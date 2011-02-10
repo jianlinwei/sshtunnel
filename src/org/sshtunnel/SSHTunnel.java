@@ -227,10 +227,10 @@ public class SSHTunnel extends Activity implements ConnectionMonitor {
 				try {
 
 					Settings.System.putString(getContentResolver(),
-							Settings.System.HTTP_PROXY, "localhost:1984");
+							Settings.Secure.HTTP_PROXY, "localhost:" + localPort);
 
 				} catch (Exception ex) {
-
+					Log.e(TAG, ex.getMessage());
 				}
 			}
 

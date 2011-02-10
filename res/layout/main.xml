@@ -4,11 +4,11 @@
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
     >
-    <EditText android:layout_weight="1" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="" android:id="@+id/host" android:hint="Host" android:inputType="textUri"></EditText>
-    <EditText android:layout_weight="1" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="" android:id="@+id/port" android:hint="Port" android:inputType="number"></EditText>
-    <EditText android:layout_weight="1" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="" android:id="@+id/user" android:hint="User"></EditText>
-    <EditText android:layout_weight="1" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="" android:id="@+id/passwd" android:inputType="textPassword" android:hint="Password"></EditText>
-    <EditText android:layout_weight="1" android:text="" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Local Port" android:id="@+id/localPort"></EditText>
-    <EditText android:layout_weight="1" android:text="" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Remote Port" android:id="@+id/remotePort"></EditText>
+    <EditText android:singleLine="true" android:layout_weight="1" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="" android:id="@+id/host" android:hint="Host" android:inputType="textUri"></EditText>
+    <EditText android:singleLine="true" android:layout_weight="1" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="" android:id="@+id/port" android:hint="Port" android:inputType="number"></EditText>
+    <EditText android:singleLine="true" android:layout_weight="1" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="" android:id="@+id/user" android:hint="User"></EditText>
+    <EditText android:singleLine="true" android:layout_weight="1" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="" android:id="@+id/passwd" android:inputType="textPassword" android:hint="Password"></EditText>
+    <EditText android:singleLine="true" android:layout_weight="1" android:text="" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Local Port" android:id="@+id/localPort"></EditText>
+    <EditText android:singleLine="true" android:layout_weight="1" android:text="" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Remote Port" android:id="@+id/remotePort"></EditText>
     <Button android:layout_weight="1" android:text="Login" android:layout_height="wrap_content" android:id="@+id/login" android:layout_width="match_parent" android:onClick="login"></Button>
 </LinearLayout>
