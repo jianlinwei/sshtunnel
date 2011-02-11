@@ -1,7 +1,9 @@
 package org.sshtunnel;
 
+import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -45,6 +47,43 @@ public class SSHTunnel extends Activity implements ConnectionMonitor {
 	private ConnectionInfo connectionInfo;
 	private boolean connected = false;
 	private boolean authenticated = false;
+	
+    // Flag indicating if this is an ARMv6 device (-1: unknown, 0: no,  1: yes)
+    private static int isARMv6 = -1;
+
+	/**
+	 * Check if this is an ARMv6 device
+	 * 
+	 * @return true if this is ARMv6
+	 */
+	private static boolean isARMv6() {
+		if (isARMv6 == -1) {
+			BufferedReader r = null;
+			try {
+				isARMv6 = 0;
+				r = new BufferedReader(new FileReader("/proc/cpuinfo"));
+				for (String line = r.readLine(); line != null; line = r
+						.readLine()) {
+					if (line.startsWith("Processor") && line.contains("ARMv6")) {
+						isARMv6 = 1;
+						break;
+					} else if (line.startsWith("CPU architecture")
+							&& (line.contains("6TE") || line.contains("5TE"))) {
+						isARMv6 = 1;
+						break;
+					}
+				}
+			} catch (Exception ex) {
+			} finally {
+				if (r != null)
+					try {
+						r.close();
+					} catch (Exception ex) {
+					}
+			}
+		}
+		return (isARMv6 == 1);
+	}
 
 	public void connectionLost(Throwable reason) {
 		onDisconnect();
@@ -84,50 +123,57 @@ public class SSHTunnel extends Activity implements ConnectionMonitor {
 			connection.close();
 			connection = null;
 		}
-		
-		runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -F OUTPUT");
-		runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -F OUTPUT");
-/*		runRootCommand("iptables_g1 -t nat -D OUTPUT -p tcp "
-				+ "--dport 80 -j REDIRECT --to " + localPort);
-		runRootCommand("iptables_g1 -t nat -D OUTPUT -p tcp "
-				+ "--dport 443 -j REDIRECT --to " + localPort);
-		runRootCommand("iptables_g1 -t nat -D OUTPUT -p tcp "
-				+ "--dport 5228 -j REDIRECT --to " + localPort);*/
+
+		if (isARMv6()) {
+			runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -F OUTPUT");
+		} else {
+			runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -F OUTPUT");
+		}
+		/*
+		 * runRootCommand("iptables_g1 -t nat -D OUTPUT -p tcp " +
+		 * "--dport 80 -j REDIRECT --to " + localPort);
+		 * runRootCommand("iptables_g1 -t nat -D OUTPUT -p tcp " +
+		 * "--dport 443 -j REDIRECT --to " + localPort);
+		 * runRootCommand("iptables_g1 -t nat -D OUTPUT -p tcp " +
+		 * "--dport 5228 -j REDIRECT --to " + localPort);
+		 */
 	}
 
 	private void CopyAssets() {
-	    AssetManager assetManager = getAssets();
-	    String[] files = null;
-	    try {
-	        files = assetManager.list("");
-	    } catch (IOException e) {
-	        Log.e(TAG, e.getMessage());
-	    }
-	    for(int i=0; i<files.length; i++) {
-	        InputStream in = null;
-	        OutputStream out = null;
-	        try {
-	          in = assetManager.open(files[i]);
-	          out = new FileOutputStream("/data/data/org.sshtunnel/" + files[i]);
-	          copyFile(in, out);
-	          in.close();
-	          in = null;
-	          out.flush();
-	          out.close();
-	          out = null;
-	        } catch(Exception e) {
-	            Log.e(TAG, e.getMessage());
-	        }       
-	    }
+		AssetManager assetManager = getAssets();
+		String[] files = null;
+		try {
+			files = assetManager.list("");
+		} catch (IOException e) {
+			Log.e(TAG, e.getMessage());
+		}
+		for (int i = 0; i < files.length; i++) {
+			InputStream in = null;
+			OutputStream out = null;
+			try {
+				in = assetManager.open(files[i]);
+				out = new FileOutputStream("/data/data/org.sshtunnel/"
+						+ files[i]);
+				copyFile(in, out);
+				in.close();
+				in = null;
+				out.flush();
+				out.close();
+				out = null;
+			} catch (Exception e) {
+				Log.e(TAG, e.getMessage());
+			}
+		}
 	}
+
 	private void copyFile(InputStream in, OutputStream out) throws IOException {
-	    byte[] buffer = new byte[1024];
-	    int read;
-	    while((read = in.read(buffer)) != -1){
-	      out.write(buffer, 0, read);
-	    }
+		byte[] buffer = new byte[1024];
+		int read;
+		while ((read = in.read(buffer)) != -1) {
+			out.write(buffer, 0, read);
+		}
 	}
-	
+
 	/** Called when the activity is closed. */
 	@Override
 	public void onDestroy() {
@@ -143,9 +189,7 @@ public class SSHTunnel extends Activity implements ConnectionMonitor {
 		setContentView(R.layout.main);
 
 		SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
-		
-		CopyAssets();
-		
+
 		isSaved = settings.getBoolean("IsSaved", false);
 
 		if (isSaved) {
@@ -171,35 +215,9 @@ public class SSHTunnel extends Activity implements ConnectionMonitor {
 			remotePortText.setText(Integer.toString(remotePort));
 		}
 
-		Process p;
-		try {
-			// Preform su to get root privledges
-			p = Runtime.getRuntime().exec("su");
-
-			// Attempt to write a file to a root-only
-			DataOutputStream os = new DataOutputStream(p.getOutputStream());
-			os.writeBytes("echo \"Do I have root?\" >/system/sd/temporary.txt\n");
-
-			// Close the terminal
-			os.writeBytes("exit\n");
-			os.flush();
-			try {
-				p.waitFor();
-				if (p.exitValue() != 255) {
-					// TODO Code to run on success
-					Log.e(TAG, "root");
-				} else {
-					// TODO Code to run on unsuccessful
-					Log.e(TAG, "not root");
-				}
-			} catch (InterruptedException e) {
-				// TODO Code to run in interrupted exception
-				Log.e(TAG, "not root");
-			}
-		} catch (IOException e) {
-			// TODO Code to run in input/output exception
-			Log.e(TAG, "not root");
-		}
+		CopyAssets();
+		runRootCommand("chmod 777 /data/data/org.sshtunnel/iptables_g1");
+		runRootCommand("chmod 777 /data/data/org.sshtunnel/iptables_n1");
 
 	}
 
@@ -357,18 +375,21 @@ public class SSHTunnel extends Activity implements ConnectionMonitor {
 				final Button button = (Button) findViewById(R.id.connect);
 				button.setText("Disconnect");
 				isConnected = true;
-				runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp "
-						+ "--dport 80 -j REDIRECT --to " + localPort);
-				runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp "
-						+ "--dport 443 -j REDIRECT --to " + localPort);
-				runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp "
-						+ "--dport 5228 -j REDIRECT --to " + localPort);
-				runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
-						+ "--dport 80 -j REDIRECT --to " + localPort);
-				runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
-						+ "--dport 443 -j REDIRECT --to " + localPort);
-				runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
-						+ "--dport 5228 -j REDIRECT --to " + localPort);
+				if (isARMv6()) {
+					runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp "
+							+ "--dport 80 -j REDIRECT --to " + localPort);
+					runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp "
+							+ "--dport 443 -j REDIRECT --to " + localPort);
+					runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp "
+							+ "--dport 5228 -j REDIRECT --to " + localPort);
+				} else {
+					runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
+							+ "--dport 80 -j REDIRECT --to " + localPort);
+					runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
+							+ "--dport 443 -j REDIRECT --to " + localPort);
+					runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
+							+ "--dport 5228 -j REDIRECT --to " + localPort);
+				}
 			}
 
 		} catch (Exception e) {
