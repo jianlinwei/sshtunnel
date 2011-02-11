@@ -129,14 +129,9 @@ public class SSHTunnel extends Activity implements ConnectionMonitor {
 		} else {
 			runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -F OUTPUT");
 		}
-		/*
-		 * runRootCommand("iptables_g1 -t nat -D OUTPUT -p tcp " +
-		 * "--dport 80 -j REDIRECT --to " + localPort);
-		 * runRootCommand("iptables_g1 -t nat -D OUTPUT -p tcp " +
-		 * "--dport 443 -j REDIRECT --to " + localPort);
-		 * runRootCommand("iptables_g1 -t nat -D OUTPUT -p tcp " +
-		 * "--dport 5228 -j REDIRECT --to " + localPort);
-		 */
+		
+		runRootCommand("/data/data/org.sshtunnel/proxy.sh stop");
+
 	}
 
 	private void CopyAssets() {
@@ -216,8 +211,12 @@ public class SSHTunnel extends Activity implements ConnectionMonitor {
 		}
 
 		CopyAssets();
+		
 		runRootCommand("chmod 777 /data/data/org.sshtunnel/iptables_g1");
 		runRootCommand("chmod 777 /data/data/org.sshtunnel/iptables_n1");
+		runRootCommand("chmod 777 /data/data/org.sshtunnel/redsocks");
+		runRootCommand("chmod 777 /data/data/org.sshtunnel/proxy.sh");
+		
 
 	}
 
@@ -375,20 +374,21 @@ public class SSHTunnel extends Activity implements ConnectionMonitor {
 				final Button button = (Button) findViewById(R.id.connect);
 				button.setText("Disconnect");
 				isConnected = true;
+				runRootCommand("/data/data/org.sshtunnel/proxy.sh start " + localPort);
 				if (isARMv6()) {
 					runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp "
-							+ "--dport 80 -j REDIRECT --to " + localPort);
+							+ "--dport 80 -j REDIRECT --to 8123");
 					runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp "
-							+ "--dport 443 -j REDIRECT --to " + localPort);
+							+ "--dport 443 -j REDIRECT --to 8124");
 					runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp "
-							+ "--dport 5228 -j REDIRECT --to " + localPort);
+							+ "--dport 5228 -j REDIRECT --to 8124");
 				} else {
 					runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
-							+ "--dport 80 -j REDIRECT --to " + localPort);
+							+ "--dport 80 -j REDIRECT --to 8123 ");
 					runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
-							+ "--dport 443 -j REDIRECT --to " + localPort);
+							+ "--dport 443 -j REDIRECT --to 8124");
 					runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
-							+ "--dport 5228 -j REDIRECT --to " + localPort);
+							+ "--dport 5228 -j REDIRECT --to 8124");
 				}
 			}
 
