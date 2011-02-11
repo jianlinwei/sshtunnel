@@ -40,7 +40,7 @@ public class SSHTunnel extends Activity implements ConnectionMonitor {
 	private boolean isConnected = false;
 	private boolean isSaved = false;
 
-	private final static int AUTH_TRIES = 1;
+	private final static int AUTH_TRIES = 20;
 
 	private Connection connection;
 	// private Session session;
@@ -116,8 +116,11 @@ public class SSHTunnel extends Activity implements ConnectionMonitor {
 	}
 
 	private void onDisconnect() {
-		connected = false;
+		
 		isConnected = false;
+		connected = false;
+		final Button button = (Button) findViewById(R.id.connect);
+		button.setText("Connect");
 
 		if (connection != null) {
 			connection.close();
@@ -225,10 +228,6 @@ public class SSHTunnel extends Activity implements ConnectionMonitor {
 		if (isConnected) {
 
 			onDisconnect();
-			isConnected = false;
-			connected = false;
-			final Button button = (Button) findViewById(R.id.connect);
-			button.setText("Connect");
 
 		} else {
 
