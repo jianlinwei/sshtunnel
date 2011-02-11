@@ -85,12 +85,13 @@ public class SSHTunnel extends Activity implements ConnectionMonitor {
 			connection = null;
 		}
 		
-		runRootCommand("/data/data/org.sshtunnel/iptables -t nat -F OUTPUT");
-/*		runRootCommand("iptables -t nat -D OUTPUT -p tcp "
+		runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -F OUTPUT");
+		runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -F OUTPUT");
+/*		runRootCommand("iptables_g1 -t nat -D OUTPUT -p tcp "
 				+ "--dport 80 -j REDIRECT --to " + localPort);
-		runRootCommand("iptables -t nat -D OUTPUT -p tcp "
+		runRootCommand("iptables_g1 -t nat -D OUTPUT -p tcp "
 				+ "--dport 443 -j REDIRECT --to " + localPort);
-		runRootCommand("iptables -t nat -D OUTPUT -p tcp "
+		runRootCommand("iptables_g1 -t nat -D OUTPUT -p tcp "
 				+ "--dport 5228 -j REDIRECT --to " + localPort);*/
 	}
 
@@ -356,11 +357,17 @@ public class SSHTunnel extends Activity implements ConnectionMonitor {
 				final Button button = (Button) findViewById(R.id.connect);
 				button.setText("Disconnect");
 				isConnected = true;
-				runRootCommand("/data/data/org.sshtunnel/iptables -t nat -A OUTPUT -p tcp "
+				runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp "
 						+ "--dport 80 -j REDIRECT --to " + localPort);
-				runRootCommand("/data/data/org.sshtunnel/iptables -t nat -A OUTPUT -p tcp "
+				runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp "
 						+ "--dport 443 -j REDIRECT --to " + localPort);
-				runRootCommand("/data/data/org.sshtunnel/iptables -t nat -A OUTPUT -p tcp "
+				runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp "
+						+ "--dport 5228 -j REDIRECT --to " + localPort);
+				runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
+						+ "--dport 80 -j REDIRECT --to " + localPort);
+				runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
+						+ "--dport 443 -j REDIRECT --to " + localPort);
+				runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
 						+ "--dport 5228 -j REDIRECT --to " + localPort);
 			}
 
