@@ -1,23 +1,13 @@
 package org.sshtunnel;
 
-import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-
-import com.trilead.ssh2.Connection;
-import com.trilead.ssh2.ConnectionInfo;
-import com.trilead.ssh2.ConnectionMonitor;
-
-import com.trilead.ssh2.LocalPortForwarder;
 
 import android.app.Activity;
-import android.app.AlertDialog;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.AssetManager;
 import android.os.Bundle;
@@ -26,7 +16,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 
-public class SSHTunnel extends Activity implements ConnectionMonitor {
+public class SSHTunnel extends Activity {
 
 	private static final String TAG = "SSHTunnel";
 	public static final String PREFS_NAME = "SSHTunnel";
@@ -37,57 +27,7 @@ public class SSHTunnel extends Activity implements ConnectionMonitor {
 	private int remotePort;
 	private String user;
 	private String passwd;
-	private boolean isConnected = false;
 	private boolean isSaved = false;
-
-	private final static int AUTH_TRIES = 20;
-
-	private Connection connection;
-	// private Session session;
-	private ConnectionInfo connectionInfo;
-	private boolean connected = false;
-	private boolean authenticated = false;
-
-	// Flag indicating if this is an ARMv6 device (-1: unknown, 0: no, 1: yes)
-	private static int isARMv6 = -1;
-
-	/**
-	 * Check if this is an ARMv6 device
-	 * 
-	 * @return true if this is ARMv6
-	 */
-	private static boolean isARMv6() {
-		if (isARMv6 == -1) {
-			BufferedReader r = null;
-			try {
-				isARMv6 = 0;
-				r = new BufferedReader(new FileReader("/proc/cpuinfo"));
-				for (String line = r.readLine(); line != null; line = r
-						.readLine()) {
-					if (line.startsWith("Processor") && line.contains("ARMv6")) {
-						isARMv6 = 1;
-						break;
-					} else if (line.startsWith("CPU architecture")
-							&& (line.contains("6TE") || line.contains("5TE"))) {
-						isARMv6 = 1;
-						break;
-					}
-				}
-			} catch (Exception ex) {
-			} finally {
-				if (r != null)
-					try {
-						r.close();
-					} catch (Exception ex) {
-					}
-			}
-		}
-		return (isARMv6 == 1);
-	}
-
-	public void connectionLost(Throwable reason) {
-		onDisconnect();
-	}
 
 	public static boolean runRootCommand(String command) {
 		Process process = null;
@@ -113,28 +53,6 @@ public class SSHTunnel extends Activity implements ConnectionMonitor {
 			}
 		}
 		return true;
-	}
-
-	private void onDisconnect() {
-
-		isConnected = false;
-		connected = false;
-		final Button button = (Button) findViewById(R.id.connect);
-		button.setText("Connect");
-
-		if (connection != null) {
-			connection.close();
-			connection = null;
-		}
-
-		if (isARMv6()) {
-			runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -F OUTPUT");
-		} else {
-			runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -F OUTPUT");
-		}
-
-		runRootCommand("/data/data/org.sshtunnel/proxy.sh stop");
-
 	}
 
 	private void CopyAssets() {
@@ -175,7 +93,11 @@ public class SSHTunnel extends Activity implements ConnectionMonitor {
 	/** Called when the activity is closed. */
 	@Override
 	public void onDestroy() {
-		onDisconnect();
+		try {
+			stopService(new Intent(this, SSHTunnelService.class));
+		} catch (Exception e) {
+			// Nothing
+		}
 		super.onDestroy();
 	}
 
@@ -222,216 +144,68 @@ public class SSHTunnel extends Activity implements ConnectionMonitor {
 
 	}
 
-	/** Called when login button is clicked. */
-	public void login(View view) {
-		if (isConnected) {
+	/** Called when disconnect button is clicked. */
+	public void serviceStop(View view) {
 
-			onDisconnect();
-
-		} else {
-			try {
-				final Button button = (Button) findViewById(R.id.connect);
-				final EditText hostText = (EditText) findViewById(R.id.host);
-				final EditText portText = (EditText) findViewById(R.id.port);
-				final EditText userText = (EditText) findViewById(R.id.user);
-				final EditText passwdText = (EditText) findViewById(R.id.passwd);
-				final EditText localPortText = (EditText) findViewById(R.id.localPort);
-				final EditText remotePortText = (EditText) findViewById(R.id.remotePort);
-
-				host = hostText.getText().toString();
-				port = Integer.parseInt(portText.getText().toString());
-				user = userText.getText().toString();
-				passwd = passwdText.getText().toString();
-				localPort = Integer
-						.parseInt(localPortText.getText().toString());
-				remotePort = Integer.parseInt(remotePortText.getText()
-						.toString());
-
-				button.setClickable(false);
-
-				/*
-				 * hostText.setEnabled(false); portText.setEnabled(false);
-				 * userText.setEnabled(false); passwdText.setEnabled(false);
-				 * localPortText.setEnabled(false);
-				 * remotePortText.setEnabled(false);
-				 */
-
-				connect();
-
-				button.setClickable(true);
-				isSaved = true;
-				SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
-				SharedPreferences.Editor editor = settings.edit();
-				editor.putBoolean("IsSaved", isSaved);
-				editor.putString("Host", host);
-				editor.putString("User", user);
-				editor.putString("Password", passwd);
-				editor.putInt("Port", port);
-				editor.putInt("LocalPort", localPort);
-				editor.putInt("RemotePort", remotePort);
-				editor.commit();
-				
-			} catch (Exception e) {
-				Log.e(TAG, "Forward Failed" + e.getMessage());
-				AlertDialog.Builder ad = new AlertDialog.Builder(this);
-				ad.setTitle("Port Forward");
-				ad.setMessage("FAILED, Please Contract @ofmax on twitter. Error: " + e.getMessage());
-				ad.show();
-			}
+		try {
+			stopService(new Intent(this, SSHTunnelService.class));
+		} catch (Exception e) {
+			// Nothing
 		}
+
+	}
+
+	/** Called when connect button is clicked. */
+	public void serviceStart(View view) {
+
+		final Button button = (Button) findViewById(R.id.connect);
+		final EditText hostText = (EditText) findViewById(R.id.host);
+		final EditText portText = (EditText) findViewById(R.id.port);
+		final EditText userText = (EditText) findViewById(R.id.user);
+		final EditText passwdText = (EditText) findViewById(R.id.passwd);
+		final EditText localPortText = (EditText) findViewById(R.id.localPort);
+		final EditText remotePortText = (EditText) findViewById(R.id.remotePort);
+
+		host = hostText.getText().toString();
+		user = userText.getText().toString();
+		passwd = passwdText.getText().toString();
+		port = Integer.parseInt(portText.getText().toString());
+		localPort = Integer.parseInt(localPortText.getText().toString());
+		remotePort = Integer.parseInt(remotePortText.getText().toString());
+
+		button.setClickable(false);
+
+		try {
+
+			Intent it = new Intent(this, SSHTunnelService.class);
+			Bundle bundle = new Bundle();
+			bundle.putString("host", host);
+			bundle.putString("user", user);
+			bundle.putString("passwd", passwd);
+			bundle.putInt("port", port);
+			bundle.putInt("localPort", localPort);
+			bundle.putInt("remotePort", remotePort);
+
+			it.putExtras(bundle);
+			startService(it);
+		} catch (Exception e) {
+			// Nothing
+		}
+
+		button.setClickable(true);
+		isSaved = true;
+		SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
+		SharedPreferences.Editor editor = settings.edit();
+		editor.putBoolean("IsSaved", isSaved);
+		editor.putString("Host", host);
+		editor.putString("User", user);
+		editor.putString("Password", passwd);
+		editor.putInt("Port", port);
+		editor.putInt("LocalPort", localPort);
+		editor.putInt("RemotePort", remotePort);
+		editor.commit();
 
 		return;
-	}
-
-	public void connect() {
-
-		connection = new Connection(host, port);
-		connection.addConnectionMonitor(this);
-
-		try {
-			connection.setCompression(true);
-		} catch (IOException e) {
-			Log.e(TAG, "Could not enable compression!", e);
-		}
-
-		try {
-			/*
-			 * Uncomment when debugging SSH protocol:
-			 */
-
-			/*
-			 * DebugLogger logger = new DebugLogger() {
-			 * 
-			 * public void log(int level, String className, String message) {
-			 * Log.d("SSH", message); }
-			 * 
-			 * };
-			 * 
-			 * Logger.enabled = true; Logger.logger = logger;
-			 */
-
-			connectionInfo = connection.connect();
-			connected = true;
-
-		} catch (IOException e) {
-			Log.e(TAG,
-					"Problem in SSH connection thread during authentication", e);
-
-			// Display the reason in the text.
-
-			onDisconnect();
-			return;
-		}
-
-		try {
-			// enter a loop to keep trying until authentication
-			int tries = 0;
-			while (connected && !connection.isAuthenticationComplete()
-					&& tries++ < AUTH_TRIES) {
-				authenticate();
-
-				// sleep to make sure we dont kill system
-				Thread.sleep(1000);
-			}
-		} catch (Exception e) {
-			Log.e(TAG,
-					"Problem in SSH connection thread during authentication", e);
-		}
-
-	}
-
-	private void authenticate() {
-		try {
-			if (connection.authenticateWithNone(user)) {
-				finishConnection();
-				return;
-			}
-		} catch (Exception e) {
-			Log.d(TAG, "Host does not support 'none' authentication.");
-		}
-
-		try {
-
-			if (connection.authenticateWithPassword(user, passwd))
-				finishConnection();
-
-		} catch (IllegalStateException e) {
-			Log.e(TAG,
-					"Connection went away while we were trying to authenticate",
-					e);
-			return;
-		} catch (Exception e) {
-			Log.e(TAG, "Problem during handleAuthentication()", e);
-		}
-	}
-
-	/**
-	 * Internal method to request actual PTY terminal once we've finished
-	 * authentication. If called before authenticated, it will just fail.
-	 */
-	private void finishConnection() {
-		authenticated = true;
-
-		try {
-			if (enablePortForward()) {
-				Log.e(TAG, "Forward Successful");
-				AlertDialog.Builder ad = new AlertDialog.Builder(this);
-				ad.setTitle("Port Forward");
-				ad.setMessage("Successful!");
-				ad.show();
-				final Button button = (Button) findViewById(R.id.connect);
-				button.setText("Disconnect");
-				isConnected = true;
-				runRootCommand("/data/data/org.sshtunnel/proxy.sh start "
-						+ localPort);
-				if (isARMv6()) {
-					runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp "
-							+ "--dport 80 -j REDIRECT --to 8123");
-					runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp "
-							+ "--dport 443 -j REDIRECT --to 8124");
-					runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp "
-							+ "--dport 5228 -j REDIRECT --to 8124");
-				} else {
-					runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
-							+ "--dport 80 -j REDIRECT --to 8123 ");
-					runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
-							+ "--dport 443 -j REDIRECT --to 8124");
-					runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
-							+ "--dport 5228 -j REDIRECT --to 8124");
-				}
-			}
-
-		} catch (Exception e) {
-			Log.e(TAG, "Error setting up port forward during connect", e);
-		}
-
-	}
-
-	public boolean enablePortForward() {
-
-		if (!authenticated)
-			return false;
-
-		/*
-		 * DynamicPortForwarder dpf = null;
-		 * 
-		 * try { dpf = connection.createDynamicPortForwarder(new
-		 * InetSocketAddress( InetAddress.getLocalHost(), 1984)); } catch
-		 * (Exception e) { Log.e(TAG, "Could not create dynamic port forward",
-		 * e); return false; }
-		 */
-
-		LocalPortForwarder lpf1 = null;
-		try {
-			lpf1 = connection.createLocalPortForwarder(new InetSocketAddress(
-					InetAddress.getLocalHost(), localPort), "127.0.0.1",
-					remotePort);
-		} catch (Exception e) {
-			Log.e(TAG, "Could not create local port forward", e);
-			return false;
-		}
-
-		return true;
 	}
 
 }

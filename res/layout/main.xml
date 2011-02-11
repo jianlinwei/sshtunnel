@@ -10,5 +10,6 @@
     <EditText android:singleLine="true" android:layout_width="fill_parent" android:layout_height="wrap_content" android:text="" android:id="@+id/passwd" android:inputType="textPassword" android:hint="Password"></EditText>
     <EditText android:singleLine="true" android:text="" android:layout_width="fill_parent" android:layout_height="wrap_content" android:hint="Local Port" android:id="@+id/localPort" android:inputType="number"></EditText>
     <EditText android:singleLine="true" android:text="" android:layout_width="fill_parent" android:layout_height="wrap_content" android:hint="Remote Port" android:id="@+id/remotePort" android:inputType="number"></EditText>
-    <Button android:text="Connect" android:layout_height="wrap_content" android:id="@+id/connect" android:layout_width="fill_parent" android:onClick="login"></Button>
+    <Button android:text="Connect" android:layout_height="wrap_content" android:id="@+id/connect" android:layout_width="fill_parent" android:onClick="serviceStart"></Button>
+    <Button android:text="Disconnect" android:id="@+id/disconnect" android:layout_width="fill_parent" android:layout_height="wrap_content" android:onClick="serviceStop"></Button>
 </LinearLayout>
