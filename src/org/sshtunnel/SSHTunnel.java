@@ -47,9 +47,9 @@ public class SSHTunnel extends Activity implements ConnectionMonitor {
 	private ConnectionInfo connectionInfo;
 	private boolean connected = false;
 	private boolean authenticated = false;
-	
-    // Flag indicating if this is an ARMv6 device (-1: unknown, 0: no,  1: yes)
-    private static int isARMv6 = -1;
+
+	// Flag indicating if this is an ARMv6 device (-1: unknown, 0: no, 1: yes)
+	private static int isARMv6 = -1;
 
 	/**
 	 * Check if this is an ARMv6 device
@@ -116,7 +116,7 @@ public class SSHTunnel extends Activity implements ConnectionMonitor {
 	}
 
 	private void onDisconnect() {
-		
+
 		isConnected = false;
 		connected = false;
 		final Button button = (Button) findViewById(R.id.connect);
@@ -132,7 +132,7 @@ public class SSHTunnel extends Activity implements ConnectionMonitor {
 		} else {
 			runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -F OUTPUT");
 		}
-		
+
 		runRootCommand("/data/data/org.sshtunnel/proxy.sh stop");
 
 	}
@@ -214,12 +214,11 @@ public class SSHTunnel extends Activity implements ConnectionMonitor {
 		}
 
 		CopyAssets();
-		
+
 		runRootCommand("chmod 777 /data/data/org.sshtunnel/iptables_g1");
 		runRootCommand("chmod 777 /data/data/org.sshtunnel/iptables_n1");
 		runRootCommand("chmod 777 /data/data/org.sshtunnel/redsocks");
 		runRootCommand("chmod 777 /data/data/org.sshtunnel/proxy.sh");
-		
 
 	}
 
@@ -230,45 +229,55 @@ public class SSHTunnel extends Activity implements ConnectionMonitor {
 			onDisconnect();
 
 		} else {
+			try {
+				final Button button = (Button) findViewById(R.id.connect);
+				final EditText hostText = (EditText) findViewById(R.id.host);
+				final EditText portText = (EditText) findViewById(R.id.port);
+				final EditText userText = (EditText) findViewById(R.id.user);
+				final EditText passwdText = (EditText) findViewById(R.id.passwd);
+				final EditText localPortText = (EditText) findViewById(R.id.localPort);
+				final EditText remotePortText = (EditText) findViewById(R.id.remotePort);
 
-			final Button button = (Button) findViewById(R.id.connect);
-			final EditText hostText = (EditText) findViewById(R.id.host);
-			final EditText portText = (EditText) findViewById(R.id.port);
-			final EditText userText = (EditText) findViewById(R.id.user);
-			final EditText passwdText = (EditText) findViewById(R.id.passwd);
-			final EditText localPortText = (EditText) findViewById(R.id.localPort);
-			final EditText remotePortText = (EditText) findViewById(R.id.remotePort);
+				host = hostText.getText().toString();
+				port = Integer.parseInt(portText.getText().toString());
+				user = userText.getText().toString();
+				passwd = passwdText.getText().toString();
+				localPort = Integer
+						.parseInt(localPortText.getText().toString());
+				remotePort = Integer.parseInt(remotePortText.getText()
+						.toString());
 
-			host = hostText.getText().toString();
-			port = Integer.parseInt(portText.getText().toString());
-			user = userText.getText().toString();
-			passwd = passwdText.getText().toString();
-			localPort = Integer.parseInt(localPortText.getText().toString());
-			remotePort = Integer.parseInt(remotePortText.getText().toString());
+				button.setClickable(false);
 
-			button.setClickable(false);
+				/*
+				 * hostText.setEnabled(false); portText.setEnabled(false);
+				 * userText.setEnabled(false); passwdText.setEnabled(false);
+				 * localPortText.setEnabled(false);
+				 * remotePortText.setEnabled(false);
+				 */
 
-			/*
-			 * hostText.setEnabled(false); portText.setEnabled(false);
-			 * userText.setEnabled(false); passwdText.setEnabled(false);
-			 * localPortText.setEnabled(false);
-			 * remotePortText.setEnabled(false);
-			 */
+				connect();
 
-			connect();
-
-			button.setClickable(true);
-			isSaved = true;
-			SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
-			SharedPreferences.Editor editor = settings.edit();
-			editor.putBoolean("IsSaved", isSaved);
-			editor.putString("Host", host);
-			editor.putString("User", user);
-			editor.putString("Password", passwd);
-			editor.putInt("Port", port);
-			editor.putInt("LocalPort", localPort);
-			editor.putInt("RemotePort", remotePort);
-			editor.commit();
+				button.setClickable(true);
+				isSaved = true;
+				SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
+				SharedPreferences.Editor editor = settings.edit();
+				editor.putBoolean("IsSaved", isSaved);
+				editor.putString("Host", host);
+				editor.putString("User", user);
+				editor.putString("Password", passwd);
+				editor.putInt("Port", port);
+				editor.putInt("LocalPort", localPort);
+				editor.putInt("RemotePort", remotePort);
+				editor.commit();
+				
+			} catch (Exception e) {
+				Log.e(TAG, "Forward Failed" + e.getMessage());
+				AlertDialog.Builder ad = new AlertDialog.Builder(this);
+				ad.setTitle("Port Forward");
+				ad.setMessage("FAILED, Please Contract @ofmax on twitter. Error: " + e.getMessage());
+				ad.show();
+			}
 		}
 
 		return;
@@ -373,7 +382,8 @@ public class SSHTunnel extends Activity implements ConnectionMonitor {
 				final Button button = (Button) findViewById(R.id.connect);
 				button.setText("Disconnect");
 				isConnected = true;
-				runRootCommand("/data/data/org.sshtunnel/proxy.sh start " + localPort);
+				runRootCommand("/data/data/org.sshtunnel/proxy.sh start "
+						+ localPort);
 				if (isARMv6()) {
 					runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp "
 							+ "--dport 80 -j REDIRECT --to 8123");
