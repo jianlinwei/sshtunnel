@@ -5,11 +5,11 @@ import java.io.DataOutputStream;
 
 import java.io.FileReader;
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
 
 import com.trilead.ssh2.Connection;
 import com.trilead.ssh2.ConnectionMonitor;
+import com.trilead.ssh2.DebugLogger;
+import com.trilead.ssh2.log.Logger;
 
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -38,7 +38,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	private String user;
 	private String passwd;
 
-	private final static int AUTH_TRIES = 20;
+	private final static int AUTH_TRIES = 2;
 
 	private Connection connection;
 
@@ -122,6 +122,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		notificationManager.notify(0, notification);
 		
 		connected = false;
+		SSHTunnel.isConnected = false;
 
 		if (connection != null) {
 			connection.close();
@@ -162,7 +163,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	// method will not be called.
 	@Override
 	public void onStart(Intent intent, int startId) {
-		super.onStart(intent, startId);
 		handleCommand(intent);
 		
 		notification.icon = R.drawable.icon;
@@ -171,8 +171,11 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		notification.setLatestEventInfo(this,
 				"SSHTunnel", "SSHTunnel Service is running now.", pendIntent);
 		notificationManager.notify(0, notification);
+		SSHTunnel.isConnected = true;
+		
+		super.onStart(intent, startId);
 	}
-
+	
 	/** Called when the activity is first created. */
 	public void handleCommand(Intent it) {
 
@@ -219,6 +222,18 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			 * 
 			 * Logger.enabled = true; Logger.logger = logger;
 			 */
+			
+			
+			 DebugLogger logger = new DebugLogger() {
+			 
+			 public void log(int level, String className, String message) {
+			 Log.e("SSH", message); }
+			 
+			 };
+			 
+			 Logger.enabled = true; 
+			 Logger.logger = logger;
+			 
 
 			connection.connect();
 			connected = true;
@@ -288,20 +303,21 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 				runRootCommand("/data/data/org.sshtunnel/proxy.sh start "
 						+ localPort);
+
 				if (isARMv6()) {
 					runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp "
-							+ "--dport 80 -j REDIRECT --to 8123");
+							+ "--dport 80 -j REDIRECT --to-ports 8123");
 					runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp "
-							+ "--dport 443 -j REDIRECT --to 8124");
+							+ "--dport 443 -j REDIRECT --to-ports 8123");
 					runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp "
-							+ "--dport 5228 -j REDIRECT --to 8124");
+							+ "--dport 5228 -j REDIRECT --to-ports 8123");
 				} else {
 					runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
-							+ "--dport 80 -j REDIRECT --to 8123 ");
+							+ "--dport 80 -j REDIRECT --to-ports 8123");
 					runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
-							+ "--dport 443 -j REDIRECT --to 8124");
+							+ "--dport 443 -j REDIRECT --to-ports 8123");
 					runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
-							+ "--dport 5228 -j REDIRECT --to 8124");
+							+ "--dport 5228 -j REDIRECT --to-ports 8123");
 				}
 			}
 
@@ -327,8 +343,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 		// LocalPortForwarder lpf1 = null;
 		try {
-			connection.createLocalPortForwarder(new InetSocketAddress(
-					InetAddress.getLocalHost(), localPort), "127.0.0.1",
+			connection.createLocalPortForwarder(localPort, "127.0.0.1",
 					remotePort);
 		} catch (Exception e) {
 			Log.e(TAG, "Could not create local port forward", e);

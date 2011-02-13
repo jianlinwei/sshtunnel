@@ -28,6 +28,7 @@ public class SSHTunnel extends Activity {
 	private String user;
 	private String passwd;
 	private boolean isSaved = false;
+	public static boolean isConnected = false;
 
 	public static boolean runRootCommand(String command) {
 		Process process = null;
@@ -67,15 +68,17 @@ public class SSHTunnel extends Activity {
 			InputStream in = null;
 			OutputStream out = null;
 			try {
-				in = assetManager.open(files[i]);
-				out = new FileOutputStream("/data/data/org.sshtunnel/"
-						+ files[i]);
-				copyFile(in, out);
-				in.close();
-				in = null;
-				out.flush();
-				out.close();
-				out = null;
+				//if (!(new File("/data/data/org.sshtunnel/" + files[i])).exists()) {
+					in = assetManager.open(files[i]);
+					out = new FileOutputStream("/data/data/org.sshtunnel/"
+							+ files[i]);
+					copyFile(in, out);
+					in.close();
+					in = null;
+					out.flush();
+					out.close();
+					out = null;
+				//}
 			} catch (Exception e) {
 				Log.e(TAG, e.getMessage());
 			}
@@ -93,11 +96,12 @@ public class SSHTunnel extends Activity {
 	/** Called when the activity is closed. */
 	@Override
 	public void onDestroy() {
-		try {
-			stopService(new Intent(this, SSHTunnelService.class));
-		} catch (Exception e) {
-			// Nothing
-		}
+		SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
+
+		SharedPreferences.Editor editor = settings.edit();
+		editor.putBoolean("IsConnected", isConnected);
+
+		editor.commit();
 		super.onDestroy();
 	}
 
@@ -110,6 +114,7 @@ public class SSHTunnel extends Activity {
 
 		SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
 
+		isConnected = settings.getBoolean("IsConnected", false);
 		isSaved = settings.getBoolean("IsSaved", false);
 
 		if (isSaved) {
@@ -135,13 +140,14 @@ public class SSHTunnel extends Activity {
 			remotePortText.setText(Integer.toString(remotePort));
 		}
 
-		CopyAssets();
-
-		runRootCommand("chmod 777 /data/data/org.sshtunnel/iptables_g1");
-		runRootCommand("chmod 777 /data/data/org.sshtunnel/iptables_n1");
-		runRootCommand("chmod 777 /data/data/org.sshtunnel/redsocks");
-		runRootCommand("chmod 777 /data/data/org.sshtunnel/proxy.sh");
-
+		if (!isConnected)
+		{
+			CopyAssets();
+			runRootCommand("chmod 777 /data/data/org.sshtunnel/iptables_g1");
+			runRootCommand("chmod 777 /data/data/org.sshtunnel/iptables_n1");
+			runRootCommand("chmod 777 /data/data/org.sshtunnel/redsocks");
+			runRootCommand("chmod 777 /data/data/org.sshtunnel/proxy.sh");
+		}
 	}
 
 	/** Called when disconnect button is clicked. */
