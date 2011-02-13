@@ -45,71 +45,9 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	private boolean connected = false;
 	private boolean authenticated = false;
 
-	// Flag indicating if this is an ARMv6 device (-1: unknown, 0: no, 1: yes)
-	private static int isARMv6 = -1;
-
-	/**
-	 * Check if this is an ARMv6 device
-	 * 
-	 * @return true if this is ARMv6
-	 */
-	private static boolean isARMv6() {
-		if (isARMv6 == -1) {
-			BufferedReader r = null;
-			try {
-				isARMv6 = 0;
-				r = new BufferedReader(new FileReader("/proc/cpuinfo"));
-				for (String line = r.readLine(); line != null; line = r
-						.readLine()) {
-					if (line.startsWith("Processor") && line.contains("ARMv6")) {
-						isARMv6 = 1;
-						break;
-					} else if (line.startsWith("CPU architecture")
-							&& (line.contains("6TE") || line.contains("5TE"))) {
-						isARMv6 = 1;
-						break;
-					}
-				}
-			} catch (Exception ex) {
-			} finally {
-				if (r != null)
-					try {
-						r.close();
-					} catch (Exception ex) {
-					}
-			}
-		}
-		return (isARMv6 == 1);
-	}
 
 	public void connectionLost(Throwable reason) {
 		stopSelf();
-	}
-
-	public static boolean runRootCommand(String command) {
-		Process process = null;
-		DataOutputStream os = null;
-		try {
-			process = Runtime.getRuntime().exec("su");
-			os = new DataOutputStream(process.getOutputStream());
-			os.writeBytes(command + "\n");
-			os.writeBytes("exit\n");
-			os.flush();
-			process.waitFor();
-		} catch (Exception e) {
-			Log.e(TAG, e.getMessage());
-			return false;
-		} finally {
-			try {
-				if (os != null) {
-					os.close();
-				}
-				process.destroy();
-			} catch (Exception e) {
-				// nothing
-			}
-		}
-		return true;
 	}
 
 	private void onDisconnect() {
@@ -128,14 +66,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			connection.close();
 			connection = null;
 		}
-
-		if (isARMv6()) {
-			runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -F OUTPUT");
-		} else {
-			runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -F OUTPUT");
-		}
-
-		runRootCommand("/data/data/org.sshtunnel/proxy.sh stop");
 
 	}
 
@@ -298,28 +228,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		authenticated = true;
 
 		try {
-			if (enablePortForward()) {
+			if (enablePortForward())
 				Log.e(TAG, "Forward Successful");
-
-				runRootCommand("/data/data/org.sshtunnel/proxy.sh start "
-						+ localPort);
-
-				if (isARMv6()) {
-					runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp "
-							+ "--dport 80 -j REDIRECT --to-ports 8123");
-					runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp "
-							+ "--dport 443 -j REDIRECT --to-ports 8124");
-					runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp "
-							+ "--dport 5228 -j REDIRECT --to-ports 8124");
-				} else {
-					runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
-							+ "--dport 80 -j REDIRECT --to-ports 8123");
-					runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
-							+ "--dport 443 -j REDIRECT --to-ports 8124");
-					runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
-							+ "--dport 5228 -j REDIRECT --to-ports 8124");
-				}
-			}
 
 		} catch (Exception e) {
 			Log.e(TAG, "Error setting up port forward during connect", e);

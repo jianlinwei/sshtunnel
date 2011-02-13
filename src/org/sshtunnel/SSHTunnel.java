@@ -7,6 +7,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.AssetManager;
@@ -32,68 +34,6 @@ public class SSHTunnel extends Activity {
 	public static boolean isConnected = false;
 	public static boolean isAutoStart = false;
 
-	public static boolean runRootCommand(String command) {
-		Process process = null;
-		DataOutputStream os = null;
-		try {
-			process = Runtime.getRuntime().exec("su");
-			os = new DataOutputStream(process.getOutputStream());
-			os.writeBytes(command + "\n");
-			os.writeBytes("exit\n");
-			os.flush();
-			process.waitFor();
-		} catch (Exception e) {
-			Log.e(TAG, e.getMessage());
-			return false;
-		} finally {
-			try {
-				if (os != null) {
-					os.close();
-				}
-				process.destroy();
-			} catch (Exception e) {
-				// nothing
-			}
-		}
-		return true;
-	}
-
-	private void CopyAssets() {
-		AssetManager assetManager = getAssets();
-		String[] files = null;
-		try {
-			files = assetManager.list("");
-		} catch (IOException e) {
-			Log.e(TAG, e.getMessage());
-		}
-		for (int i = 0; i < files.length; i++) {
-			InputStream in = null;
-			OutputStream out = null;
-			try {
-				//if (!(new File("/data/data/org.sshtunnel/" + files[i])).exists()) {
-					in = assetManager.open(files[i]);
-					out = new FileOutputStream("/data/data/org.sshtunnel/"
-							+ files[i]);
-					copyFile(in, out);
-					in.close();
-					in = null;
-					out.flush();
-					out.close();
-					out = null;
-				//}
-			} catch (Exception e) {
-				Log.e(TAG, e.getMessage());
-			}
-		}
-	}
-
-	private void copyFile(InputStream in, OutputStream out) throws IOException {
-		byte[] buffer = new byte[1024];
-		int read;
-		while ((read = in.read(buffer)) != -1) {
-			out.write(buffer, 0, read);
-		}
-	}
 
 	/** Called when the activity is closed. */
 	@Override
@@ -144,15 +84,6 @@ public class SSHTunnel extends Activity {
 			remotePortText.setText(Integer.toString(remotePort));
 			isAutoStartText.setChecked(isAutoStart);
 		}
-
-		if (!isConnected)
-		{
-			CopyAssets();
-			runRootCommand("chmod 777 /data/data/org.sshtunnel/iptables_g1");
-			runRootCommand("chmod 777 /data/data/org.sshtunnel/iptables_n1");
-			runRootCommand("chmod 777 /data/data/org.sshtunnel/redsocks");
-			runRootCommand("chmod 777 /data/data/org.sshtunnel/proxy.sh");
-		}
 	}
 
 	/** Called when disconnect button is clicked. */
@@ -166,6 +97,27 @@ public class SSHTunnel extends Activity {
 
 	}
 
+	private void showAToast (String msg) {
+		AlertDialog.Builder builder = new AlertDialog.Builder(this);
+		builder.setMessage(msg)
+		       .setCancelable(false)
+		       .setNegativeButton("Ok, I know", new DialogInterface.OnClickListener() {
+		           public void onClick(DialogInterface dialog, int id) {
+		                dialog.cancel();
+		           }
+		       });
+		AlertDialog alert = builder.create();
+		alert.show();
+	}
+	
+	private boolean isTextEmpty(String s, String msg) {
+		if (s == null || s.length() <= 0) {
+			showAToast(msg);
+			return true;
+		}
+		return false;
+	}
+	
 	/** Called when connect button is clicked. */
 	public void serviceStart(View view) {
 
@@ -178,6 +130,17 @@ public class SSHTunnel extends Activity {
 		final EditText remotePortText = (EditText) findViewById(R.id.remotePort);
 		final CheckBox isAutoStartText = (CheckBox) findViewById(R.id.isAutoStart);
 
+		if (isTextEmpty(hostText.getText().toString(), "Cann't let the Host empty."))
+			return;
+		if (isTextEmpty(portText.getText().toString(), "Cann't let the Port empty."))
+			return;
+		if (isTextEmpty(userText.getText().toString(), "Cann't let the User empty."))
+			return;
+		if (isTextEmpty(localPortText.getText().toString(), "Cann't let the Loacal Port empty."))
+			return;
+		if (isTextEmpty(remotePortText.getText().toString(), "Cann't let the Remote Port empty."))
+			return;
+		
 		host = hostText.getText().toString();
 		user = userText.getText().toString();
 		passwd = passwdText.getText().toString();
