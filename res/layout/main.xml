@@ -1,15 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
-    android:layout_width="fill_parent"
-    android:layout_height="fill_parent"
-    >
-    <EditText android:singleLine="true" android:layout_width="fill_parent" android:layout_height="wrap_content" android:text="" android:id="@+id/host" android:hint="Host" android:inputType="textUri"></EditText>
-    <EditText android:singleLine="true" android:layout_width="fill_parent" android:layout_height="wrap_content" android:text="" android:id="@+id/port" android:hint="Port" android:inputType="number"></EditText>
-    <EditText android:singleLine="true" android:layout_width="fill_parent" android:layout_height="wrap_content" android:text="" android:id="@+id/user" android:hint="User"></EditText>
-    <EditText android:singleLine="true" android:layout_width="fill_parent" android:layout_height="wrap_content" android:text="" android:id="@+id/passwd" android:inputType="textPassword" android:hint="Password"></EditText>
-    <EditText android:singleLine="true" android:text="" android:layout_width="fill_parent" android:layout_height="wrap_content" android:hint="Local Port" android:id="@+id/localPort" android:inputType="number"></EditText>
-    <EditText android:singleLine="true" android:text="" android:layout_width="fill_parent" android:layout_height="wrap_content" android:hint="Remote Port" android:id="@+id/remotePort" android:inputType="number"></EditText>
-    <Button android:text="Connect" android:layout_height="wrap_content" android:id="@+id/connect" android:layout_width="fill_parent" android:onClick="serviceStart"></Button>
-    <Button android:text="Disconnect" android:id="@+id/disconnect" android:layout_width="fill_parent" android:layout_height="wrap_content" android:onClick="serviceStop"></Button>
+	android:orientation="vertical" android:layout_width="fill_parent" android:padding="5px"
+	android:layout_height="fill_parent">
+	<EditText android:singleLine="true" android:layout_width="fill_parent"
+		android:layout_height="wrap_content" android:text="" android:id="@+id/host"
+		android:hint="Host" android:inputType="textUri"></EditText>
+	<EditText android:singleLine="true" android:layout_width="fill_parent"
+		android:layout_height="wrap_content" android:text="" android:id="@+id/port"
+		android:hint="Port" android:inputType="number"></EditText>
+	<EditText android:singleLine="true" android:layout_width="fill_parent"
+		android:layout_height="wrap_content" android:text="" android:id="@+id/user"
+		android:hint="User"></EditText>
+	<EditText android:singleLine="true" android:layout_width="fill_parent"
+		android:layout_height="wrap_content" android:text="" android:id="@+id/passwd"
+		android:inputType="textPassword" android:hint="Password"></EditText>
+	<EditText android:singleLine="true" android:text=""
+		android:layout_width="fill_parent" android:layout_height="wrap_content"
+		android:hint="Local Port" android:id="@+id/localPort"
+		android:inputType="number"></EditText>
+	<EditText android:singleLine="true" android:text=""
+		android:layout_width="fill_parent" android:layout_height="wrap_content"
+		android:hint="Remote Port" android:id="@+id/remotePort"
+		android:inputType="number"></EditText>
+	<CheckBox android:text="  Connect at boot  "
+		android:id="@+id/isAutoStart" android:layout_width="fill_parent"
+		android:layout_height="wrap_content"></CheckBox>
+	<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+		android:orientation="horizontal" android:layout_width="fill_parent"
+		android:layout_height="fill_parent">
+
+		<Button android:layout_weight="1" android:text="Connect"
+			android:layout_height="wrap_content" android:id="@+id/connect"
+			android:layout_width="fill_parent" android:onClick="serviceStart"></Button>
+		<Button android:layout_weight="1" android:text="Disconnect"
+			android:id="@+id/disconnect" android:layout_width="fill_parent"
+			android:layout_height="wrap_content" android:onClick="serviceStop"></Button>
+	</LinearLayout>
 </LinearLayout>

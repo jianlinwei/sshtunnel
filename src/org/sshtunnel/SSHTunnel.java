@@ -14,6 +14,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 
 public class SSHTunnel extends Activity {
@@ -29,6 +30,7 @@ public class SSHTunnel extends Activity {
 	private String passwd;
 	private boolean isSaved = false;
 	public static boolean isConnected = false;
+	public static boolean isAutoStart = false;
 
 	public static boolean runRootCommand(String command) {
 		Process process = null;
@@ -124,6 +126,7 @@ public class SSHTunnel extends Activity {
 			port = settings.getInt("Port", 0);
 			localPort = settings.getInt("LocalPort", 0);
 			remotePort = settings.getInt("RemotePort", 0);
+			isAutoStart = settings.getBoolean("IsAutoStart", false);
 
 			final EditText hostText = (EditText) findViewById(R.id.host);
 			final EditText portText = (EditText) findViewById(R.id.port);
@@ -131,6 +134,7 @@ public class SSHTunnel extends Activity {
 			final EditText passwdText = (EditText) findViewById(R.id.passwd);
 			final EditText localPortText = (EditText) findViewById(R.id.localPort);
 			final EditText remotePortText = (EditText) findViewById(R.id.remotePort);
+			final CheckBox isAutoStartText = (CheckBox) findViewById(R.id.isAutoStart);
 
 			hostText.setText(host);
 			portText.setText(Integer.toString(port));
@@ -138,6 +142,7 @@ public class SSHTunnel extends Activity {
 			passwdText.setText(passwd);
 			localPortText.setText(Integer.toString(localPort));
 			remotePortText.setText(Integer.toString(remotePort));
+			isAutoStartText.setChecked(isAutoStart);
 		}
 
 		if (!isConnected)
@@ -171,6 +176,7 @@ public class SSHTunnel extends Activity {
 		final EditText passwdText = (EditText) findViewById(R.id.passwd);
 		final EditText localPortText = (EditText) findViewById(R.id.localPort);
 		final EditText remotePortText = (EditText) findViewById(R.id.remotePort);
+		final CheckBox isAutoStartText = (CheckBox) findViewById(R.id.isAutoStart);
 
 		host = hostText.getText().toString();
 		user = userText.getText().toString();
@@ -178,6 +184,7 @@ public class SSHTunnel extends Activity {
 		port = Integer.parseInt(portText.getText().toString());
 		localPort = Integer.parseInt(localPortText.getText().toString());
 		remotePort = Integer.parseInt(remotePortText.getText().toString());
+		isAutoStart = isAutoStartText.isChecked();
 
 		button.setClickable(false);
 
@@ -191,6 +198,7 @@ public class SSHTunnel extends Activity {
 			bundle.putInt("port", port);
 			bundle.putInt("localPort", localPort);
 			bundle.putInt("remotePort", remotePort);
+			
 
 			it.putExtras(bundle);
 			startService(it);
@@ -203,6 +211,7 @@ public class SSHTunnel extends Activity {
 		SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
 		SharedPreferences.Editor editor = settings.edit();
 		editor.putBoolean("IsSaved", isSaved);
+		editor.putBoolean("IsAutoStart", isAutoStart);
 		editor.putString("Host", host);
 		editor.putString("User", user);
 		editor.putString("Password", passwd);
