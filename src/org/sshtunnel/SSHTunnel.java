@@ -7,6 +7,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.AssetManager;
@@ -166,6 +168,27 @@ public class SSHTunnel extends Activity {
 
 	}
 
+	private void showAToast (String msg) {
+		AlertDialog.Builder builder = new AlertDialog.Builder(this);
+		builder.setMessage(msg)
+		       .setCancelable(false)
+		       .setNegativeButton("Ok, I know", new DialogInterface.OnClickListener() {
+		           public void onClick(DialogInterface dialog, int id) {
+		                dialog.cancel();
+		           }
+		       });
+		AlertDialog alert = builder.create();
+		alert.show();
+	}
+	
+	private boolean isTextEmpty(String s, String msg) {
+		if (s == null || s.length() <= 0) {
+			showAToast(msg);
+			return true;
+		}
+		return false;
+	}
+	
 	/** Called when connect button is clicked. */
 	public void serviceStart(View view) {
 
@@ -177,6 +200,17 @@ public class SSHTunnel extends Activity {
 		final EditText localPortText = (EditText) findViewById(R.id.localPort);
 		final EditText remotePortText = (EditText) findViewById(R.id.remotePort);
 		final CheckBox isAutoStartText = (CheckBox) findViewById(R.id.isAutoStart);
+		
+		if (isTextEmpty(hostText.getText().toString(), "Cann't let the Host empty."))
+			return;
+		if (isTextEmpty(portText.getText().toString(), "Cann't let the Port empty."))
+			return;
+		if (isTextEmpty(userText.getText().toString(), "Cann't let the User empty."))
+			return;
+		if (isTextEmpty(localPortText.getText().toString(), "Cann't let the Loacal Port empty."))
+			return;
+		if (isTextEmpty(remotePortText.getText().toString(), "Cann't let the Remote Port empty."))
+			return;
 
 		host = hostText.getText().toString();
 		user = userText.getText().toString();
