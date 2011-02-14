@@ -222,18 +222,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			 * 
 			 * Logger.enabled = true; Logger.logger = logger;
 			 */
-			
-			
-			 DebugLogger logger = new DebugLogger() {
-			 
-			 public void log(int level, String className, String message) {
-			 Log.e("SSH", message); }
-			 
-			 };
-			 
-			 Logger.enabled = true; 
-			 Logger.logger = logger;
-			 
 
 			connection.connect();
 			connected = true;
