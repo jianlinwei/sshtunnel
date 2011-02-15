@@ -41,7 +41,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	private boolean connected = false;
 	private boolean authenticated = false;
 
-
 	public void connectionLost(Throwable reason) {
 		try {
 			Thread.sleep(5000);
@@ -58,15 +57,15 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 				}
 
 				try {
-					
+
 					// Reconnect now.
 					connect();
-					
+
 				} catch (Exception e) {
 					Log.e(TAG, "Forward Failed" + e.getMessage());
 					continue;
 				}
-				
+
 				notification.icon = R.drawable.icon;
 				notification.tickerText = "Auto Reconnected.";
 				notification.defaults = Notification.DEFAULT_SOUND;
@@ -85,10 +84,10 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		notification.icon = R.drawable.icon;
 		notification.tickerText = "Port Forward Stop";
 		notification.defaults = Notification.DEFAULT_SOUND;
-		notification.setLatestEventInfo(this,
-				"SSHTunnel", "SSHTunnel Service has been stopped.", pendIntent);
+		notification.setLatestEventInfo(this, "SSHTunnel",
+				"SSHTunnel Service has been stopped.", pendIntent);
 		notificationManager.notify(0, notification);
-		
+
 		connected = false;
 		SSHTunnel.isConnected = false;
 
@@ -104,18 +103,20 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		super.onCreate();
 		notificationManager = (NotificationManager) this
 				.getSystemService(NOTIFICATION_SERVICE);
-		
+
 		intent = new Intent(this, SSHTunnel.class);
 		pendIntent = PendingIntent.getActivity(this, 0, intent, 0);
 		notification = new Notification();
-			
+
 	}
 
 	/** Called when the activity is closed. */
 	@Override
 	public void onDestroy() {
-		onDisconnect();
-		super.onDestroy();
+		if (SSHTunnel.isConnected) {
+			onDisconnect();
+			super.onDestroy();
+		}
 	}
 
 	// This is the old onStart method that will be called on the pre-2.0
@@ -123,9 +124,10 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	// method will not be called.
 	@Override
 	public void onStart(Intent intent, int startId) {
-		
-		if (connected) return;
-		
+
+		if (connected)
+			return;
+
 		if (handleCommand(intent)) {
 			notification.icon = R.drawable.icon;
 			notification.tickerText = "Port Forward Successful! Enjoy!";
@@ -147,7 +149,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			stopSelf();
 		}
 	}
-	
+
 	/** Called when the activity is first created. */
 	public boolean handleCommand(Intent it) {
 
@@ -197,10 +199,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			 * 
 			 * Logger.enabled = true; Logger.logger = logger;
 			 */
-			 
 
 			connection.connect();
-			
 
 		} catch (Exception e) {
 			Log.e(TAG,
@@ -208,9 +208,9 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 			// Display the reason in the text.
 
-			throw(e);
+			throw (e);
 		}
-		
+
 		connected = true;
 
 		try {
@@ -226,7 +226,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		} catch (Exception e) {
 			Log.e(TAG,
 					"Problem in SSH connection thread during authentication", e);
-			throw(e);
+			throw (e);
 		}
 
 	}
