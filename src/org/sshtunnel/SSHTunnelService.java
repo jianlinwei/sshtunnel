@@ -8,8 +8,6 @@ import java.io.IOException;
 
 import com.trilead.ssh2.Connection;
 import com.trilead.ssh2.ConnectionMonitor;
-import com.trilead.ssh2.DebugLogger;
-import com.trilead.ssh2.log.Logger;
 
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -37,8 +35,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	private int remotePort;
 	private String user;
 	private String passwd;
-	private boolean isAutoReconnect;
-	private int reconnectTry;
+	private boolean isAutoReconnect = false;
 
 	private final static int AUTH_TRIES = 2;
 	private final static int RECONNECT_TRIES = 2;
@@ -87,26 +84,38 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 	public void connectionLost(Throwable reason) {
 		try {
-			Thread.sleep(10000);
+			Thread.sleep(5000);
 		} catch (Exception ignore) {
-			
+
 		}
-		if (isAutoReconnect && reconnectTry <= RECONNECT_TRIES) {
-			connected = false;
-			reconnectTry++;
+		if (isAutoReconnect && SSHTunnel.isConnected) {
+			for (int reconNum = 1; reconNum <= RECONNECT_TRIES; reconNum++) {
+				connected = false;
 
-			if (connection != null) {
-				connection.close();
-				connection = null;
+				if (connection != null) {
+					connection.close();
+					connection = null;
+				}
+
+				try {
+					
+					// Reconnect now.
+					connect();
+					
+				} catch (Exception e) {
+					Log.e(TAG, "Forward Failed" + e.getMessage());
+					continue;
+				}
+				
+				notification.icon = R.drawable.icon;
+				notification.tickerText = "Auto Reconnected.";
+				notification.defaults = Notification.DEFAULT_SOUND;
+				notification.setLatestEventInfo(this, "SSHTunnel",
+						"Reconnected for " + reconNum + " times", pendIntent);
+				notificationManager.notify(0, notification);
+				return;
 			}
 
-			try {
-				connect();
-			} catch (Exception e) {
-				Log.e(TAG, "Forward Failed" + e.getMessage());
-				stopSelf();
-			}
-			
 		} else
 			stopSelf();
 	}
@@ -179,6 +188,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	/** Called when the activity is closed. */
 	@Override
 	public void onDestroy() {
+		SSHTunnel.isConnected = false;
 		onDisconnect();
 		super.onDestroy();
 	}
@@ -213,7 +223,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		port = bundle.getInt("port");
 		localPort = bundle.getInt("localPort");
 		remotePort = bundle.getInt("remotePort");
-		isAutoReconnect = bundle.getBoolean("IsAutoReconnect");
+		isAutoReconnect = bundle.getBoolean("isAutoReconnect");
 
 		try {
 			connect();
