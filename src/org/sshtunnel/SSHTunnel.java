@@ -150,27 +150,23 @@ public class SSHTunnel extends Activity {
 			isAutoStartText.setChecked(isAutoStart);
 			isAutoReconnectText.setChecked(isAutoReconnect);
 		}
-		
-		Button conButton = (Button) findViewById(R.id.connect);
-		Button disconButton = (Button) findViewById(R.id.disconnect);
-		
-		if (isConnected) {
-			conButton.setClickable(false);
-			disconButton.setClickable(true);
-		} else {
+
+		if (!isConnected)
+		{
 			CopyAssets();
 			runRootCommand("chmod 777 /data/data/org.sshtunnel/iptables_g1");
 			runRootCommand("chmod 777 /data/data/org.sshtunnel/iptables_n1");
 			runRootCommand("chmod 777 /data/data/org.sshtunnel/redsocks");
 			runRootCommand("chmod 777 /data/data/org.sshtunnel/proxy.sh");
-			conButton.setClickable(true);
-			disconButton.setClickable(false);
 		}
 	}
 
 	/** Called when disconnect button is clicked. */
 	public void serviceStop(View view) {
-
+		if (!isConnected) {
+			showAToast ("Service has been stopped already.");
+			return;
+		}
 		try {
 			stopService(new Intent(this, SSHTunnelService.class));
 		} catch (Exception e) {
@@ -202,6 +198,11 @@ public class SSHTunnel extends Activity {
 	
 	/** Called when connect button is clicked. */
 	public void serviceStart(View view) {
+		
+		if (isConnected) {
+			showAToast ("Service has been started already.");
+			return;
+		}
 
 		final Button button = (Button) findViewById(R.id.connect);
 		final EditText hostText = (EditText) findViewById(R.id.host);
