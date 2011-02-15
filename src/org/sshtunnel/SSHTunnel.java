@@ -150,14 +150,21 @@ public class SSHTunnel extends Activity {
 			isAutoStartText.setChecked(isAutoStart);
 			isAutoReconnectText.setChecked(isAutoReconnect);
 		}
-
-		if (!isConnected)
-		{
+		
+		Button conButton = (Button) findViewById(R.id.connect);
+		Button disconButton = (Button) findViewById(R.id.disconnect);
+		
+		if (isConnected) {
+			conButton.setClickable(false);
+			disconButton.setClickable(true);
+		} else {
 			CopyAssets();
 			runRootCommand("chmod 777 /data/data/org.sshtunnel/iptables_g1");
 			runRootCommand("chmod 777 /data/data/org.sshtunnel/iptables_n1");
 			runRootCommand("chmod 777 /data/data/org.sshtunnel/redsocks");
 			runRootCommand("chmod 777 /data/data/org.sshtunnel/proxy.sh");
+			conButton.setClickable(true);
+			disconButton.setClickable(false);
 		}
 	}
 

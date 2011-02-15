@@ -98,15 +98,15 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 				}
 
 				try {
-					
+
 					// Reconnect now.
 					connect();
-					
+
 				} catch (Exception e) {
 					Log.e(TAG, "Forward Failed" + e.getMessage());
 					continue;
 				}
-				
+
 				notification.icon = R.drawable.icon;
 				notification.tickerText = "Auto Reconnected.";
 				notification.defaults = Notification.DEFAULT_SOUND;
@@ -188,9 +188,10 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	/** Called when the activity is closed. */
 	@Override
 	public void onDestroy() {
-		SSHTunnel.isConnected = false;
-		onDisconnect();
-		super.onDestroy();
+		if (SSHTunnel.isConnected) {
+			onDisconnect();
+			super.onDestroy();
+		}
 	}
 
 	// This is the old onStart method that will be called on the pre-2.0
@@ -198,21 +199,30 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	// method will not be called.
 	@Override
 	public void onStart(Intent intent, int startId) {
-		handleCommand(intent);
+		if (handleCommand(intent)) {
+			notification.icon = R.drawable.icon;
+			notification.tickerText = "Port Forward Successful! Enjoy!";
+			notification.defaults = Notification.DEFAULT_SOUND;
+			notification.setLatestEventInfo(this, "SSHTunnel",
+					"SSHTunnel Service is running now.", pendIntent);
+			notificationManager.notify(0, notification);
+			SSHTunnel.isConnected = true;
 
-		notification.icon = R.drawable.icon;
-		notification.tickerText = "Port Forward Successful! Enjoy!";
-		notification.defaults = Notification.DEFAULT_SOUND;
-		notification.setLatestEventInfo(this, "SSHTunnel",
-				"SSHTunnel Service is running now.", pendIntent);
-		notificationManager.notify(0, notification);
-		SSHTunnel.isConnected = true;
-
-		super.onStart(intent, startId);
+			super.onStart(intent, startId);
+		} else {
+			notification.icon = R.drawable.icon;
+			notification.tickerText = "Port Forward Failed.";
+			notification.defaults = Notification.DEFAULT_SOUND;
+			notification.setLatestEventInfo(this, "SSHTunnel",
+					"Please check your network or settings.", pendIntent);
+			notificationManager.notify(0, notification);
+			SSHTunnel.isConnected = false;
+			stopSelf();
+		}
 	}
 
 	/** Called when the activity is first created. */
-	public void handleCommand(Intent it) {
+	public boolean handleCommand(Intent it) {
 
 		Log.e(TAG, "Service Start");
 
@@ -229,10 +239,12 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			connect();
 		} catch (Exception e) {
 			Log.e(TAG, "Forward Failed" + e.getMessage());
+			return false;
 		}
+		return true;
 	}
 
-	public void connect() {
+	public void connect() throws Exception {
 
 		connection = new Connection(host, port);
 		connection.addConnectionMonitor(this);
@@ -260,17 +272,17 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			 */
 
 			connection.connect();
-			connected = true;
 
-		} catch (IOException e) {
+		} catch (Exception e) {
 			Log.e(TAG,
 					"Problem in SSH connection thread during authentication", e);
 
 			// Display the reason in the text.
 
-			onDisconnect();
-			return;
+			throw(e);
 		}
+		
+		connected = true;
 
 		try {
 			// enter a loop to keep trying until authentication
@@ -285,6 +297,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		} catch (Exception e) {
 			Log.e(TAG,
 					"Problem in SSH connection thread during authentication", e);
+			throw(e);
 		}
 
 	}
