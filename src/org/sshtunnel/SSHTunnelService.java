@@ -1,9 +1,5 @@
 package org.sshtunnel;
 
-import java.io.BufferedReader;
-import java.io.DataOutputStream;
-
-import java.io.FileReader;
 import java.io.IOException;
 
 import com.trilead.ssh2.Connection;
@@ -37,8 +33,10 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	private int remotePort;
 	private String user;
 	private String passwd;
+	private boolean isAutoReconnect = false;
 
 	private final static int AUTH_TRIES = 2;
+	private final static int RECONNECT_TRIES = 2;
 
 	private Connection connection;
 
@@ -47,7 +45,41 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 
 	public void connectionLost(Throwable reason) {
-		stopSelf();
+		try {
+			Thread.sleep(5000);
+		} catch (Exception ignore) {
+
+		}
+		if (isAutoReconnect && SSHTunnel.isConnected) {
+			for (int reconNum = 1; reconNum <= RECONNECT_TRIES; reconNum++) {
+				connected = false;
+
+				if (connection != null) {
+					connection.close();
+					connection = null;
+				}
+
+				try {
+					
+					// Reconnect now.
+					connect();
+					
+				} catch (Exception e) {
+					Log.e(TAG, "Forward Failed" + e.getMessage());
+					continue;
+				}
+				
+				notification.icon = R.drawable.icon;
+				notification.tickerText = "Auto Reconnected.";
+				notification.defaults = Notification.DEFAULT_SOUND;
+				notification.setLatestEventInfo(this, "SSHTunnel",
+						"Reconnected for " + reconNum + " times", pendIntent);
+				notificationManager.notify(0, notification);
+				return;
+			}
+
+		} else
+			stopSelf();
 	}
 
 	private void onDisconnect() {
@@ -93,6 +125,9 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	// method will not be called.
 	@Override
 	public void onStart(Intent intent, int startId) {
+		
+		if (connected) return;
+		
 		handleCommand(intent);
 		
 		notification.icon = R.drawable.icon;
@@ -118,6 +153,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		port = bundle.getInt("port");
 		localPort = bundle.getInt("localPort");
 		remotePort = bundle.getInt("remotePort");
+		isAutoReconnect = bundle.getBoolean("isAutoReconnect");
 
 		try {
 			connect();

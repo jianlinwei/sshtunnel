@@ -5,7 +5,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.widget.EditText;
 
 public class SSHTunnelReceiver extends BroadcastReceiver {
 	
@@ -19,6 +18,7 @@ public class SSHTunnelReceiver extends BroadcastReceiver {
 	private String passwd;
 	private boolean isSaved = false;
 	private boolean isAutoStart = false;
+	private boolean isAutoReconnect = false;
 
 	@Override
 	public void onReceive(Context context, Intent intent) {
@@ -35,6 +35,7 @@ public class SSHTunnelReceiver extends BroadcastReceiver {
 			port = settings.getInt("Port", 0);
 			localPort = settings.getInt("LocalPort", 0);
 			remotePort = settings.getInt("RemotePort", 0);
+			isAutoReconnect = settings.getBoolean("IsAutoReconnect", false);
 			
 			Intent it = new Intent(context, SSHTunnelService.class);
 			Bundle bundle = new Bundle();
@@ -44,6 +45,7 @@ public class SSHTunnelReceiver extends BroadcastReceiver {
 			bundle.putInt("port", port);
 			bundle.putInt("localPort", localPort);
 			bundle.putInt("remotePort", remotePort);
+			bundle.putBoolean("isAutoConnect", isAutoReconnect);
 
 			it.putExtras(bundle);
 			context.startService(it);
