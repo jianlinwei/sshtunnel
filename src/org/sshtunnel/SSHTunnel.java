@@ -84,7 +84,10 @@ public class SSHTunnel extends Activity {
 
 	/** Called when disconnect button is clicked. */
 	public void serviceStop(View view) {
-
+		if (!isConnected) {
+			showAToast ("Service has been stopped already.");
+			return;
+		}
 		try {
 			stopService(new Intent(this, SSHTunnelService.class));
 		} catch (Exception e) {
@@ -116,7 +119,10 @@ public class SSHTunnel extends Activity {
 	
 	/** Called when connect button is clicked. */
 	public void serviceStart(View view) {
-
+		if (isConnected) {
+			showAToast ("Service has been started already.");
+			return;
+		}
 		final Button button = (Button) findViewById(R.id.connect);
 		final EditText hostText = (EditText) findViewById(R.id.host);
 		final EditText portText = (EditText) findViewById(R.id.port);

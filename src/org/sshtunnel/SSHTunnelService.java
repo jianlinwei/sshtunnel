@@ -4,8 +4,6 @@ import java.io.IOException;
 
 import com.trilead.ssh2.Connection;
 import com.trilead.ssh2.ConnectionMonitor;
-import com.trilead.ssh2.DebugLogger;
-import com.trilead.ssh2.log.Logger;
 
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -128,21 +126,30 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		
 		if (connected) return;
 		
-		handleCommand(intent);
-		
-		notification.icon = R.drawable.icon;
-		notification.tickerText = "Port Forward Successful! Enjoy!";
-		notification.defaults = Notification.DEFAULT_SOUND;
-		notification.setLatestEventInfo(this,
-				"SSHTunnel", "SSHTunnel Service is running now.", pendIntent);
-		notificationManager.notify(0, notification);
-		SSHTunnel.isConnected = true;
-		
-		super.onStart(intent, startId);
+		if (handleCommand(intent)) {
+			notification.icon = R.drawable.icon;
+			notification.tickerText = "Port Forward Successful! Enjoy!";
+			notification.defaults = Notification.DEFAULT_SOUND;
+			notification.setLatestEventInfo(this, "SSHTunnel",
+					"SSHTunnel Service is running now.", pendIntent);
+			notificationManager.notify(0, notification);
+			SSHTunnel.isConnected = true;
+
+			super.onStart(intent, startId);
+		} else {
+			notification.icon = R.drawable.icon;
+			notification.tickerText = "Port Forward Failed.";
+			notification.defaults = Notification.DEFAULT_SOUND;
+			notification.setLatestEventInfo(this, "SSHTunnel",
+					"Please check your network or settings.", pendIntent);
+			notificationManager.notify(0, notification);
+			SSHTunnel.isConnected = false;
+			stopSelf();
+		}
 	}
 	
 	/** Called when the activity is first created. */
-	public void handleCommand(Intent it) {
+	public boolean handleCommand(Intent it) {
 
 		Log.e(TAG, "Service Start");
 
@@ -159,10 +166,12 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			connect();
 		} catch (Exception e) {
 			Log.e(TAG, "Forward Failed" + e.getMessage());
+			return true;
 		}
+		return false;
 	}
 
-	public void connect() {
+	public void connect() throws Exception {
 
 		connection = new Connection(host, port);
 		connection.addConnectionMonitor(this);
@@ -188,31 +197,21 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			 * 
 			 * Logger.enabled = true; Logger.logger = logger;
 			 */
-			
-			
-			 DebugLogger logger = new DebugLogger() {
-			 
-			 public void log(int level, String className, String message) {
-			 Log.e("SSH", message); }
-			 
-			 };
-			 
-			 Logger.enabled = true; 
-			 Logger.logger = logger;
 			 
 
 			connection.connect();
-			connected = true;
+			
 
-		} catch (IOException e) {
+		} catch (Exception e) {
 			Log.e(TAG,
 					"Problem in SSH connection thread during authentication", e);
 
 			// Display the reason in the text.
 
-			onDisconnect();
-			return;
+			throw(e);
 		}
+		
+		connected = true;
 
 		try {
 			// enter a loop to keep trying until authentication
@@ -227,6 +226,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		} catch (Exception e) {
 			Log.e(TAG,
 					"Problem in SSH connection thread during authentication", e);
+			throw(e);
 		}
 
 	}
