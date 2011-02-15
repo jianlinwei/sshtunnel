@@ -168,9 +168,9 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			connect();
 		} catch (Exception e) {
 			Log.e(TAG, "Forward Failed" + e.getMessage());
-			return true;
+			return false;
 		}
-		return false;
+		return true;
 	}
 
 	public void connect() throws Exception {
