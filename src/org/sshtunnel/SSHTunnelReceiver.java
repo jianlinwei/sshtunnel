@@ -13,7 +13,6 @@ public class SSHTunnelReceiver extends BroadcastReceiver {
 	private String host;
 	private int port;
 	private int localPort;
-	private int remotePort;
 	private String user;
 	private String passwd;
 	private boolean isSaved = false;
@@ -34,7 +33,6 @@ public class SSHTunnelReceiver extends BroadcastReceiver {
 			passwd = settings.getString("Password", "");
 			port = settings.getInt("Port", 0);
 			localPort = settings.getInt("LocalPort", 0);
-			remotePort = settings.getInt("RemotePort", 0);
 			isAutoReconnect = settings.getBoolean("IsAutoReconnect", false);
 			
 			
@@ -45,7 +43,6 @@ public class SSHTunnelReceiver extends BroadcastReceiver {
 			bundle.putString("passwd", passwd);
 			bundle.putInt("port", port);
 			bundle.putInt("localPort", localPort);
-			bundle.putInt("remotePort", remotePort);
 			bundle.putBoolean("isAutoConnect", isAutoReconnect);
 
 			it.putExtras(bundle);

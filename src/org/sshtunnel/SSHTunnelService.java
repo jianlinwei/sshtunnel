@@ -32,7 +32,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	private String host;
 	private int port;
 	private int localPort;
-	private int remotePort;
 	private String user;
 	private String passwd;
 	private boolean isAutoReconnect = false;
@@ -232,7 +231,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		passwd = bundle.getString("passwd");
 		port = bundle.getInt("port");
 		localPort = bundle.getInt("localPort");
-		remotePort = bundle.getInt("remotePort");
 		isAutoReconnect = bundle.getBoolean("isAutoReconnect");
 
 		try {
@@ -343,18 +341,10 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 				if (isARMv6()) {
 					runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp "
-							+ "--dport 80 -j REDIRECT --to-ports 8123");
-					runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp "
-							+ "--dport 443 -j REDIRECT --to-ports 8124");
-					runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT "
-							+ "--dport 53 -j REDIRECT --to-ports 1053");
+							+ "-j REDIRECT --to-ports 8123");
 				} else {
 					runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
-							+ "--dport 80 -j REDIRECT --to-ports 8123");
-					runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
-							+ "--dport 443 -j REDIRECT --to-ports 8124");
-					runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT "
-							+ "--dport 53 -j REDIRECT --to-ports 1053");
+							+ "-j REDIRECT --to-ports 8123");
 				}
 			}
 
@@ -380,9 +370,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 		// LocalPortForwarder lpf1 = null;
 		try {
-			connection.createLocalPortForwarder(localPort, "127.0.0.1",
-					remotePort);
-			connection.createLocalPortForwarder(1053, "8.8.8.8", 53);
+			connection.createDynamicPortForwarder(localPort);
 		} catch (Exception e) {
 			Log.e(TAG, "Could not create local port forward", e);
 			return false;

@@ -14,18 +14,12 @@
 	<EditText android:singleLine="true" android:layout_width="fill_parent"
 		android:layout_height="wrap_content" android:text="" android:id="@+id/passwd"
 		android:inputType="textPassword" android:hint="Password"></EditText>
-	<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-		android:orientation="horizontal" android:layout_width="fill_parent"
-		android:layout_height="wrap_content">
-		<EditText android:layout_weight="1" android:singleLine="true" android:text=""
-			android:layout_width="fill_parent" android:layout_height="wrap_content"
-			android:hint="Local Port" android:id="@+id/localPort"
-			android:inputType="number"></EditText>
-		<EditText android:layout_weight="1" android:singleLine="true" android:text=""
-			android:layout_width="fill_parent" android:layout_height="wrap_content"
-			android:hint="Remote Port" android:id="@+id/remotePort"
-			android:inputType="number"></EditText>
-	</LinearLayout>
+
+	<EditText android:singleLine="true"
+		android:text="" android:layout_width="fill_parent"
+		android:layout_height="wrap_content" android:hint="Local Port"
+		android:id="@+id/localPort" android:inputType="number"></EditText>
+
 	<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
 		android:orientation="horizontal" android:layout_width="fill_parent"
 		android:layout_height="wrap_content">
