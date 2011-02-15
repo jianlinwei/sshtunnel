@@ -23,7 +23,7 @@ public class SSHTunnel extends Activity {
 	private String user;
 	private String passwd;
 	private boolean isSaved = false;
-	public static boolean isConnected = false;
+
 	public static boolean isAutoStart = false;
 	public static boolean isAutoReconnect = false;
 
@@ -34,7 +34,7 @@ public class SSHTunnel extends Activity {
 		SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
 
 		SharedPreferences.Editor editor = settings.edit();
-		editor.putBoolean("IsConnected", isConnected);
+		editor.putBoolean("SSHTunnelService.isConnected", SSHTunnelService.isConnected);
 
 		editor.commit();
 		super.onDestroy();
@@ -49,7 +49,7 @@ public class SSHTunnel extends Activity {
 
 		SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
 
-		isConnected = settings.getBoolean("IsConnected", false);
+		SSHTunnelService.isConnected = settings.getBoolean("SSHTunnelService.isConnected", false);
 		isSaved = settings.getBoolean("IsSaved", false);
 
 		if (isSaved) {
@@ -84,7 +84,7 @@ public class SSHTunnel extends Activity {
 
 	/** Called when disconnect button is clicked. */
 	public void serviceStop(View view) {
-		if (!isConnected) {
+		if (!SSHTunnelService.isConnected) {
 			showAToast ("Service has been stopped already.");
 			return;
 		}
@@ -119,7 +119,7 @@ public class SSHTunnel extends Activity {
 	
 	/** Called when connect button is clicked. */
 	public void serviceStart(View view) {
-		if (isConnected) {
+		if (SSHTunnelService.isConnected) {
 			showAToast ("Service has been started already.");
 			return;
 		}

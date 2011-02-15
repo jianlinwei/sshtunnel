@@ -40,6 +40,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 	private boolean connected = false;
 	private boolean authenticated = false;
+	public static boolean isConnected = false;
 
 	public void connectionLost(Throwable reason) {
 		try {
@@ -47,7 +48,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		} catch (Exception ignore) {
 
 		}
-		if (isAutoReconnect && SSHTunnel.isConnected) {
+		if (isAutoReconnect && isConnected) {
 			for (int reconNum = 1; reconNum <= RECONNECT_TRIES; reconNum++) {
 				connected = false;
 
@@ -89,7 +90,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		notificationManager.notify(0, notification);
 
 		connected = false;
-		SSHTunnel.isConnected = false;
+		isConnected = false;
 
 		if (connection != null) {
 			connection.close();
@@ -113,7 +114,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	/** Called when the activity is closed. */
 	@Override
 	public void onDestroy() {
-		if (SSHTunnel.isConnected) {
+		if (isConnected) {
 			onDisconnect();
 			super.onDestroy();
 		}
@@ -135,7 +136,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			notification.setLatestEventInfo(this, "SSHTunnel",
 					"SSHTunnel Service is running now.", pendIntent);
 			notificationManager.notify(0, notification);
-			SSHTunnel.isConnected = true;
+			isConnected = true;
 
 			super.onStart(intent, startId);
 		} else {
@@ -145,7 +146,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			notification.setLatestEventInfo(this, "SSHTunnel",
 					"Please check your network or settings.", pendIntent);
 			notificationManager.notify(0, notification);
-			SSHTunnel.isConnected = false;
+			isConnected = false;
 			stopSelf();
 		}
 	}
