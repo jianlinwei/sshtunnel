@@ -37,8 +37,11 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	private int remotePort;
 	private String user;
 	private String passwd;
+	private boolean isAutoReconnect;
+	private int reconnectTry;
 
 	private final static int AUTH_TRIES = 2;
+	private final static int RECONNECT_TRIES = 2;
 
 	private Connection connection;
 
@@ -83,7 +86,29 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	}
 
 	public void connectionLost(Throwable reason) {
-		stopSelf();
+		try {
+			Thread.sleep(10000);
+		} catch (Exception ignore) {
+			
+		}
+		if (isAutoReconnect && reconnectTry <= RECONNECT_TRIES) {
+			connected = false;
+			reconnectTry++;
+
+			if (connection != null) {
+				connection.close();
+				connection = null;
+			}
+
+			try {
+				connect();
+			} catch (Exception e) {
+				Log.e(TAG, "Forward Failed" + e.getMessage());
+				stopSelf();
+			}
+			
+		} else
+			stopSelf();
 	}
 
 	public static boolean runRootCommand(String command) {
@@ -117,10 +142,10 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		notification.icon = R.drawable.icon;
 		notification.tickerText = "Port Forward Stop";
 		notification.defaults = Notification.DEFAULT_SOUND;
-		notification.setLatestEventInfo(this,
-				"SSHTunnel", "SSHTunnel Service has been stopped.", pendIntent);
+		notification.setLatestEventInfo(this, "SSHTunnel",
+				"SSHTunnel Service has been stopped.", pendIntent);
 		notificationManager.notify(0, notification);
-		
+
 		connected = false;
 		SSHTunnel.isConnected = false;
 
@@ -144,11 +169,11 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		super.onCreate();
 		notificationManager = (NotificationManager) this
 				.getSystemService(NOTIFICATION_SERVICE);
-		
+
 		intent = new Intent(this, SSHTunnel.class);
 		pendIntent = PendingIntent.getActivity(this, 0, intent, 0);
 		notification = new Notification();
-			
+
 	}
 
 	/** Called when the activity is closed. */
@@ -164,18 +189,18 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	@Override
 	public void onStart(Intent intent, int startId) {
 		handleCommand(intent);
-		
+
 		notification.icon = R.drawable.icon;
 		notification.tickerText = "Port Forward Successful! Enjoy!";
 		notification.defaults = Notification.DEFAULT_SOUND;
-		notification.setLatestEventInfo(this,
-				"SSHTunnel", "SSHTunnel Service is running now.", pendIntent);
+		notification.setLatestEventInfo(this, "SSHTunnel",
+				"SSHTunnel Service is running now.", pendIntent);
 		notificationManager.notify(0, notification);
 		SSHTunnel.isConnected = true;
-		
+
 		super.onStart(intent, startId);
 	}
-	
+
 	/** Called when the activity is first created. */
 	public void handleCommand(Intent it) {
 
@@ -188,6 +213,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		port = bundle.getInt("port");
 		localPort = bundle.getInt("localPort");
 		remotePort = bundle.getInt("remotePort");
+		isAutoReconnect = bundle.getBoolean("IsAutoReconnect");
 
 		try {
 			connect();
