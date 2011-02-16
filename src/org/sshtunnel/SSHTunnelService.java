@@ -39,8 +39,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	private boolean isAutoReconnect = false;
 	private boolean isAutoSetProxy = false;
 	private LocalPortForwarder lpf1 = null;
-	private LocalPortForwarder lpf2 = null;
-	private DNSServer dnsServer;
+//	private LocalPortForwarder lpf2 = null;
+//	private DNSServer dnsServer;
 
 	private final static int AUTH_TRIES = 2;
 	private final static int RECONNECT_TRIES = 3;
@@ -159,10 +159,10 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 				lpf1.close();
 				lpf1 = null;
 			}
-			if (lpf2 != null) {
-				lpf2.close();
-				lpf2 = null;
-			}
+//			if (lpf2 != null) {
+//				lpf2.close();
+//				lpf2 = null;
+//			}
 		} catch (Exception ignore) {
 			// Nothing
 		}
@@ -187,9 +187,9 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		dnsServer = new DNSServer("DNS Server", 8153, "127.0.0.1", localPort, "8.8.8.8", 53);
-		dnsServer.setBasePath(this.getFilesDir().getParent());
-		new Thread(dnsServer).start();
+//		dnsServer = new DNSServer("DNS Server", 8153, "127.0.0.1", localPort, "8.8.8.8", 53);
+//		dnsServer.setBasePath(this.getFilesDir().getParent());
+//		new Thread(dnsServer).start();
 		notificationManager = (NotificationManager) this
 				.getSystemService(NOTIFICATION_SERVICE);
 
@@ -208,11 +208,12 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			notifyAlert(getString(R.string.forward_stop),
 					getString(R.string.service_stopped));
 		}
-		try {
-			dnsServer.close();
-		} catch (Exception e) {
-			Log.e(TAG, "DNS Server close unexpected");
-		}
+//		try {
+//			if (dnsServer != null)
+//				dnsServer.close();
+//		} catch (Exception e) {
+//			Log.e(TAG, "DNS Server close unexpected");
+//		}
 		super.onDestroy();
 	}
 
@@ -369,15 +370,15 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 								+ "--dport 80 -j REDIRECT --to-ports 8123");
 						runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp "
 								+ "--dport 443 -j REDIRECT --to-ports 8124");
-						runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p udp "
-								+ "--dport 53 -j REDIRECT --to-ports 8153");
+//						runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p udp "
+//								+ "--dport 53 -j REDIRECT --to-ports 8153");
 					} else {
 						runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
 								+ "--dport 80 -j REDIRECT --to-ports 8123");
 						runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
 								+ "--dport 443 -j REDIRECT --to-ports 8124");
-						runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p udp "
-								+ "--dport 53 -j REDIRECT --to-ports 8153");
+//						runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p udp "
+//								+ "--dport 53 -j REDIRECT --to-ports 8153");
 					}
 				}
 			}
@@ -406,8 +407,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		try {
 			lpf1 = connection.createLocalPortForwarder(localPort, "127.0.0.1",
 					remotePort);
-			if (isAutoSetProxy)
-				lpf2 = connection.createLocalPortForwarder(1053, "8.8.8.8", 53);
 		} catch (Exception e) {
 			Log.e(TAG, "Could not create local port forward", e);
 			return false;
