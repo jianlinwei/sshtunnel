@@ -88,12 +88,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		if (isAutoReconnect && connected) {
 			for (int reconNum = 1; reconNum <= RECONNECT_TRIES; reconNum++) {
 
-				try {
-					Thread.sleep(5000 * reconNum);
-				} catch (Exception ignore) {
-
-				}
-
 				onDisconnect();
 
 				try {
@@ -103,6 +97,11 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 				} catch (Exception e) {
 					Log.e(TAG, "Forward Failed" + e.getMessage());
+					try {
+						Thread.sleep(5000 * reconNum);
+					} catch (Exception ignore) {
+
+					}
 					continue;
 				}
 
@@ -178,12 +177,14 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	@Override
 	public void onCreate() {
 		super.onCreate();
+		
 		notificationManager = (NotificationManager) this
 				.getSystemService(NOTIFICATION_SERVICE);
 
 		intent = new Intent(this, SSHTunnel.class);
 		pendIntent = PendingIntent.getActivity(this, 0, intent, 0);
 		notification = new Notification();
+		this.setForeground(true);
 	}
 
 	/** Called when the activity is closed. */
@@ -196,6 +197,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			notifyAlert(getString(R.string.forward_stop),
 					getString(R.string.service_stopped));
 		}
+		
+		this.setForeground(false);
 
 		super.onDestroy();
 	}
