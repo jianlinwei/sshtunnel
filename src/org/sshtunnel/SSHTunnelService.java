@@ -36,7 +36,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	private String user;
 	private String passwd;
 	private boolean isAutoReconnect = false;
-	private boolean isAutoSetProxy = false;
 	private DynamicPortForwarder dpf = null;
 
 	private final static int AUTH_TRIES = 2;
@@ -166,15 +165,13 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			connection = null;
 		}
 
-		if (isAutoSetProxy) {
-			if (isARMv6()) {
-				runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -F OUTPUT");
-			} else {
-				runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -F OUTPUT");
-			}
-
-			runRootCommand("/data/data/org.sshtunnel/proxy.sh stop");
+		if (isARMv6()) {
+			runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -F OUTPUT");
+		} else {
+			runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -F OUTPUT");
 		}
+
+		runRootCommand("/data/data/org.sshtunnel/proxy.sh stop");
 
 	}
 
@@ -243,7 +240,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		port = bundle.getInt("port");
 		localPort = bundle.getInt("localPort");
 		isAutoReconnect = bundle.getBoolean("isAutoReconnect");
-		isAutoSetProxy = bundle.getBoolean("isAutoSetProxy");
 
 		try {
 			connect();
@@ -346,18 +342,18 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		try {
 			if (enablePortForward()) {
 				Log.e(TAG, "Forward Successful");
-				if (isAutoSetProxy) {
-					runRootCommand("/data/data/org.sshtunnel/proxy.sh start "
-							+ localPort);
 
-					if (isARMv6()) {
-						runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT "
-								+ "-j REDIRECT --to-ports 8123");
-					} else {
-						runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT "
-								+ "-j REDIRECT --to-ports 8123");
-					}
+				runRootCommand("/data/data/org.sshtunnel/proxy.sh start "
+						+ localPort);
+
+				if (isARMv6()) {
+					runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT "
+							+ "-j REDIRECT --to-ports 8123");
+				} else {
+					runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT "
+							+ "-j REDIRECT --to-ports 8123");
 				}
+
 			}
 
 		} catch (Exception e) {
