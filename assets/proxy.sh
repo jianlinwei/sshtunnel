@@ -23,7 +23,7 @@ redsocks {
  local_port = 8123;
  ip = 127.0.0.1;
  port = $2;
- type = socks5;
+ type = socks4;
 } 
 " >>$DIR/redsocks.conf
   echo "nameserver 8.8.8.8" > /etc/resolv.conf
