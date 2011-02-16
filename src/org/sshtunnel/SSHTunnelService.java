@@ -368,14 +368,14 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 						runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp "
 								+ "--dport 443 -j REDIRECT --to-ports 8124");
 						runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p udp "
-								+ "--dport 443 -j REDIRECT --to-ports 8153");
+								+ "--dport 53 -j REDIRECT --to-ports 8153");
 					} else {
 						runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
 								+ "--dport 80 -j REDIRECT --to-ports 8123");
 						runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
 								+ "--dport 443 -j REDIRECT --to-ports 8124");
 						runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p udp "
-								+ "--dport 443 -j REDIRECT --to-ports 8153");
+								+ "--dport 53 -j REDIRECT --to-ports 8153");
 					}
 				}
 			}
