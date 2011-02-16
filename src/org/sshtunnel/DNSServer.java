@@ -51,6 +51,10 @@ public class DNSServer implements WrapServer {
 
 	private boolean inService = false;
 
+	public boolean isInService() {
+		return inService;
+	}
+
 	private Hashtable<String, DnsResponse> dnsCache = new Hashtable<String, DnsResponse>();
 
 	/**
@@ -60,8 +64,6 @@ public class DNSServer implements WrapServer {
 	private Hashtable<String, String> orgCache = new Hashtable<String, String>();
 
 	private String target = "8.8.4.4:53";
-
-	private final String[] iptablesRules = new String[] { "iptables -t nat -A OUTPUT %1$s -p udp  --dport 53  -j DNAT  --to-destination 127.0.0.1:7442" };
 
 	public DNSServer(String name, int port, String proxyHost, int proxyPort,
 			String dnsHost, int dnsPort) {
@@ -507,10 +509,6 @@ public class DNSServer implements WrapServer {
 
 	public void setBasePath(String path) {
 		this.homePath = path;
-	}
-
-	public String[] getRules() {
-		return iptablesRules;
 	}
 
 	private void initOrgCache() {

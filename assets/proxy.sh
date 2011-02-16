@@ -38,7 +38,7 @@ redsocks {
   /dev/block/mtdblock3 \
   /system
   
-  setprop net.dns1 127.0.0.1
+  setprop net.dns1 8.8.8.8
   
   echo 1 > /proc/sys/net/ipv4/ip_forward
   cp -f /etc/hosts $DIR/hosts.bak
@@ -52,7 +52,6 @@ stop)
   /dev/block/mtdblock3 \
   /system
   
-  setprop net.dns1 8.8.8.8
   cp -f $DIR/hosts.bak /etc/hosts
   
   echo 0 > /proc/sys/net/ipv4/ip_forward
