@@ -220,7 +220,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	private void notifyAlert(String title, String info) {
 		notification.icon = R.drawable.icon;
 		notification.tickerText = title;
-		notification.defaults = Notification.DEFAULT_SOUND;
 		notification.setLatestEventInfo(this, "SSHTunnel", info, pendIntent);
 		notificationManager.notify(0, notification);
 	}
