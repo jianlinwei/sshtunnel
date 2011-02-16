@@ -36,16 +36,15 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	private String user;
 	private String passwd;
 	private boolean isAutoReconnect = false;
-	
+	private boolean isAutoSetProxy = false;
 
 	private final static int AUTH_TRIES = 2;
-	private final static int RECONNECT_TRIES = 2;
+	private final static int RECONNECT_TRIES = 3;
 
 	private Connection connection;
 
 	private boolean connected = false;
 	private boolean authenticated = false;
-	private boolean isConnected = false;
 
 	// Flag indicating if this is an ARMv6 device (-1: unknown, 0: no, 1: yes)
 	private static int isARMv6 = -1;
@@ -85,19 +84,17 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	}
 
 	public void connectionLost(Throwable reason) {
-		try {
-			Thread.sleep(5000);
-		} catch (Exception ignore) {
 
-		}
-		if (isAutoReconnect && isConnected) {
+		if (isAutoReconnect && connected) {
 			for (int reconNum = 1; reconNum <= RECONNECT_TRIES; reconNum++) {
-				connected = false;
 
-				if (connection != null) {
-					connection.close();
-					connection = null;
+				try {
+					Thread.sleep(5000 * reconNum);
+				} catch (Exception ignore) {
+
 				}
+
+				onDisconnect();
 
 				try {
 
@@ -109,16 +106,18 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 					continue;
 				}
 
-				notification.icon = R.drawable.icon;
-				notification.tickerText = "Auto Reconnected.";
-				notification.defaults = Notification.DEFAULT_SOUND;
-				notification.setLatestEventInfo(this, "SSHTunnel",
-						"Reconnected for " + reconNum + " times", pendIntent);
-				notificationManager.notify(0, notification);
+				notifyAlert(getString(R.string.auto_reconnected),
+						getString(R.string.reconnect_success));
 				return;
 			}
 
+			connected = false;
+			notifyAlert(getString(R.string.auto_reconnected),
+					getString(R.string.reconnect_fail));
+			stopSelf();
+
 		} else
+
 			stopSelf();
 	}
 
@@ -150,28 +149,22 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 	private void onDisconnect() {
 
-		notification.icon = R.drawable.icon;
-		notification.tickerText = "Port Forward Stop";
-		notification.defaults = Notification.DEFAULT_SOUND;
-		notification.setLatestEventInfo(this, "SSHTunnel",
-				"SSHTunnel Service has been stopped.", pendIntent);
-		notificationManager.notify(0, notification);
-
 		connected = false;
-		isConnected = false;
 
 		if (connection != null) {
 			connection.close();
 			connection = null;
 		}
 
-		if (isARMv6()) {
-			runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -F OUTPUT");
-		} else {
-			runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -F OUTPUT");
-		}
+		if (isAutoSetProxy) {
+			if (isARMv6()) {
+				runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -F OUTPUT");
+			} else {
+				runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -F OUTPUT");
+			}
 
-		runRootCommand("/data/data/org.sshtunnel/proxy.sh stop");
+			runRootCommand("/data/data/org.sshtunnel/proxy.sh stop");
+		}
 
 	}
 
@@ -184,16 +177,28 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		intent = new Intent(this, SSHTunnel.class);
 		pendIntent = PendingIntent.getActivity(this, 0, intent, 0);
 		notification = new Notification();
-
 	}
 
 	/** Called when the activity is closed. */
 	@Override
 	public void onDestroy() {
-		if (isConnected) {
+		if (connected) {
+
 			onDisconnect();
-			super.onDestroy();
+
+			notifyAlert(getString(R.string.forward_stop),
+					getString(R.string.service_stopped));
 		}
+
+		super.onDestroy();
+	}
+
+	private void notifyAlert(String title, String info) {
+		notification.icon = R.drawable.icon;
+		notification.tickerText = title;
+		notification.defaults = Notification.DEFAULT_SOUND;
+		notification.setLatestEventInfo(this, "SSHTunnel", info, pendIntent);
+		notificationManager.notify(0, notification);
 	}
 
 	// This is the old onStart method that will be called on the pre-2.0
@@ -202,23 +207,16 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	@Override
 	public void onStart(Intent intent, int startId) {
 		if (handleCommand(intent)) {
-			notification.icon = R.drawable.icon;
-			notification.tickerText = "Port Forward Successful! Enjoy!";
-			notification.defaults = Notification.DEFAULT_SOUND;
-			notification.setLatestEventInfo(this, "SSHTunnel",
-					"SSHTunnel Service is running now.", pendIntent);
-			notificationManager.notify(0, notification);
-			isConnected = true;
+			// Connection and forward successful
+			notifyAlert(getString(R.string.forward_success),
+					getString(R.string.service_running));
 
 			super.onStart(intent, startId);
+
 		} else {
-			notification.icon = R.drawable.icon;
-			notification.tickerText = "Port Forward Failed.";
-			notification.defaults = Notification.DEFAULT_SOUND;
-			notification.setLatestEventInfo(this, "SSHTunnel",
-					"Please check your network or settings.", pendIntent);
-			notificationManager.notify(0, notification);
-			isConnected = false;
+			// Connection or forward unsuccessful
+			notifyAlert(getString(R.string.forward_fail),
+					getString(R.string.service_failed));
 			stopSelf();
 		}
 	}
@@ -236,6 +234,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		localPort = bundle.getInt("localPort");
 		remotePort = bundle.getInt("remotePort");
 		isAutoReconnect = bundle.getBoolean("isAutoReconnect");
+		isAutoSetProxy = bundle.getBoolean("isAutoSetProxy");
 
 		try {
 			connect();
@@ -274,6 +273,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			 */
 
 			connection.connect();
+			connected = true;
 
 		} catch (Exception e) {
 			Log.e(TAG,
@@ -281,10 +281,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 			// Display the reason in the text.
 
-			throw(e);
+			throw (e);
 		}
-		
-		connected = true;
 
 		try {
 			// enter a loop to keep trying until authentication
@@ -299,7 +297,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		} catch (Exception e) {
 			Log.e(TAG,
 					"Problem in SSH connection thread during authentication", e);
-			throw(e);
+			throw (e);
 		}
 
 	}
@@ -339,24 +337,25 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		try {
 			if (enablePortForward()) {
 				Log.e(TAG, "Forward Successful");
+				if (isAutoSetProxy) {
+					runRootCommand("/data/data/org.sshtunnel/proxy.sh start "
+							+ localPort);
 
-				runRootCommand("/data/data/org.sshtunnel/proxy.sh start "
-						+ localPort);
-
-				if (isARMv6()) {
-					runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp "
-							+ "--dport 80 -j REDIRECT --to-ports 8123");
-					runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp "
-							+ "--dport 443 -j REDIRECT --to-ports 8124");
-					runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT "
-							+ "--dport 53 -j REDIRECT --to-ports 1053");
-				} else {
-					runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
-							+ "--dport 80 -j REDIRECT --to-ports 8123");
-					runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
-							+ "--dport 443 -j REDIRECT --to-ports 8124");
-					runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT "
-							+ "--dport 53 -j REDIRECT --to-ports 1053");
+					if (isARMv6()) {
+						runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp "
+								+ "--dport 80 -j REDIRECT --to-ports 8123");
+						runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp "
+								+ "--dport 443 -j REDIRECT --to-ports 8124");
+						runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT "
+								+ "--dport 53 -j REDIRECT --to-ports 1053");
+					} else {
+						runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
+								+ "--dport 80 -j REDIRECT --to-ports 8123");
+						runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
+								+ "--dport 443 -j REDIRECT --to-ports 8124");
+						runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT "
+								+ "--dport 53 -j REDIRECT --to-ports 1053");
+					}
 				}
 			}
 
@@ -384,7 +383,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		try {
 			connection.createLocalPortForwarder(localPort, "127.0.0.1",
 					remotePort);
-			connection.createLocalPortForwarder(1053, "8.8.8.8", 53);
+			if (isAutoSetProxy)
+				connection.createLocalPortForwarder(1053, "8.8.8.8", 53);
 		} catch (Exception e) {
 			Log.e(TAG, "Could not create local port forward", e);
 			return false;

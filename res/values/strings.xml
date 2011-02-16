@@ -1,5 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="hello">Hello World, SSHTunnel!</string>
+    <string name="service_running">SSHTunnel service is running now.</string>
     <string name="app_name">SSHTunnel</string>
+<string name="forward_success">Port Forwarding Successed.</string>
+<string name="forward_fail">Port Forwarding Failed.</string>
+<string name="service_stopped">SSHTunnel service stopped.</string>
+<string name="auto_reconnected">Auto Reconnected</string>
+<string name="reconnect_success">Reconnected successfully.</string>
+<string name="already_stopped">Service has been stopped already.</string>
+<string name="already_running">Service has been started already.</string>
+<string name="forward_stop">Port Forwarding Stopped</string>
+<string name="service_failed">Please check your network and login information</string>
+<string name="reconnect_fail">Cannot reconnect</string>
+<string name="ok_iknow">OK, I know</string>
 </resources>

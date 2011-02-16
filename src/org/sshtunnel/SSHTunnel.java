@@ -38,6 +38,7 @@ public class SSHTunnel extends Activity {
 	private boolean isSaved = false;
 	public static boolean isAutoStart = false;
 	public static boolean isAutoReconnect = false;
+	public static boolean isAutoSetProxy = false;
 
 	public boolean isWorked(String service) {
 		ActivityManager myManager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
@@ -148,6 +149,7 @@ public class SSHTunnel extends Activity {
 			remotePort = settings.getInt("RemotePort", 0);
 			isAutoStart = settings.getBoolean("IsAutoStart", false);
 			isAutoReconnect = settings.getBoolean("IsAutoReconnect", false);
+			isAutoReconnect = settings.getBoolean("IsAutoReconnect", false);
 
 			final EditText hostText = (EditText) findViewById(R.id.host);
 			final EditText portText = (EditText) findViewById(R.id.port);
@@ -157,6 +159,7 @@ public class SSHTunnel extends Activity {
 			final EditText remotePortText = (EditText) findViewById(R.id.remotePort);
 			final CheckBox isAutoStartText = (CheckBox) findViewById(R.id.isAutoStart);
 			final CheckBox isAutoReconnectText = (CheckBox) findViewById(R.id.isAutoReconnect);
+			final CheckBox isAutoSetProxyText = (CheckBox) findViewById(R.id.isAutoSetProxy);
 
 			hostText.setText(host);
 			portText.setText(Integer.toString(port));
@@ -166,9 +169,10 @@ public class SSHTunnel extends Activity {
 			remotePortText.setText(Integer.toString(remotePort));
 			isAutoStartText.setChecked(isAutoStart);
 			isAutoReconnectText.setChecked(isAutoReconnect);
+			isAutoSetProxyText.setChecked(isAutoSetProxy);
 		}
 
-		if (!isWorked(SERVICE_NAME)) {
+		if (!isWorked(SERVICE_NAME) && isAutoSetProxy) {
 			CopyAssets();
 			runRootCommand("chmod 777 /data/data/org.sshtunnel/iptables_g1");
 			runRootCommand("chmod 777 /data/data/org.sshtunnel/iptables_n1");
@@ -180,7 +184,7 @@ public class SSHTunnel extends Activity {
 	/** Called when disconnect button is clicked. */
 	public void serviceStop(View view) {
 		if (!isWorked(SERVICE_NAME)) {
-			showAToast("Service has been stopped already.");
+			showAToast(getString(R.string.already_stopped));
 			return;
 		}
 		try {
@@ -195,7 +199,7 @@ public class SSHTunnel extends Activity {
 		AlertDialog.Builder builder = new AlertDialog.Builder(this);
 		builder.setMessage(msg)
 				.setCancelable(false)
-				.setNegativeButton("Ok, I know",
+				.setNegativeButton(getString(R.string.ok_iknow),
 						new DialogInterface.OnClickListener() {
 							public void onClick(DialogInterface dialog, int id) {
 								dialog.cancel();
@@ -217,7 +221,7 @@ public class SSHTunnel extends Activity {
 	public void serviceStart(View view) {
 
 		if (isWorked(SERVICE_NAME)) {
-			showAToast("Service has been started already.");
+			showAToast(getString(R.string.already_running));
 			return;
 		}
 
@@ -230,6 +234,7 @@ public class SSHTunnel extends Activity {
 		final EditText remotePortText = (EditText) findViewById(R.id.remotePort);
 		final CheckBox isAutoStartText = (CheckBox) findViewById(R.id.isAutoStart);
 		final CheckBox isAutoReconnectText = (CheckBox) findViewById(R.id.isAutoReconnect);
+		final CheckBox isAutoSetProxyText = (CheckBox) findViewById(R.id.isAutoSetProxy);
 
 		if (isTextEmpty(hostText.getText().toString(),
 				"Cann't let the Host empty."))
@@ -255,6 +260,7 @@ public class SSHTunnel extends Activity {
 		remotePort = Integer.parseInt(remotePortText.getText().toString());
 		isAutoStart = isAutoStartText.isChecked();
 		isAutoReconnect = isAutoReconnectText.isChecked();
+		isAutoSetProxy = isAutoSetProxyText.isChecked();
 
 		button.setClickable(false);
 
@@ -269,6 +275,7 @@ public class SSHTunnel extends Activity {
 			bundle.putInt("localPort", localPort);
 			bundle.putInt("remotePort", remotePort);
 			bundle.putBoolean("isAutoReconnect", isAutoReconnect);
+			bundle.putBoolean("isAutoSetProxy", isAutoSetProxy);
 
 			it.putExtras(bundle);
 			startService(it);
@@ -283,6 +290,7 @@ public class SSHTunnel extends Activity {
 		editor.putBoolean("IsSaved", isSaved);
 		editor.putBoolean("IsAutoStart", isAutoStart);
 		editor.putBoolean("IsAutoReconnect", isAutoReconnect);
+		editor.putBoolean("IsAutoSetProxy", isAutoSetProxy);
 		editor.putString("Host", host);
 		editor.putString("User", user);
 		editor.putString("Password", passwd);
