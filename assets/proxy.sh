@@ -37,7 +37,7 @@ redsocks {
   $DIR/redsocks -p $DIR/redsocks.pid -c $DIR/redsocks.conf
   ;;
 stop)
-  kill `cat $DIR/redsocks.pid`
+  kill -9 `cat $DIR/redsocks.pid`
   
   rm $DIR/redsocks.pid
   

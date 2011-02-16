@@ -8,6 +8,7 @@ import java.io.IOException;
 
 import com.trilead.ssh2.Connection;
 import com.trilead.ssh2.ConnectionMonitor;
+import com.trilead.ssh2.LocalPortForwarder;
 
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -37,6 +38,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	private String passwd;
 	private boolean isAutoReconnect = false;
 	private boolean isAutoSetProxy = false;
+	private LocalPortForwarder lpf = null;
 
 	private final static int AUTH_TRIES = 2;
 	private final static int RECONNECT_TRIES = 3;
@@ -150,6 +152,15 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	private void onDisconnect() {
 
 		connected = false;
+
+		try {
+			if (lpf != null) {
+				lpf.close();
+				lpf = null;
+			}
+		} catch (Exception ignore) {
+			// Nothing
+		}
 
 		if (connection != null) {
 			connection.close();
@@ -381,7 +392,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 		// LocalPortForwarder lpf1 = null;
 		try {
-			connection.createLocalPortForwarder(localPort, "127.0.0.1",
+			lpf = connection.createLocalPortForwarder(localPort, "127.0.0.1",
 					remotePort);
 			if (isAutoSetProxy)
 				connection.createLocalPortForwarder(1053, "8.8.8.8", 53);
