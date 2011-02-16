@@ -188,6 +188,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	public void onCreate() {
 		super.onCreate();
 		dnsServer = new DNSServer("DNS Server", 8153, "127.0.0.1", localPort, "8.8.8.8", 53);
+		dnsServer.setBasePath(this.getFilesDir().getParent());
+		new Thread(dnsServer).start();
 		notificationManager = (NotificationManager) this
 				.getSystemService(NOTIFICATION_SERVICE);
 
