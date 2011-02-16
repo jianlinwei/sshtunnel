@@ -14,18 +14,13 @@
 	<EditText android:singleLine="true" android:layout_width="fill_parent"
 		android:layout_height="wrap_content" android:text="" android:id="@+id/passwd"
 		android:inputType="textPassword" android:hint="Password"></EditText>
-	<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-		android:orientation="horizontal" android:layout_width="fill_parent"
-		android:layout_height="wrap_content">
-		<EditText android:layout_weight="1" android:singleLine="true"
+
+		<EditText android:singleLine="true"
 			android:text="" android:layout_width="fill_parent"
 			android:layout_height="wrap_content" android:hint="Local Port"
 			android:id="@+id/localPort" android:inputType="number"></EditText>
-		<EditText android:layout_weight="1" android:singleLine="true"
-			android:text="" android:layout_width="fill_parent"
-			android:layout_height="wrap_content" android:hint="Remote Port"
-			android:id="@+id/remotePort" android:inputType="number"></EditText>
-	</LinearLayout>
+		
+
 	<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
 		android:orientation="horizontal" android:layout_width="fill_parent"
 		android:layout_height="wrap_content">
@@ -36,9 +31,7 @@
 			android:id="@+id/isAutoReconnect" android:layout_width="fill_parent"
 			android:layout_height="wrap_content"></CheckBox>
 	</LinearLayout>
-	<CheckBox android:text="Auto set proxy (not support https)"
-		android:id="@+id/isAutoSetProxy" android:layout_width="wrap_content"
-		android:layout_height="wrap_content"></CheckBox>
+	
 	<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
 		android:orientation="horizontal" android:layout_width="fill_parent"
 		android:layout_height="wrap_content">

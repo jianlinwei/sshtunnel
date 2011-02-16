@@ -8,7 +8,7 @@ import java.io.IOException;
 
 import com.trilead.ssh2.Connection;
 import com.trilead.ssh2.ConnectionMonitor;
-import com.trilead.ssh2.LocalPortForwarder;
+import com.trilead.ssh2.DynamicPortForwarder;
 
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -33,12 +33,11 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	private String host;
 	private int port;
 	private int localPort;
-	private int remotePort;
 	private String user;
 	private String passwd;
 	private boolean isAutoReconnect = false;
 	private boolean isAutoSetProxy = false;
-	private LocalPortForwarder lpf = null;
+	private DynamicPortForwarder dpf = null;
 
 	private final static int AUTH_TRIES = 2;
 	private final static int RECONNECT_TRIES = 3;
@@ -154,9 +153,9 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		connected = false;
 
 		try {
-			if (lpf != null) {
-				lpf.close();
-				lpf = null;
+			if (dpf != null) {
+				dpf.close();
+				dpf = null;
 			}
 		} catch (Exception ignore) {
 			// Nothing
@@ -243,7 +242,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		passwd = bundle.getString("passwd");
 		port = bundle.getInt("port");
 		localPort = bundle.getInt("localPort");
-		remotePort = bundle.getInt("remotePort");
 		isAutoReconnect = bundle.getBoolean("isAutoReconnect");
 		isAutoSetProxy = bundle.getBoolean("isAutoSetProxy");
 
@@ -353,19 +351,11 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 							+ localPort);
 
 					if (isARMv6()) {
-						runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp "
-								+ "--dport 80 -j REDIRECT --to-ports 8123");
-						runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp "
-								+ "--dport 443 -j REDIRECT --to-ports 8124");
 						runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT "
-								+ "--dport 53 -j REDIRECT --to-ports 1053");
+								+ "-j REDIRECT --to-ports 8123");
 					} else {
-						runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
-								+ "--dport 80 -j REDIRECT --to-ports 8123");
-						runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
-								+ "--dport 443 -j REDIRECT --to-ports 8124");
-						runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT "
-								+ "--dport 53 -j REDIRECT --to-ports 1053");
+						runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT "
+								+ "-j REDIRECT --to-ports 8123");
 					}
 				}
 			}
@@ -392,10 +382,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 		// LocalPortForwarder lpf1 = null;
 		try {
-			lpf = connection.createLocalPortForwarder(localPort, "127.0.0.1",
-					remotePort);
-			if (isAutoSetProxy)
-				connection.createLocalPortForwarder(1053, "8.8.8.8", 53);
+			dpf = connection.createDynamicPortForwarder(localPort);
 		} catch (Exception e) {
 			Log.e(TAG, "Could not create local port forward", e);
 			return false;
