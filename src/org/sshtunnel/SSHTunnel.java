@@ -39,6 +39,7 @@ public class SSHTunnel extends Activity {
 	public static boolean isAutoStart = false;
 	public static boolean isAutoReconnect = false;
 	public static boolean isAutoSetProxy = false;
+	public static boolean isRoot = false;
 
 	public boolean isWorked(String service) {
 		ActivityManager myManager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
@@ -52,7 +53,7 @@ public class SSHTunnel extends Activity {
 		}
 		return false;
 	}
-
+	
 	public static boolean runRootCommand(String command) {
 		Process process = null;
 		DataOutputStream os = null;
@@ -139,6 +140,23 @@ public class SSHTunnel extends Activity {
 		SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
 
 		isSaved = settings.getBoolean("IsSaved", false);
+		
+		if (!runRootCommand("ls")) {
+			isRoot = false;
+		} else {
+			isRoot = true;
+		}
+		
+		if (isRoot) {
+			isAutoSetProxy = settings.getBoolean("IsAutoSetProxy", false);
+			final CheckBox isAutoSetProxyText = (CheckBox) findViewById(R.id.isAutoSetProxy);
+			isAutoSetProxyText.setChecked(isAutoSetProxy);
+			isAutoSetProxyText.setEnabled(true);
+		} else { 
+			final CheckBox isAutoSetProxyText = (CheckBox) findViewById(R.id.isAutoSetProxy);
+			isAutoSetProxyText.setChecked(false);
+			isAutoSetProxyText.setEnabled(false);
+		}
 
 		if (isSaved) {
 			host = settings.getString("Host", "");
@@ -149,7 +167,7 @@ public class SSHTunnel extends Activity {
 			remotePort = settings.getInt("RemotePort", 0);
 			isAutoStart = settings.getBoolean("IsAutoStart", false);
 			isAutoReconnect = settings.getBoolean("IsAutoReconnect", false);
-			isAutoReconnect = settings.getBoolean("IsAutoReconnect", false);
+			
 
 			final EditText hostText = (EditText) findViewById(R.id.host);
 			final EditText portText = (EditText) findViewById(R.id.port);
@@ -159,7 +177,7 @@ public class SSHTunnel extends Activity {
 			final EditText remotePortText = (EditText) findViewById(R.id.remotePort);
 			final CheckBox isAutoStartText = (CheckBox) findViewById(R.id.isAutoStart);
 			final CheckBox isAutoReconnectText = (CheckBox) findViewById(R.id.isAutoReconnect);
-			final CheckBox isAutoSetProxyText = (CheckBox) findViewById(R.id.isAutoSetProxy);
+			
 
 			hostText.setText(host);
 			portText.setText(Integer.toString(port));
@@ -169,10 +187,10 @@ public class SSHTunnel extends Activity {
 			remotePortText.setText(Integer.toString(remotePort));
 			isAutoStartText.setChecked(isAutoStart);
 			isAutoReconnectText.setChecked(isAutoReconnect);
-			isAutoSetProxyText.setChecked(isAutoSetProxy);
+			
 		}
 
-		if (!isWorked(SERVICE_NAME) && isAutoSetProxy) {
+		if (!isWorked(SERVICE_NAME)) {
 			CopyAssets();
 			runRootCommand("chmod 777 /data/data/org.sshtunnel/iptables_g1");
 			runRootCommand("chmod 777 /data/data/org.sshtunnel/iptables_n1");
