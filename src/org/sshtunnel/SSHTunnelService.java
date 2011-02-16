@@ -91,12 +91,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		if (isAutoReconnect && connected) {
 			for (int reconNum = 1; reconNum <= RECONNECT_TRIES; reconNum++) {
 
-				try {
-					Thread.sleep(5000 * reconNum);
-				} catch (Exception ignore) {
-
-				}
-
 				onDisconnect();
 
 				try {
@@ -106,6 +100,11 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 				} catch (Exception e) {
 					Log.e(TAG, "Forward Failed" + e.getMessage());
+					try {
+						Thread.sleep(5000 * reconNum);
+					} catch (Exception ignore) {
+
+					}
 					continue;
 				}
 
