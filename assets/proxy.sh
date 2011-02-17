@@ -55,6 +55,8 @@ stop)
   
   cp -f $DIR/hosts.bak /etc/hosts
   
+  rm $DIR/hosts.bak
+  
   rm $DIR/redsocks.pid
   
   rm $DIR/redsocks.conf
