@@ -205,6 +205,16 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			notifyAlert(getString(R.string.forward_stop),
 					getString(R.string.service_stopped));
 		}
+		
+		if (isAutoSetProxy) {
+			if (isARMv6()) {
+				runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -F OUTPUT");
+			} else {
+				runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -F OUTPUT");
+			}
+
+			runRootCommand("/data/data/org.sshtunnel/proxy.sh stop");
+		}
 
 		try {
 			if (dnsServer != null)
@@ -218,7 +228,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	private void notifyAlert(String title, String info) {
 		notification.icon = R.drawable.icon;
 		notification.tickerText = title;
-		notification.setLatestEventInfo(this, "SSHTunnel", info, pendIntent);
+		notification.setLatestEventInfo(this, getString(R.string.app_name), info, pendIntent);
 		notificationManager.notify(0, notification);
 	}
 
