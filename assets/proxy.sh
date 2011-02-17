@@ -34,35 +34,16 @@ redsocks {
 } 
 " >>$DIR/redsocks.conf
 
-  mount -o rw,remount -t yaffs2 \
-  /dev/block/mtdblock3 \
-  /system
-
-  cp -f /etc/hosts $DIR/hosts.bak
-  cp -f $DIR/hosts /etc
   $DIR/redsocks -p $DIR/redsocks.pid -c $DIR/redsocks.conf
   
-  mount -o ro,remount -t yaffs2 \
-  /dev/block/mtdblock3 \
-  /system
   ;;
 stop)
   kill -9 `cat $DIR/redsocks.pid`
-  
-  mount -o rw,remount -t yaffs2 \
-  /dev/block/mtdblock3 \
-  /system
-  
-  cp -f $DIR/hosts.bak /etc/hosts
-  
-  rm $DIR/hosts.bak
+
   
   rm $DIR/redsocks.pid
   
   rm $DIR/redsocks.conf
   
-  mount -o ro,remount -t yaffs2 \
-  /dev/block/mtdblock3 \
-  /system
   ;;
 esac

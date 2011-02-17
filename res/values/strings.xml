@@ -13,4 +13,15 @@
 <string name="service_failed">Please check your network and login information</string>
 <string name="reconnect_fail">Cannot reconnect</string>
 <string name="ok_iknow">OK, I know</string>
+<string name="user">User</string>
+<string name="host">Host</string>
+<string name="port">Port</string>
+<string name="password">Password</string>
+<string name="local_port">Local Port</string>
+<string name="remote_port">Remote Port</string>
+<string name="auto_connect">Connect at boot</string>
+<string name="auto_reconnect">Auto reconnect</string>
+<string name="auto_set_proxy">Auto set proxy (need root permission)</string>
+<string name="disconnect">Disconnect</string>
+<string name="connect">Connect</string>
 </resources>

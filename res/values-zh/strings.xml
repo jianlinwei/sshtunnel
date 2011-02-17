@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="service_running">正通过安全隧道连接到互联网</string>
+    <string name="app_name">安全隧道</string>
+<string name="forward_success">安全隧道连接成功</string>
+<string name="forward_fail">安全隧道连接失败</string>
+<string name="service_stopped">安全隧道服务已停止</string>
+<string name="auto_reconnected">恢复连接中</string>
+<string name="reconnect_success">恢复连接成功</string>
+<string name="already_stopped">服务已关闭</string>
+<string name="already_running">服务已启动</string>
+<string name="forward_stop">安全隧道连接已关闭</string>
+<string name="service_failed">请检查你的网络状况或者账户信息</string>
+<string name="reconnect_fail">恢复连接失败</string>
+<string name="ok_iknow">我知道了</string>
+<string name="user">用户名</string>
+<string name="host">主机地址</string>
+<string name="port">主机端口</string>
+<string name="password">密码</string>
+<string name="local_port">本地端口</string>
+<string name="remote_port">远程端口</string>
+<string name="auto_connect">启动时连接</string>
+<string name="auto_reconnect">自动恢复连接</string>
+<string name="auto_set_proxy">自动配置代理（需要ROOT权限）</string>
+<string name="disconnect">关闭服务</string>
+<string name="connect">启动服务</string>
+</resources>
