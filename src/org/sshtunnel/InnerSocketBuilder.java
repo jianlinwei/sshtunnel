@@ -11,8 +11,8 @@ import android.util.Log;
 
 public class InnerSocketBuilder {
 
-	private String proxyHost = "10.0.0.172";
-	private int proxyPort = 80;
+	private String proxyHost = "127.0.0.1";
+	private int proxyPort = 1984;
 	private String target = "";
 
 	private Socket innerSocket = null;
@@ -21,11 +21,7 @@ public class InnerSocketBuilder {
 
 	private long starTime = System.currentTimeMillis();
 	private final String TAG = "CMWRAP->InnerSocketBuilder";
-	private final String UA = "biAji's wap channel";
-
-	public InnerSocketBuilder(String target) {
-		this("10.0.0.172", 80, target);
-	}
+	private final String UA = "SSHTunnel/DNSServer";
 
 	/**
 	 * 建立经由代理服务器至目标服务器的连接
@@ -54,7 +50,7 @@ public class InnerSocketBuilder {
 		try {
 			innerSocket = new Socket(proxyHost, proxyPort);
 			innerSocket.setKeepAlive(true);
-			innerSocket.setSoTimeout(300 * 1000);
+			innerSocket.setSoTimeout(30 * 1000);
 
 			din = new BufferedReader(new InputStreamReader(
 					innerSocket.getInputStream()));

@@ -37,13 +37,14 @@ redsocks {
   mount -o rw,remount -t yaffs2 \
   /dev/block/mtdblock3 \
   /system
-  
-  setprop net.dns1 8.8.8.8
-  
-  echo 1 > /proc/sys/net/ipv4/ip_forward
+
   cp -f /etc/hosts $DIR/hosts.bak
   cp -f $DIR/hosts /etc
   $DIR/redsocks -p $DIR/redsocks.pid -c $DIR/redsocks.conf
+  
+  mount -o ro,remount -t yaffs2 \
+  /dev/block/mtdblock3 \
+  /system
   ;;
 stop)
   kill -9 `cat $DIR/redsocks.pid`
@@ -54,10 +55,12 @@ stop)
   
   cp -f $DIR/hosts.bak /etc/hosts
   
-  echo 0 > /proc/sys/net/ipv4/ip_forward
-  
   rm $DIR/redsocks.pid
   
   rm $DIR/redsocks.conf
+  
+  mount -o ro,remount -t yaffs2 \
+  /dev/block/mtdblock3 \
+  /system
   ;;
 esac

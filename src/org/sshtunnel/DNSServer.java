@@ -63,7 +63,7 @@ public class DNSServer implements WrapServer {
 	 */
 	private Hashtable<String, String> orgCache = new Hashtable<String, String>();
 
-	private String target = "8.8.4.4:53";
+	private String target = "8.8.8.8:53";
 
 	public DNSServer(String name, int port, String proxyHost, int proxyPort,
 			String dnsHost, int dnsPort) {
