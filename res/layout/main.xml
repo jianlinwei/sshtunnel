@@ -36,7 +36,7 @@
 			android:id="@+id/isAutoReconnect" android:layout_width="fill_parent"
 			android:layout_height="wrap_content"></CheckBox>
 	</LinearLayout>
-	<CheckBox android:text="Auto set proxy (not support https)"
+	<CheckBox android:text="Auto set proxy"
 		android:id="@+id/isAutoSetProxy" android:layout_width="wrap_content"
 		android:layout_height="wrap_content"></CheckBox>
 	<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
