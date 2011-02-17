@@ -75,8 +75,9 @@ public class LocalAcceptThread extends Thread implements IChannelWorkerThread
 			{
 				/* This may fail, e.g., if the remote port is closed (in optimistic terms: not open yet) */
 
-				cn = cm.openDirectTCPIPChannel(host_to_connect, port_to_connect, s.getInetAddress().getHostAddress(), s
-						.getPort());
+//				cn = cm.openDirectTCPIPChannel(host_to_connect, port_to_connect, s.getInetAddress().getHostAddress(), s
+//						.getPort());
+				cn = cm.openDirectTCPIPChannel(host_to_connect, port_to_connect, "127.0.0.1", 0);
 
 			}
 			catch (IOException e)

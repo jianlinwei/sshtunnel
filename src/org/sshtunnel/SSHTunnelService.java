@@ -40,7 +40,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	private boolean isAutoSetProxy = false;
 	private LocalPortForwarder lpf1 = null;
 	private LocalPortForwarder lpf2 = null;
-	private DNSServer dnsServer;
+	private DNSServer dnsServer = null;
+	private NormalTcpServer tcpServer = null;
 
 	private final static int AUTH_TRIES = 2;
 	private final static int RECONNECT_TRIES = 3;
@@ -205,12 +206,18 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			notifyAlert(getString(R.string.forward_stop),
 					getString(R.string.service_stopped));
 		}
-		try {
-			if (dnsServer != null)
-				dnsServer.close();
-		} catch (Exception e) {
-			Log.e(TAG, "DNS Server close unexpected");
-		}
+//		try {
+//			if (tcpServer != null)
+//				tcpServer.close();
+//		} catch (Exception e) {
+//			Log.e(TAG, "DNS Server close unexpected");
+//		}
+//		try {
+//			if (dnsServer != null)
+//				dnsServer.close();
+//		} catch (Exception e) {
+//			Log.e(TAG, "DNS Server close unexpected");
+//		}
 		super.onDestroy();
 	}
 
@@ -256,9 +263,12 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		isAutoReconnect = bundle.getBoolean("isAutoReconnect");
 		isAutoSetProxy = bundle.getBoolean("isAutoSetProxy");
 
-		dnsServer = new DNSServer("DNS Server", 8153, "127.0.0.1", localPort, "8.8.8.8", 53);
-		dnsServer.setBasePath("/data/data/org.sshtunnel");
-		new Thread(dnsServer).start();
+//		dnsServer = new DNSServer("DNS Server", 8153, "127.0.0.1", localPort, "8.8.8.8", 53);
+//		dnsServer.setBasePath("/data/data/org.sshtunnel");
+//		new Thread(dnsServer).start();
+//		
+//		tcpServer = new NormalTcpServer("SSHTunnel HTTP Server","127.0.0.1", localPort);
+//		new Thread(tcpServer).start();
 		
 		try {
 			connect();
@@ -370,15 +380,15 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 								+ "--dport 80 -j REDIRECT --to-ports 8123");
 						runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp "
 								+ "--dport 443 -j REDIRECT --to-ports 8124");
-						runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p udp "
-								+ "--dport 53 -j REDIRECT --to-ports 8153");
+//						runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p udp "
+//								+ "--dport 53 -j REDIRECT --to-ports 8153");
 					} else {
 						runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
 								+ "--dport 80 -j REDIRECT --to-ports 8123");
 						runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
 								+ "--dport 443 -j REDIRECT --to-ports 8124");
-						runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p udp "
-								+ "--dport 53 -j REDIRECT --to-ports 8153");
+//						runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p udp "
+//								+ "--dport 53 -j REDIRECT --to-ports 8153");
 					}
 				}
 			}
