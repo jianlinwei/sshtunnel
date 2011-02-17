@@ -351,8 +351,12 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 				if (isARMv6()) {
 					runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp "
 							+ "-j REDIRECT --to-ports 8123");
+					runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p udp "
+							+ "-j REDIRECT --to-ports 8123");
 				} else {
 					runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
+							+ "-j REDIRECT --to-ports 8123");
+					runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p udp "
 							+ "-j REDIRECT --to-ports 8123");
 				}
 
