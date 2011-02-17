@@ -12,16 +12,13 @@ import android.util.Log;
 public class InnerSocketBuilder {
 
 	private String proxyHost = "127.0.0.1";
-	private int proxyPort = 1984;
-	private String target = "";
+	private int proxyPort = 1053;
 
 	private Socket innerSocket = null;
 
 	private boolean isConnected = false;
 
-	private long starTime = System.currentTimeMillis();
 	private final String TAG = "CMWRAP->InnerSocketBuilder";
-	private final String UA = "SSHTunnel/DNSServer";
 
 	/**
 	 * 建立经由代理服务器至目标服务器的连接
@@ -36,7 +33,7 @@ public class InnerSocketBuilder {
 	public InnerSocketBuilder(String proxyHost, int proxyPort, String target) {
 		this.proxyHost = proxyHost;
 		this.proxyPort = proxyPort;
-		this.target = target;
+		
 		connect();
 	}
 
@@ -44,42 +41,12 @@ public class InnerSocketBuilder {
 
 		// starTime = System.currentTimeMillis();
 		Log.v(TAG, "建立通道");
-		BufferedReader din = null;
-		BufferedWriter dout = null;
 
 		try {
 			innerSocket = new Socket(proxyHost, proxyPort);
 			innerSocket.setKeepAlive(true);
 			innerSocket.setSoTimeout(30 * 1000);
-
-			din = new BufferedReader(new InputStreamReader(
-					innerSocket.getInputStream()));
-			dout = new BufferedWriter(new OutputStreamWriter(
-					innerSocket.getOutputStream()));
-
-			String connectStr = "CONNECT " + target
-					+ " HTTP/1.1\r\nUser-agent: " + this.UA + "\r\n\r\n";
-
-			dout.write(connectStr);
-			dout.flush();
-			Log.v(TAG, connectStr);
-
-			String result = din.readLine();
-			String line = "";
-			while ((line = din.readLine()) != null) {
-				if (line.trim().equals(""))
-					break;
-				Log.v(TAG, line);
-			}
-
-			if (result != null && result.contains("200")) {
-				Log.v(TAG, result);
-				Log.v(TAG, "通道建立成功， 耗时："
-						+ (System.currentTimeMillis() - starTime) / 1000);
-				isConnected = true;
-			} else {
-				Log.d(TAG, "建立隧道失败");
-			}
+			isConnected = true;
 
 		} catch (IOException e) {
 			Log.e(TAG, "建立隧道失败：" + e.getLocalizedMessage());

@@ -40,8 +40,8 @@ public class DNSServer implements WrapServer {
 	private int srvPort = 8153;
 
 	private String name;
-	protected String proxyHost, dnsHost;
-	protected int proxyPort, dnsPort;
+	protected String dnsHost;
+	protected int dnsPort;
 	final protected int DNS_PKG_HEADER_LEN = 12;
 	final private int[] DNS_HEADERS = { 0, 0, 0x81, 0x80, 0, 0, 0, 0, 0, 0, 0,
 			0 };
@@ -65,12 +65,9 @@ public class DNSServer implements WrapServer {
 
 	private String target = "8.8.8.8:53";
 
-	public DNSServer(String name, int port, String proxyHost, int proxyPort,
-			String dnsHost, int dnsPort) {
+	public DNSServer(String name, int port, String dnsHost, int dnsPort) {
 		this.name = name;
 		this.srvPort = port;
-		this.proxyHost = proxyHost;
-		this.proxyPort = proxyPort;
 		this.dnsHost = dnsHost;
 		this.dnsPort = dnsPort;
 
@@ -184,8 +181,7 @@ public class DNSServer implements WrapServer {
 	 */
 	protected byte[] fetchAnswer(byte[] quest) {
 
-		Socket innerSocket = new InnerSocketBuilder(proxyHost, proxyPort,
-				target).getSocket();
+		Socket innerSocket = new InnerSocketBuilder(dnsHost, dnsPort, target).getSocket();
 		DataInputStream in;
 		DataOutputStream out;
 		byte[] result = null;
@@ -498,15 +494,6 @@ public class DNSServer implements WrapServer {
 		this.target = target;
 	}
 
-	public void setProxyHost(String host) {
-		this.proxyHost = host;
-	}
-
-	public void setProxyPort(int port) {
-		this.proxyPort = port;
-
-	}
-
 	public void setBasePath(String path) {
 		this.homePath = path;
 	}
@@ -514,7 +501,6 @@ public class DNSServer implements WrapServer {
 	private void initOrgCache() {
 		// TODO: 由Preference读取
 		// TODO: 重构
-		orgCache.put("dn5r3l4y.appspot.com", "74.125.153.141");
 
 	}
 
@@ -524,6 +510,18 @@ public class DNSServer implements WrapServer {
 		// TODO: Implement test case
 
 		return ret;
+	}
+
+	@Override
+	public void setProxyHost(String host) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void setProxyPort(int port) {
+		// TODO Auto-generated method stub
+		
 	}
 
 }
