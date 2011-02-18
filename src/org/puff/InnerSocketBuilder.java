@@ -1,4 +1,4 @@
-package org.sshtunnel;
+package org.puff;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
