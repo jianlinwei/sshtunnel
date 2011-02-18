@@ -15,11 +15,6 @@ public class PacketServiceAccept
 
 	String serviceName;
 
-	public PacketServiceAccept(String serviceName)
-	{
-		this.serviceName = serviceName;
-	}
-
 	public PacketServiceAccept(byte payload[], int off, int len) throws IOException
 	{
 		this.payload = new byte[len];
@@ -45,6 +40,11 @@ public class PacketServiceAccept
 
 		if (tr.remain() != 0)
 			throw new IOException("Padding in SSH_MSG_SERVICE_ACCEPT packet!");
+	}
+
+	public PacketServiceAccept(String serviceName)
+	{
+		this.serviceName = serviceName;
 	}
 
 	public byte[] getPayload()

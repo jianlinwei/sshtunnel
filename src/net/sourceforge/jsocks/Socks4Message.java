@@ -15,6 +15,48 @@ public class Socks4Message extends ProxyMessage{
    private byte[] msgBytes;
    private int msgLength;
 
+   static final String[] replyMessage ={
+          "Request Granted",
+          "Request Rejected or Failed",
+          "Failed request, can't connect to Identd",
+          "Failed request, bad user name"};
+
+   static final int SOCKS_VERSION = 4;
+
+   public final static int REQUEST_CONNECT		= 1;
+
+   public final static int REQUEST_BIND   		= 2;
+
+   public final static int REPLY_OK 			= 90;
+
+   public final static int REPLY_REJECTED		= 91;
+
+   public final static int REPLY_NO_CONNECT		= 92;
+   public final static int REPLY_BAD_IDENTD		= 93;
+
+   //Class methods
+   static InetAddress bytes2IP(byte[] addr){
+      String s = bytes2IPV4(addr,0);
+      try{
+         return InetAddress.getByName(s);
+      }catch(UnknownHostException uh_ex){
+        return null;
+      }
+   }
+
+   //Constants
+
+   /**
+    *Initialise from the stream
+    *If clientMode is true attempts to read a server response
+    *otherwise reads a client request
+    *see read for more detail
+    */
+   public Socks4Message(InputStream in, boolean clientMode) throws IOException{
+      msgBytes = null;
+      read(in,clientMode);
+   }
+
    /**
     * Server failed reply, cmd command for failed request
     */
@@ -35,7 +77,6 @@ public class Socks4Message extends ProxyMessage{
    public Socks4Message(int cmd,InetAddress ip,int port){
       this(0,cmd,ip,port,null);
    }
-
    /**
     *  Client request
     */
@@ -76,23 +117,10 @@ public class Socks4Message extends ProxyMessage{
          msgBytes[msgBytes.length -1 ] = 0;
       }
    }
-
-   /**
-    *Initialise from the stream
-    *If clientMode is true attempts to read a server response
-    *otherwise reads a client request
-    *see read for more detail
-    */
-   public Socks4Message(InputStream in, boolean clientMode) throws IOException{
-      msgBytes = null;
-      read(in,clientMode);
-   }
-
    @Override
 public void read(InputStream in) throws IOException{
         read(in,true);
    }
-
    @Override
 public void read(InputStream in, boolean clientMode) throws IOException{
        boolean mode4a = false;
@@ -139,33 +167,5 @@ public void write(OutputStream out) throws IOException{
       }
       out.write(msgBytes);
    }
-
-   //Class methods
-   static InetAddress bytes2IP(byte[] addr){
-      String s = bytes2IPV4(addr,0);
-      try{
-         return InetAddress.getByName(s);
-      }catch(UnknownHostException uh_ex){
-        return null;
-      }
-   }
-
-   //Constants
-
-   static final String[] replyMessage ={
-          "Request Granted",
-          "Request Rejected or Failed",
-          "Failed request, can't connect to Identd",
-          "Failed request, bad user name"};
-
-   static final int SOCKS_VERSION = 4;
-
-   public final static int REQUEST_CONNECT		= 1;
-   public final static int REQUEST_BIND   		= 2;
-
-   public final static int REPLY_OK 			= 90;
-   public final static int REPLY_REJECTED		= 91;
-   public final static int REPLY_NO_CONNECT		= 92;
-   public final static int REPLY_BAD_IDENTD		= 93;
 
 }

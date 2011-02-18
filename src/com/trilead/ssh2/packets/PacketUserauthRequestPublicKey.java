@@ -19,16 +19,6 @@ public class PacketUserauthRequestPublicKey
 	byte[] pk;
 	byte[] sig;
 
-	public PacketUserauthRequestPublicKey(String serviceName, String user,
-			String pkAlgorithmName, byte[] pk, byte[] sig)
-	{
-		this.serviceName = serviceName;
-		this.userName = user;
-		this.pkAlgoName = pkAlgorithmName;
-		this.pk = pk;
-		this.sig = sig;
-	}
-
 	public PacketUserauthRequestPublicKey(byte payload[], int off, int len) throws IOException
 	{
 		this.payload = new byte[len];
@@ -43,6 +33,16 @@ public class PacketUserauthRequestPublicKey
 					+ packet_type + ")");
 
 		throw new IOException("Not implemented!");
+	}
+
+	public PacketUserauthRequestPublicKey(String serviceName, String user,
+			String pkAlgorithmName, byte[] pk, byte[] sig)
+	{
+		this.serviceName = serviceName;
+		this.userName = user;
+		this.pkAlgoName = pkAlgorithmName;
+		this.pk = pk;
+		this.sig = sig;
 	}
 
 	public byte[] getPayload()

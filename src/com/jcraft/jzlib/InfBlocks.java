@@ -107,20 +107,73 @@ final class InfBlocks{
     reset(z, null);
   }
 
-  void reset(ZStream z, long[] c){
-    if(c!=null) c[0]=check;
-    if(mode==BTREE || mode==DTREE){
-    }
-    if(mode==CODES){
-      codes.free(z);
-    }
-    mode=TYPE;
-    bitk=0;
-    bitb=0;
-    read=write=0;
+  void free(ZStream z){
+    reset(z, null);
+    window=null;
+    hufts=null;
+    //ZFREE(z, s);
+  }
 
+  // copy as much as possible from the sliding window to the output area
+  int inflate_flush(ZStream z, int r){
+    int n;
+    int p;
+    int q;
+
+    // local copies of source and destination pointers
+    p = z.next_out_index;
+    q = read;
+
+    // compute number of bytes to copy as far as end of window
+    n = ((q <= write ? write : end) - q);
+    if (n > z.avail_out) n = z.avail_out;
+    if (n!=0 && r == Z_BUF_ERROR) r = Z_OK;
+
+    // update counters
+    z.avail_out -= n;
+    z.total_out += n;
+
+    // update check information
     if(checkfn != null)
-      z.adler=check=z._adler.adler32(0L, null, 0, 0);
+      z.adler=check=z._adler.adler32(check, window, q, n);
+
+    // copy as far as end of window
+    System.arraycopy(window, q, z.next_out, p, n);
+    p += n;
+    q += n;
+
+    // see if more to copy at beginning of window
+    if (q == end){
+      // wrap pointers
+      q = 0;
+      if (write == end)
+        write = 0;
+
+      // compute bytes to copy
+      n = write - q;
+      if (n > z.avail_out) n = z.avail_out;
+      if (n!=0 && r == Z_BUF_ERROR) r = Z_OK;
+
+      // update counters
+      z.avail_out -= n;
+      z.total_out += n;
+
+      // update check information
+      if(checkfn != null)
+	z.adler=check=z._adler.adler32(check, window, q, n);
+
+      // copy
+      System.arraycopy(window, q, z.next_out, p, n);
+      p += n;
+      q += n;
+    }
+
+    // update pointers
+    z.next_out_index = p;
+    read = q;
+
+    // done
+    return r;
   }
 
   int proc(ZStream z, int r){
@@ -134,7 +187,7 @@ final class InfBlocks{
 
     // copy input/output information to locals (UPDATE macro restores)
     {p=z.next_in_index;n=z.avail_in;b=bitb;k=bitk;}
-    {q=write;m=(int)(q<read?read-q-1:end-q);}
+    {q=write;m=(q<read?read-q-1:end-q);}
 
     // process input based on current state
     while(true){
@@ -156,7 +209,7 @@ final class InfBlocks{
 	  b|=(z.next_in[p++]&0xff)<<k;
 	  k+=8;
 	}
-	t = (int)(b & 7);
+	t = (b & 7);
 	last = t & 1;
 
 	switch (t >>> 1){
@@ -243,14 +296,14 @@ final class InfBlocks{
 
 	if(m==0){
 	  if(q==end&&read!=0){
-	    q=0; m=(int)(q<read?read-q-1:end-q);
+	    q=0; m=(q<read?read-q-1:end-q);
 	  }
 	  if(m==0){
 	    write=q; 
 	    r=inflate_flush(z,r);
-	    q=write;m=(int)(q<read?read-q-1:end-q);
+	    q=write;m=(q<read?read-q-1:end-q);
 	    if(q==end&&read!=0){
-	      q=0; m=(int)(q<read?read-q-1:end-q);
+	      q=0; m=(q<read?read-q-1:end-q);
 	    }
 	    if(m==0){
 	      bitb=b; bitk=k; 
@@ -488,7 +541,7 @@ final class InfBlocks{
 	codes.free(z);
 
 	p=z.next_in_index; n=z.avail_in;b=bitb;k=bitk;
-	q=write;m=(int)(q<read?read-q-1:end-q);
+	q=write;m=(q<read?read-q-1:end-q);
 
 	if (last==0){
 	  mode = TYPE;
@@ -498,7 +551,7 @@ final class InfBlocks{
       case DRY:
 	write=q; 
 	r=inflate_flush(z, r); 
-	q=write; m=(int)(q<read?read-q-1:end-q);
+	q=write; m=(q<read?read-q-1:end-q);
 	if (read != write){
 	  bitb=b; bitk=k; 
 	  z.avail_in=n;z.total_in+=p-z.next_in_index;z.next_in_index=p;
@@ -532,11 +585,20 @@ final class InfBlocks{
     }
   }
 
-  void free(ZStream z){
-    reset(z, null);
-    window=null;
-    hufts=null;
-    //ZFREE(z, s);
+  void reset(ZStream z, long[] c){
+    if(c!=null) c[0]=check;
+    if(mode==BTREE || mode==DTREE){
+    }
+    if(mode==CODES){
+      codes.free(z);
+    }
+    mode=TYPE;
+    bitk=0;
+    bitb=0;
+    read=write=0;
+
+    if(checkfn != null)
+      z.adler=check=z._adler.adler32(0L, null, 0, 0);
   }
 
   void set_dictionary(byte[] d, int start, int n){
@@ -548,67 +610,5 @@ final class InfBlocks{
   // by Z_SYNC_FLUSH or Z_FULL_FLUSH. 
   int sync_point(){
     return mode == LENS ? 1 : 0;
-  }
-
-  // copy as much as possible from the sliding window to the output area
-  int inflate_flush(ZStream z, int r){
-    int n;
-    int p;
-    int q;
-
-    // local copies of source and destination pointers
-    p = z.next_out_index;
-    q = read;
-
-    // compute number of bytes to copy as far as end of window
-    n = (int)((q <= write ? write : end) - q);
-    if (n > z.avail_out) n = z.avail_out;
-    if (n!=0 && r == Z_BUF_ERROR) r = Z_OK;
-
-    // update counters
-    z.avail_out -= n;
-    z.total_out += n;
-
-    // update check information
-    if(checkfn != null)
-      z.adler=check=z._adler.adler32(check, window, q, n);
-
-    // copy as far as end of window
-    System.arraycopy(window, q, z.next_out, p, n);
-    p += n;
-    q += n;
-
-    // see if more to copy at beginning of window
-    if (q == end){
-      // wrap pointers
-      q = 0;
-      if (write == end)
-        write = 0;
-
-      // compute bytes to copy
-      n = write - q;
-      if (n > z.avail_out) n = z.avail_out;
-      if (n!=0 && r == Z_BUF_ERROR) r = Z_OK;
-
-      // update counters
-      z.avail_out -= n;
-      z.total_out += n;
-
-      // update check information
-      if(checkfn != null)
-	z.adler=check=z._adler.adler32(check, window, q, n);
-
-      // copy
-      System.arraycopy(window, q, z.next_out, p, n);
-      p += n;
-      q += n;
-    }
-
-    // update pointers
-    z.next_out_index = p;
-    read = q;
-
-    // done
-    return r;
   }
 }

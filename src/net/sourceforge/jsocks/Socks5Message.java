@@ -17,6 +17,71 @@ public class Socks5Message extends ProxyMessage{
 
    byte[] data;
 
+   //SOCKS5 constants
+   public static final int SOCKS_VERSION		=5;
+
+   public static final int SOCKS_ATYP_IPV4		=0x1; //Where is 2??
+
+
+   public static final int SOCKS_ATYP_DOMAINNAME	=0x3; //!!!!rfc1928
+
+   public static final int SOCKS_ATYP_IPV6		=0x4;
+
+   public static final int SOCKS_IPV6_LENGTH		=16;
+
+
+   static boolean doResolveIP = true;
+
+
+   /**
+    *Wether to resolve hostIP returned from SOCKS server
+    *that is wether to create InetAddress object from the
+    *hostName string
+    */
+   static public boolean resolveIP(){ return doResolveIP;}
+
+   /**
+    *Wether to resolve hostIP returned from SOCKS server
+    *that is wether to create InetAddress object from the
+    *hostName string
+    *@param doResolve Wether to resolve hostIP from SOCKS server.
+    *@return Previous value.
+    */
+   static public boolean resolveIP(boolean doResolve){
+      boolean old = doResolveIP;
+      doResolveIP = doResolve;
+      return old;
+   }
+
+   /**
+     Initialises Message from the stream. Reads server response from
+     given stream.
+     @param in Input stream to read response from.
+     @throws SocksException If server response code is not SOCKS_SUCCESS(0), or
+     if any error with protocol occurs.
+     @throws IOException If any error happens with I/O.
+   */
+   public Socks5Message(InputStream in) throws SocksException,
+                                              IOException{
+      this(in,true);
+   }
+
+   /**
+     Initialises Message from the stream. Reads server response or client 
+     request from given stream.
+     
+     @param in Input stream to read response from.
+     @param clinetMode If true read server response, else read client request.
+     @throws SocksException If server response code is not SOCKS_SUCCESS(0) and
+     reading in client mode, or if any error with protocol occurs.
+     @throws IOException If any error happens with I/O.
+   */
+   public Socks5Message(InputStream in,boolean clientMode)throws SocksException,
+                                              IOException{
+      read(in,clientMode);
+   }
+            
+
    /**
     Server error response.
     @param cmd Error code.
@@ -64,6 +129,13 @@ public class Socks5Message extends ProxyMessage{
       data[data.length-1] = (byte)(port);
    }
 
+   /*
+   private static final void debug(String s){
+      if(DEBUG)
+         System.out.print(s);
+   }
+   private static final boolean DEBUG = false;
+   */
 
    /**
     Construct client request or server response.
@@ -96,34 +168,17 @@ public class Socks5Message extends ProxyMessage{
    }
 
    /**
-     Initialises Message from the stream. Reads server response from
-     given stream.
-     @param in Input stream to read response from.
-     @throws SocksException If server response code is not SOCKS_SUCCESS(0), or
-     if any error with protocol occurs.
-     @throws IOException If any error happens with I/O.
+    Returns IP field of the message as IP, if the message was created
+    with ATYP of HOSTNAME, it will attempt to resolve the hostname,
+    which might fail.
+    @throws UnknownHostException if host can't be resolved.
    */
-   public Socks5Message(InputStream in) throws SocksException,
-                                              IOException{
-      this(in,true);
+   @Override
+public InetAddress getInetAddress() throws UnknownHostException{
+     if(ip!=null) return ip;
+
+     return (ip=InetAddress.getByName(host));
    }
-
-   /**
-     Initialises Message from the stream. Reads server response or client 
-     request from given stream.
-     
-     @param in Input stream to read response from.
-     @param clinetMode If true read server response, else read client request.
-     @throws SocksException If server response code is not SOCKS_SUCCESS(0) and
-     reading in client mode, or if any error with protocol occurs.
-     @throws IOException If any error happens with I/O.
-   */
-   public Socks5Message(InputStream in,boolean clientMode)throws SocksException,
-                                              IOException{
-      read(in,clientMode);
-   }
-
-
    /**
      Initialises Message from the stream. Reads server response from
      given stream.
@@ -132,12 +187,11 @@ public class Socks5Message extends ProxyMessage{
      if any error with protocol occurs.
      @throws IOException If any error happens with I/O.
    */
-   public void read(InputStream in) throws SocksException,
+   @Override
+public void read(InputStream in) throws SocksException,
                                            IOException{
        read(in,true);
    }
-
-
    /**
      Initialises Message from the stream. Reads server response or client 
      request from given stream.
@@ -148,7 +202,8 @@ public class Socks5Message extends ProxyMessage{
      reading in client mode, or if any error with protocol occurs.
      @throws IOException If any error happens with I/O.
    */
-   public void read(InputStream in,boolean clientMode) throws SocksException,
+   @Override
+public void read(InputStream in,boolean clientMode) throws SocksException,
                                            IOException{
       data = null;
       ip = null;
@@ -198,10 +253,26 @@ public class Socks5Message extends ProxyMessage{
    }
 
    /**
+     Returns string representation of the message.
+   */
+   @Override
+public String toString(){
+      String s=
+        "Socks5Message:"+"\n"+
+        "VN   "+version+"\n"+
+        "CMD  "+command+"\n"+
+        "ATYP "+addrType+"\n"+
+        "ADDR "+host+"\n"+
+        "PORT "+port+"\n";
+      return s;
+   }
+
+   /**
     Writes the message to the stream.
     @param out Output stream to which message should be written.
    */
-   public void write(OutputStream out)throws SocksException,
+   @Override
+public void write(OutputStream out)throws SocksException,
                                              IOException{
      if(data == null){
        Socks5Message msg;
@@ -222,71 +293,5 @@ public class Socks5Message extends ProxyMessage{
      }
      out.write(data);
    }
-
-   /**
-    Returns IP field of the message as IP, if the message was created
-    with ATYP of HOSTNAME, it will attempt to resolve the hostname,
-    which might fail.
-    @throws UnknownHostException if host can't be resolved.
-   */
-   public InetAddress getInetAddress() throws UnknownHostException{
-     if(ip!=null) return ip;
-
-     return (ip=InetAddress.getByName(host));
-   }
-
-   /**
-     Returns string representation of the message.
-   */
-   public String toString(){
-      String s=
-        "Socks5Message:"+"\n"+
-        "VN   "+version+"\n"+
-        "CMD  "+command+"\n"+
-        "ATYP "+addrType+"\n"+
-        "ADDR "+host+"\n"+
-        "PORT "+port+"\n";
-      return s;
-   }
-            
-
-   /**
-    *Wether to resolve hostIP returned from SOCKS server
-    *that is wether to create InetAddress object from the
-    *hostName string
-    */
-   static public boolean resolveIP(){ return doResolveIP;}
-
-   /**
-    *Wether to resolve hostIP returned from SOCKS server
-    *that is wether to create InetAddress object from the
-    *hostName string
-    *@param doResolve Wether to resolve hostIP from SOCKS server.
-    *@return Previous value.
-    */
-   static public boolean resolveIP(boolean doResolve){
-      boolean old = doResolveIP;
-      doResolveIP = doResolve;
-      return old;
-   }
-
-   /*
-   private static final void debug(String s){
-      if(DEBUG)
-         System.out.print(s);
-   }
-   private static final boolean DEBUG = false;
-   */
-
-   //SOCKS5 constants
-   public static final int SOCKS_VERSION		=5;
-
-   public static final int SOCKS_ATYP_IPV4		=0x1; //Where is 2??
-   public static final int SOCKS_ATYP_DOMAINNAME	=0x3; //!!!!rfc1928
-   public static final int SOCKS_ATYP_IPV6		=0x4;
-
-   public static final int SOCKS_IPV6_LENGTH		=16;
-
-   static boolean doResolveIP = true;
 
 }

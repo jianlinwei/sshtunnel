@@ -65,20 +65,27 @@ public class DhExchange
 	{
 	}
 
-	public void init(int group, SecureRandom rnd)
+	public byte[] calculateH(byte[] clientversion, byte[] serverversion, byte[] clientKexPayload,
+			byte[] serverKexPayload, byte[] hostKey) throws UnsupportedEncodingException
 	{
-		k = null;
+		HashForSSH2Types hash = new HashForSSH2Types("SHA1");
 
-		if (group == 1)
-			p = p1;
-		else if (group == 14)
-			p = p14;
-		else
-			throw new IllegalArgumentException("Unknown DH group " + group);
+		if (log.isEnabled())
+		{
+			log.log(90, "Client: '" + new String(clientversion, "ISO-8859-1") + "'");
+			log.log(90, "Server: '" + new String(serverversion, "ISO-8859-1") + "'");
+		}
 
-		x = new BigInteger(p.bitLength() - 1, rnd);
+		hash.updateByteString(clientversion);
+		hash.updateByteString(serverversion);
+		hash.updateByteString(clientKexPayload);
+		hash.updateByteString(serverKexPayload);
+		hash.updateByteString(hostKey);
+		hash.updateBigInt(e);
+		hash.updateBigInt(f);
+		hash.updateBigInt(k);
 
-		e = g.modPow(x, p);
+		return hash.getDigest();
 	}
 
 	/**
@@ -105,6 +112,22 @@ public class DhExchange
 		return k;
 	}
 
+	public void init(int group, SecureRandom rnd)
+	{
+		k = null;
+
+		if (group == 1)
+			p = p1;
+		else if (group == 14)
+			p = p14;
+		else
+			throw new IllegalArgumentException("Unknown DH group " + group);
+
+		x = new BigInteger(p.bitLength() - 1, rnd);
+
+		e = g.modPow(x, p);
+	}
+
 	/**
 	 * @param f
 	 */
@@ -120,28 +143,5 @@ public class DhExchange
 
 		this.f = f;
 		this.k = f.modPow(x, p);
-	}
-
-	public byte[] calculateH(byte[] clientversion, byte[] serverversion, byte[] clientKexPayload,
-			byte[] serverKexPayload, byte[] hostKey) throws UnsupportedEncodingException
-	{
-		HashForSSH2Types hash = new HashForSSH2Types("SHA1");
-
-		if (log.isEnabled())
-		{
-			log.log(90, "Client: '" + new String(clientversion, "ISO-8859-1") + "'");
-			log.log(90, "Server: '" + new String(serverversion, "ISO-8859-1") + "'");
-		}
-
-		hash.updateByteString(clientversion);
-		hash.updateByteString(serverversion);
-		hash.updateByteString(clientKexPayload);
-		hash.updateByteString(serverKexPayload);
-		hash.updateByteString(hostKey);
-		hash.updateBigInt(e);
-		hash.updateBigInt(f);
-		hash.updateBigInt(k);
-
-		return hash.getDigest();
 	}
 }

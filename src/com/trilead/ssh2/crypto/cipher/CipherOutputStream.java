@@ -34,6 +34,28 @@ public class CipherOutputStream
 		changeCipher(tc);
 	}
 
+	public void changeCipher(BlockCipher bc)
+	{
+		this.currentCipher = bc;
+		blockSize = bc.getBlockSize();
+		buffer = new byte[blockSize];
+		enc = new byte[blockSize];
+		pos = 0;
+	}
+
+	public void flush() throws IOException
+	{
+		if (pos != 0)
+			throw new IOException("FATAL: cannot flush since crypto buffer is not aligned.");
+
+		if (out_buffer_pos > 0)
+		{
+			bo.write(out_buffer, 0, out_buffer_pos);
+			out_buffer_pos = 0;
+		}
+		bo.flush();
+	}
+
 	private void internal_write(byte[] src, int off, int len) throws IOException
 	{
 		while (len > 0)
@@ -65,43 +87,6 @@ public class CipherOutputStream
 		}
 	}
 
-	public void flush() throws IOException
-	{
-		if (pos != 0)
-			throw new IOException("FATAL: cannot flush since crypto buffer is not aligned.");
-
-		if (out_buffer_pos > 0)
-		{
-			bo.write(out_buffer, 0, out_buffer_pos);
-			out_buffer_pos = 0;
-		}
-		bo.flush();
-	}
-
-	public void changeCipher(BlockCipher bc)
-	{
-		this.currentCipher = bc;
-		blockSize = bc.getBlockSize();
-		buffer = new byte[blockSize];
-		enc = new byte[blockSize];
-		pos = 0;
-	}
-
-	private void writeBlock() throws IOException
-	{
-		try
-		{
-			currentCipher.transformBlock(buffer, 0, enc, 0);
-		}
-		catch (Exception e)
-		{
-			throw (IOException) new IOException("Error while decrypting block.").initCause(e);
-		}
-
-		internal_write(enc, 0, blockSize);
-		pos = 0;
-	}
-
 	public void write(byte[] src, int off, int len) throws IOException
 	{
 		while (len > 0)
@@ -126,11 +111,19 @@ public class CipherOutputStream
 			writeBlock();
 	}
 
-	public void writePlain(int b) throws IOException
+	private void writeBlock() throws IOException
 	{
-		if (pos != 0)
-			throw new IOException("Cannot write plain since crypto buffer is not aligned.");
-		internal_write(b);
+		try
+		{
+			currentCipher.transformBlock(buffer, 0, enc, 0);
+		}
+		catch (Exception e)
+		{
+			throw (IOException) new IOException("Error while decrypting block.").initCause(e);
+		}
+
+		internal_write(enc, 0, blockSize);
+		pos = 0;
 	}
 
 	public void writePlain(byte[] b, int off, int len) throws IOException
@@ -138,5 +131,12 @@ public class CipherOutputStream
 		if (pos != 0)
 			throw new IOException("Cannot write plain since crypto buffer is not aligned.");
 		internal_write(b, off, len);
+	}
+
+	public void writePlain(int b) throws IOException
+	{
+		if (pos != 0)
+			throw new IOException("Cannot write plain since crypto buffer is not aligned.");
+		internal_write(b);
 	}
 }

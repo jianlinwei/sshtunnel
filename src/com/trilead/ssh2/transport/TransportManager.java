@@ -54,20 +54,9 @@ import com.trilead.ssh2.util.Tokenizer;
  */
 public class TransportManager
 {
-	private static final Logger log = Logger.getLogger(TransportManager.class);
-
-	class HandlerEntry
-	{
-		MessageHandler mh;
-		int low;
-		int high;
-	}
-
-	private final Vector<byte[]> asynchronousQueue = new Vector<byte[]>();
-	private Thread asynchronousThread = null;
-
 	class AsynchronousWorker extends Thread
 	{
+		@Override
 		public void run()
 		{
 			while (true)
@@ -123,6 +112,18 @@ public class TransportManager
 		}
 	}
 
+	class HandlerEntry
+	{
+		MessageHandler mh;
+		int low;
+		int high;
+	}
+
+	private static final Logger log = Logger.getLogger(TransportManager.class);
+	private final Vector<byte[]> asynchronousQueue = new Vector<byte[]>();
+
+	private Thread asynchronousThread = null;
+
 	String hostname;
 	int port;
 	final Socket sock = new Socket();
@@ -144,104 +145,34 @@ public class TransportManager
 	Vector connectionMonitors = new Vector();
 	boolean monitorsWereInformed = false;
 
-	/**
-	 * There were reports that there are JDKs which use
-	 * the resolver even though one supplies a dotted IP
-	 * address in the Socket constructor. That is why we
-	 * try to generate the InetAdress "by hand".
-	 * 
-	 * @param host
-	 * @return the InetAddress
-	 * @throws UnknownHostException
-	 */
-	private InetAddress createInetAddress(String host) throws UnknownHostException
-	{
-		/* Check if it is a dotted IP4 address */
-
-		InetAddress addr = parseIPv4Address(host);
-
-		if (addr != null)
-			return addr;
-
-		return InetAddress.getByName(host);
-	}
-
-	private InetAddress parseIPv4Address(String host) throws UnknownHostException
-	{
-		if (host == null)
-			return null;
-
-		String[] quad = Tokenizer.parseTokens(host, '.');
-
-		if ((quad == null) || (quad.length != 4))
-			return null;
-
-		byte[] addr = new byte[4];
-
-		for (int i = 0; i < 4; i++)
-		{
-			int part = 0;
-
-			if ((quad[i].length() == 0) || (quad[i].length() > 3))
-				return null;
-
-			for (int k = 0; k < quad[i].length(); k++)
-			{
-				char c = quad[i].charAt(k);
-
-				/* No, Character.isDigit is not the same */
-				if ((c < '0') || (c > '9'))
-					return null;
-
-				part = part * 10 + (c - '0');
-			}
-
-			if (part > 255) /* 300.1.2.3 is invalid =) */
-				return null;
-
-			addr[i] = (byte) part;
-		}
-
-		return InetAddress.getByAddress(host, addr);
-	}
-
 	public TransportManager(String host, int port) throws IOException
 	{
 		this.hostname = host;
 		this.port = port;
 	}
 
-	public int getPacketOverheadEstimate()
+	public void changeRecvCipher(BlockCipher bc, MAC mac)
 	{
-		return tc.getPacketOverheadEstimate();
+		tc.changeRecvCipher(bc, mac);
 	}
 
-	public void setTcpNoDelay(boolean state) throws IOException
-	{
-		sock.setTcpNoDelay(state);
+	/**
+	 * @param comp
+	 */
+	public void changeRecvCompression(ICompressor comp) {
+		tc.changeRecvCompression(comp);
 	}
 
-	public void setSoTimeout(int timeout) throws IOException
+	public void changeSendCipher(BlockCipher bc, MAC mac)
 	{
-		sock.setSoTimeout(timeout);
+		tc.changeSendCipher(bc, mac);
 	}
 
-	public ConnectionInfo getConnectionInfo(int kexNumber) throws IOException
-	{
-		return km.getOrWaitForConnectionInfo(kexNumber);
-	}
-
-	public Throwable getReasonClosedCause()
-	{
-		synchronized (connectionSemaphore)
-		{
-			return reasonClosedCause;
-		}
-	}
-
-	public byte[] getSessionIdentifier()
-	{
-		return km.sessionId;
+	/**
+	 * @param comp
+	 */
+	public void changeSendCompression(ICompressor comp) {
+		tc.changeSendCompression(comp);
 	}
 
 	public void close(Throwable cause, boolean useDisconnectPacket)
@@ -330,6 +261,28 @@ public class TransportManager
 				}
 			}
 		}
+	}
+
+	/**
+	 * There were reports that there are JDKs which use
+	 * the resolver even though one supplies a dotted IP
+	 * address in the Socket constructor. That is why we
+	 * try to generate the InetAdress "by hand".
+	 * 
+	 * @param host
+	 * @return the InetAddress
+	 * @throws UnknownHostException
+	 */
+	private InetAddress createInetAddress(String host) throws UnknownHostException
+	{
+		/* Check if it is a dotted IP4 address */
+
+		InetAddress addr = parseIPv4Address(host);
+
+		if (addr != null)
+			return addr;
+
+		return InetAddress.getByName(host);
 	}
 
 	private void establishConnection(ProxyData proxyData, int connectTimeout) throws IOException
@@ -442,6 +395,34 @@ public class TransportManager
 		throw new IOException("Unsupported ProxyData");
 	}
 
+	public void forceKeyExchange(CryptoWishList cwl, DHGexParameters dhgex) throws IOException
+	{
+		km.initiateKEX(cwl, dhgex);
+	}
+
+	public ConnectionInfo getConnectionInfo(int kexNumber) throws IOException
+	{
+		return km.getOrWaitForConnectionInfo(kexNumber);
+	}
+
+	public int getPacketOverheadEstimate()
+	{
+		return tc.getPacketOverheadEstimate();
+	}
+
+	public Throwable getReasonClosedCause()
+	{
+		synchronized (connectionSemaphore)
+		{
+			return reasonClosedCause;
+		}
+	}
+
+	public byte[] getSessionIdentifier()
+	{
+		return km.sessionId;
+	}
+
 	public void initialize(CryptoWishList cwl, ServerHostKeyVerifier verifier, DHGexParameters dhgex,
 			int connectTimeout, SecureRandom rnd, ProxyData proxyData) throws IOException
 	{
@@ -463,6 +444,7 @@ public class TransportManager
 
 		receiveThread = new Thread(new Runnable()
 		{
+			@Override
 			public void run()
 			{
 				try
@@ -511,58 +493,6 @@ public class TransportManager
 		receiveThread.start();
 	}
 
-	public void registerMessageHandler(MessageHandler mh, int low, int high)
-	{
-		HandlerEntry he = new HandlerEntry();
-		he.mh = mh;
-		he.low = low;
-		he.high = high;
-
-		synchronized (messageHandlers)
-		{
-			messageHandlers.addElement(he);
-		}
-	}
-
-	public void removeMessageHandler(MessageHandler mh, int low, int high)
-	{
-		synchronized (messageHandlers)
-		{
-			for (int i = 0; i < messageHandlers.size(); i++)
-			{
-				HandlerEntry he = messageHandlers.elementAt(i);
-				if ((he.mh == mh) && (he.low == low) && (he.high == high))
-				{
-					messageHandlers.removeElementAt(i);
-					break;
-				}
-			}
-		}
-	}
-
-	public void sendKexMessage(byte[] msg) throws IOException
-	{
-		synchronized (connectionSemaphore)
-		{
-			if (connectionClosed)
-			{
-				throw (IOException) new IOException("Sorry, this connection is closed.").initCause(reasonClosedCause);
-			}
-
-			flagKexOngoing = true;
-
-			try
-			{
-				tc.sendMessage(msg);
-			}
-			catch (IOException e)
-			{
-				close(e, false);
-				throw e;
-			}
-		}
-	}
-
 	public void kexFinished() throws IOException
 	{
 		synchronized (connectionSemaphore)
@@ -572,115 +502,43 @@ public class TransportManager
 		}
 	}
 
-	public void forceKeyExchange(CryptoWishList cwl, DHGexParameters dhgex) throws IOException
+	private InetAddress parseIPv4Address(String host) throws UnknownHostException
 	{
-		km.initiateKEX(cwl, dhgex);
-	}
+		if (host == null)
+			return null;
 
-	public void changeRecvCipher(BlockCipher bc, MAC mac)
-	{
-		tc.changeRecvCipher(bc, mac);
-	}
+		String[] quad = Tokenizer.parseTokens(host, '.');
 
-	public void changeSendCipher(BlockCipher bc, MAC mac)
-	{
-		tc.changeSendCipher(bc, mac);
-	}
+		if ((quad == null) || (quad.length != 4))
+			return null;
 
-	/**
-	 * @param comp
-	 */
-	public void changeRecvCompression(ICompressor comp) {
-		tc.changeRecvCompression(comp);
-	}
+		byte[] addr = new byte[4];
 
-	/**
-	 * @param comp
-	 */
-	public void changeSendCompression(ICompressor comp) {
-		tc.changeSendCompression(comp);
-	}
-
-	/**
-	 * 
-	 */
-	public void startCompression() {
-		tc.startCompression();
-	}
-
-	public void sendAsynchronousMessage(byte[] msg) throws IOException
-	{
-		synchronized (asynchronousQueue)
+		for (int i = 0; i < 4; i++)
 		{
-			asynchronousQueue.addElement(msg);
+			int part = 0;
 
-			/* This limit should be flexible enough. We need this, otherwise the peer
-			 * can flood us with global requests (and other stuff where we have to reply
-			 * with an asynchronous message) and (if the server just sends data and does not
-			 * read what we send) this will probably put us in a low memory situation
-			 * (our send queue would grow and grow and...) */
+			if ((quad[i].length() == 0) || (quad[i].length() > 3))
+				return null;
 
-			if (asynchronousQueue.size() > 100)
-				throw new IOException("Error: the peer is not consuming our asynchronous replies.");
-
-			/* Check if we have an asynchronous sending thread */
-
-			if (asynchronousThread == null)
+			for (int k = 0; k < quad[i].length(); k++)
 			{
-				asynchronousThread = new AsynchronousWorker();
-				asynchronousThread.setDaemon(true);
-				asynchronousThread.start();
+				char c = quad[i].charAt(k);
 
-				/* The thread will stop after 2 seconds of inactivity (i.e., empty queue) */
+				/* No, Character.isDigit is not the same */
+				if ((c < '0') || (c > '9'))
+					return null;
+
+				part = part * 10 + (c - '0');
 			}
+
+			if (part > 255) /* 300.1.2.3 is invalid =) */
+				return null;
+
+			addr[i] = (byte) part;
 		}
-	}
 
-	public void setConnectionMonitors(Vector monitors)
-	{
-		synchronized (this)
-		{
-			connectionMonitors = (Vector) monitors.clone();
-		}
-	}
-
-	public void sendMessage(byte[] msg) throws IOException
-	{
-		if (Thread.currentThread() == receiveThread)
-			throw new IOException("Assertion error: sendMessage may never be invoked by the receiver thread!");
-
-		synchronized (connectionSemaphore)
-		{
-			while (true)
-			{
-				if (connectionClosed)
-				{
-					throw (IOException) new IOException("Sorry, this connection is closed.")
-							.initCause(reasonClosedCause);
-				}
-
-				if (flagKexOngoing == false)
-					break;
-
-				try
-				{
-					connectionSemaphore.wait();
-				}
-				catch (InterruptedException e)
-				{
-				}
-			}
-
-			try
-			{
-				tc.sendMessage(msg);
-			}
-			catch (IOException e)
-			{
-				close(e, false);
-				throw e;
-			}
-		}
+		return InetAddress.getByAddress(host, addr);
 	}
 
 	public void receiveLoop() throws IOException
@@ -798,5 +656,149 @@ public class TransportManager
 
 			mh.handleMessage(msg, msglen);
 		}
+	}
+
+	public void registerMessageHandler(MessageHandler mh, int low, int high)
+	{
+		HandlerEntry he = new HandlerEntry();
+		he.mh = mh;
+		he.low = low;
+		he.high = high;
+
+		synchronized (messageHandlers)
+		{
+			messageHandlers.addElement(he);
+		}
+	}
+
+	public void removeMessageHandler(MessageHandler mh, int low, int high)
+	{
+		synchronized (messageHandlers)
+		{
+			for (int i = 0; i < messageHandlers.size(); i++)
+			{
+				HandlerEntry he = messageHandlers.elementAt(i);
+				if ((he.mh == mh) && (he.low == low) && (he.high == high))
+				{
+					messageHandlers.removeElementAt(i);
+					break;
+				}
+			}
+		}
+	}
+
+	public void sendAsynchronousMessage(byte[] msg) throws IOException
+	{
+		synchronized (asynchronousQueue)
+		{
+			asynchronousQueue.addElement(msg);
+
+			/* This limit should be flexible enough. We need this, otherwise the peer
+			 * can flood us with global requests (and other stuff where we have to reply
+			 * with an asynchronous message) and (if the server just sends data and does not
+			 * read what we send) this will probably put us in a low memory situation
+			 * (our send queue would grow and grow and...) */
+
+			if (asynchronousQueue.size() > 100)
+				throw new IOException("Error: the peer is not consuming our asynchronous replies.");
+
+			/* Check if we have an asynchronous sending thread */
+
+			if (asynchronousThread == null)
+			{
+				asynchronousThread = new AsynchronousWorker();
+				asynchronousThread.setDaemon(true);
+				asynchronousThread.start();
+
+				/* The thread will stop after 2 seconds of inactivity (i.e., empty queue) */
+			}
+		}
+	}
+
+	public void sendKexMessage(byte[] msg) throws IOException
+	{
+		synchronized (connectionSemaphore)
+		{
+			if (connectionClosed)
+			{
+				throw (IOException) new IOException("Sorry, this connection is closed.").initCause(reasonClosedCause);
+			}
+
+			flagKexOngoing = true;
+
+			try
+			{
+				tc.sendMessage(msg);
+			}
+			catch (IOException e)
+			{
+				close(e, false);
+				throw e;
+			}
+		}
+	}
+
+	public void sendMessage(byte[] msg) throws IOException
+	{
+		if (Thread.currentThread() == receiveThread)
+			throw new IOException("Assertion error: sendMessage may never be invoked by the receiver thread!");
+
+		synchronized (connectionSemaphore)
+		{
+			while (true)
+			{
+				if (connectionClosed)
+				{
+					throw (IOException) new IOException("Sorry, this connection is closed.")
+							.initCause(reasonClosedCause);
+				}
+
+				if (flagKexOngoing == false)
+					break;
+
+				try
+				{
+					connectionSemaphore.wait();
+				}
+				catch (InterruptedException e)
+				{
+				}
+			}
+
+			try
+			{
+				tc.sendMessage(msg);
+			}
+			catch (IOException e)
+			{
+				close(e, false);
+				throw e;
+			}
+		}
+	}
+
+	public void setConnectionMonitors(Vector monitors)
+	{
+		synchronized (this)
+		{
+			connectionMonitors = (Vector) monitors.clone();
+		}
+	}
+
+	public void setSoTimeout(int timeout) throws IOException
+	{
+		sock.setSoTimeout(timeout);
+	}
+
+	public void setTcpNoDelay(boolean state) throws IOException
+	{
+		sock.setTcpNoDelay(state);
+	}
+
+	/**
+	 * 
+	 */
+	public void startCompression() {
+		tc.startCompression();
 	}
 }

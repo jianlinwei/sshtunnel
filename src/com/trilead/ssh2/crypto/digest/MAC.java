@@ -9,22 +9,11 @@ package com.trilead.ssh2.crypto.digest;
  */
 public final class MAC
 {
-	Digest mac;
-	int size;
-
-	public final static String[] getMacList()
-	{
-		/* Higher Priority First */
-
-		return new String[] { "hmac-sha1-96", "hmac-sha1", "hmac-md5-96", "hmac-md5" };
-	}
-
 	public final static void checkMacList(String[] macs)
 	{
 		for (int i = 0; i < macs.length; i++)
 			getKeyLen(macs[i]);
 	}
-
 	public final static int getKeyLen(String type)
 	{
 		if (type.equals("hmac-sha1"))
@@ -37,6 +26,17 @@ public final class MAC
 			return 16;
 		throw new IllegalArgumentException("Unkown algorithm " + type);
 	}
+
+	public final static String[] getMacList()
+	{
+		/* Higher Priority First */
+
+		return new String[] { "hmac-sha1-96", "hmac-sha1", "hmac-md5-96", "hmac-md5" };
+	}
+
+	Digest mac;
+
+	int size;
 
 	public MAC(String type, byte[] key)
 	{
@@ -62,6 +62,11 @@ public final class MAC
 		size = mac.getDigestLength();
 	}
 
+	public final void getMac(byte[] out, int off)
+	{
+		mac.digest(out, off);
+	}
+
 	public final void initMac(int seq)
 	{
 		mac.reset();
@@ -71,18 +76,13 @@ public final class MAC
 		mac.update((byte) (seq));
 	}
 
-	public final void update(byte[] packetdata, int off, int len)
-	{
-		mac.update(packetdata, off, len);
-	}
-
-	public final void getMac(byte[] out, int off)
-	{
-		mac.digest(out, off);
-	}
-
 	public final int size()
 	{
 		return size;
+	}
+
+	public final void update(byte[] packetdata, int off, int len)
+	{
+		mac.update(packetdata, off, len);
 	}
 }

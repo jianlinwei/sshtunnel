@@ -26,9 +26,19 @@ public class DSAPrivateKey
 		this.x = x;
 	}
 
+	public BigInteger getG()
+	{
+		return g;
+	}
+
 	public BigInteger getP()
 	{
 		return p;
+	}
+	
+	public DSAPublicKey getPublicKey()
+	{
+		return new DSAPublicKey(p, q, g, y);
 	}
 
 	public BigInteger getQ()
@@ -36,23 +46,13 @@ public class DSAPrivateKey
 		return q;
 	}
 	
-	public BigInteger getG()
-	{
-		return g;
-	}
-
-	public BigInteger getY()
-	{
-		return y;
-	}
-	
 	public BigInteger getX()
 	{
 		return x;
 	}
 	
-	public DSAPublicKey getPublicKey()
+	public BigInteger getY()
 	{
-		return new DSAPublicKey(p, q, g, y);
+		return y;
 	}
 }

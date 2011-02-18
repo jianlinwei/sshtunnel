@@ -12,10 +12,79 @@ package com.trilead.ssh2.crypto.digest;
  */
 public final class SHA1 implements Digest
 {
-	private int H0, H1, H2, H3, H4;
+	public static void main(String[] args)
+	{
+		SHA1 sha = new SHA1();
 
+		byte[] dig1 = new byte[20];
+		byte[] dig2 = new byte[20];
+		byte[] dig3 = new byte[20];
+
+		/*
+		 * We do not specify a charset name for getBytes(), since we assume that
+		 * the JVM's default encoder maps the _used_ ASCII characters exactly as
+		 * getBytes("US-ASCII") would do. (Ah, yes, too lazy to catch the
+		 * exception that can be thrown by getBytes("US-ASCII")). Note: This has
+		 * no effect on the SHA-1 implementation, this is just for the following
+		 * test code.
+		 */
+
+		sha.update("abc".getBytes());
+		sha.digest(dig1);
+
+		sha.update("abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq".getBytes());
+		sha.digest(dig2);
+
+		for (int i = 0; i < 1000000; i++)
+			sha.update((byte) 'a');
+		sha.digest(dig3);
+
+		String dig1_res = toHexString(dig1);
+		String dig2_res = toHexString(dig2);
+		String dig3_res = toHexString(dig3);
+
+		String dig1_ref = "A9993E364706816ABA3E25717850C26C9CD0D89D";
+		String dig2_ref = "84983E441C3BD26EBAAE4AA1F95129E5E54670F1";
+		String dig3_ref = "34AA973CD4C4DAA4F61EEB2BDBAD27316534016F";
+
+		if (dig1_res.equals(dig1_ref))
+			System.out.println("SHA-1 Test 1 OK.");
+		else
+			System.out.println("SHA-1 Test 1 FAILED.");
+
+		if (dig2_res.equals(dig2_ref))
+			System.out.println("SHA-1 Test 2 OK.");
+		else
+			System.out.println("SHA-1 Test 2 FAILED.");
+
+		if (dig3_res.equals(dig3_ref))
+			System.out.println("SHA-1 Test 3 OK.");
+		else
+			System.out.println("SHA-1 Test 3 FAILED.");
+
+		if (dig3_res.equals(dig3_ref))
+			System.out.println("SHA-1 Test 3 OK.");
+		else
+			System.out.println("SHA-1 Test 3 FAILED.");
+	}
+
+	private static final String toHexString(byte[] b)
+	{
+		final String hexChar = "0123456789ABCDEF";
+
+		StringBuffer sb = new StringBuffer();
+		for (int i = 0; i < b.length; i++)
+		{
+			sb.append(hexChar.charAt((b[i] >> 4) & 0x0f));
+			sb.append(hexChar.charAt(b[i] & 0x0f));
+		}
+		return sb.toString();
+	}
+	private int H0, H1, H2, H3, H4;
 	private final int[] w = new int[80];
+
 	private int currentPos;
+
 	private long currentLen;
 
 	public SHA1()
@@ -23,177 +92,13 @@ public final class SHA1 implements Digest
 		reset();
 	}
 
-	public final int getDigestLength()
-	{
-		return 20;
-	}
-
-	public final void reset()
-	{
-		H0 = 0x67452301;
-		H1 = 0xEFCDAB89;
-		H2 = 0x98BADCFE;
-		H3 = 0x10325476;
-		H4 = 0xC3D2E1F0;
-
-		currentPos = 0;
-		currentLen = 0;
-
-		/* In case of complete paranoia, we should also wipe out the
-		 * information contained in the w[] array */
-	}
-
-	public final void update(byte b[])
-	{
-		update(b, 0, b.length);
-	}
-
-	public final void update(byte b[], int off, int len)
-	{
-		if (len >= 4)
-		{
-			int idx = currentPos >> 2;
-
-			switch (currentPos & 3)
-			{
-			case 0:
-				w[idx] = (((b[off++] & 0xff) << 24) | ((b[off++] & 0xff) << 16) | ((b[off++] & 0xff) << 8) | (b[off++] & 0xff));
-				len -= 4;
-				currentPos += 4;
-				currentLen += 32;
-				if (currentPos == 64)
-				{
-					perform();
-					currentPos = 0;
-				}
-				break;
-			case 1:
-				w[idx] = (w[idx] << 24) | (((b[off++] & 0xff) << 16) | ((b[off++] & 0xff) << 8) | (b[off++] & 0xff));
-				len -= 3;
-				currentPos += 3;
-				currentLen += 24;
-				if (currentPos == 64)
-				{
-					perform();
-					currentPos = 0;
-				}
-				break;
-			case 2:
-				w[idx] = (w[idx] << 16) | (((b[off++] & 0xff) << 8) | (b[off++] & 0xff));
-				len -= 2;
-				currentPos += 2;
-				currentLen += 16;
-				if (currentPos == 64)
-				{
-					perform();
-					currentPos = 0;
-				}
-				break;
-			case 3:
-				w[idx] = (w[idx] << 8) | (b[off++] & 0xff);
-				len--;
-				currentPos++;
-				currentLen += 8;
-				if (currentPos == 64)
-				{
-					perform();
-					currentPos = 0;
-				}
-				break;
-			}
-
-			/* Now currentPos is a multiple of 4 - this is the place to be...*/
-
-			while (len >= 8)
-			{
-				w[currentPos >> 2] = ((b[off++] & 0xff) << 24) | ((b[off++] & 0xff) << 16) | ((b[off++] & 0xff) << 8)
-						| (b[off++] & 0xff);
-				currentPos += 4;
-
-				if (currentPos == 64)
-				{
-					perform();
-					currentPos = 0;
-				}
-
-				w[currentPos >> 2] = ((b[off++] & 0xff) << 24) | ((b[off++] & 0xff) << 16) | ((b[off++] & 0xff) << 8)
-						| (b[off++] & 0xff);
-
-				currentPos += 4;
-
-				if (currentPos == 64)
-				{
-					perform();
-					currentPos = 0;
-				}
-
-				currentLen += 64;
-				len -= 8;
-			}
-
-			while (len < 0) //(len >= 4)
-			{
-				w[currentPos >> 2] = ((b[off++] & 0xff) << 24) | ((b[off++] & 0xff) << 16) | ((b[off++] & 0xff) << 8)
-						| (b[off++] & 0xff);
-				len -= 4;
-				currentPos += 4;
-				currentLen += 32;
-				if (currentPos == 64)
-				{
-					perform();
-					currentPos = 0;
-				}
-			}
-		}
-
-		/* Remaining bytes (1-3) */
-
-		while (len > 0)
-		{
-			/* Here is room for further improvements */
-			int idx = currentPos >> 2;
-			w[idx] = (w[idx] << 8) | (b[off++] & 0xff);
-
-			currentLen += 8;
-			currentPos++;
-
-			if (currentPos == 64)
-			{
-				perform();
-				currentPos = 0;
-			}
-			len--;
-		}
-	}
-
-	public final void update(byte b)
-	{
-		int idx = currentPos >> 2;
-		w[idx] = (w[idx] << 8) | (b & 0xff);
-
-		currentLen += 8;
-		currentPos++;
-
-		if (currentPos == 64)
-		{
-			perform();
-			currentPos = 0;
-		}
-	}
-
-	private final void putInt(byte[] b, int pos, int val)
-	{
-		b[pos] = (byte) (val >> 24);
-		b[pos + 1] = (byte) (val >> 16);
-		b[pos + 2] = (byte) (val >> 8);
-		b[pos + 3] = (byte) val;
-	}
-
+	@Override
 	public final void digest(byte[] out)
 	{
 		digest(out, 0);
 	}
 
+	@Override
 	public final void digest(byte[] out, int off)
 	{
 		/* Pad with a '1' and 7-31 zero bits... */
@@ -235,6 +140,12 @@ public final class SHA1 implements Digest
 		putInt(out, off + 16, H4);
 
 		reset();
+	}
+
+	@Override
+	public final int getDigestLength()
+	{
+		return 20;
 	}
 
 	private final void perform()
@@ -593,72 +504,168 @@ public final class SHA1 implements Digest
 		// debug(80, H0, H1, H2, H3, H4);
 	}
 
-	private static final String toHexString(byte[] b)
+	private final void putInt(byte[] b, int pos, int val)
 	{
-		final String hexChar = "0123456789ABCDEF";
-
-		StringBuffer sb = new StringBuffer();
-		for (int i = 0; i < b.length; i++)
-		{
-			sb.append(hexChar.charAt((b[i] >> 4) & 0x0f));
-			sb.append(hexChar.charAt(b[i] & 0x0f));
-		}
-		return sb.toString();
+		b[pos] = (byte) (val >> 24);
+		b[pos + 1] = (byte) (val >> 16);
+		b[pos + 2] = (byte) (val >> 8);
+		b[pos + 3] = (byte) val;
 	}
 
-	public static void main(String[] args)
+	@Override
+	public final void reset()
 	{
-		SHA1 sha = new SHA1();
+		H0 = 0x67452301;
+		H1 = 0xEFCDAB89;
+		H2 = 0x98BADCFE;
+		H3 = 0x10325476;
+		H4 = 0xC3D2E1F0;
 
-		byte[] dig1 = new byte[20];
-		byte[] dig2 = new byte[20];
-		byte[] dig3 = new byte[20];
+		currentPos = 0;
+		currentLen = 0;
 
-		/*
-		 * We do not specify a charset name for getBytes(), since we assume that
-		 * the JVM's default encoder maps the _used_ ASCII characters exactly as
-		 * getBytes("US-ASCII") would do. (Ah, yes, too lazy to catch the
-		 * exception that can be thrown by getBytes("US-ASCII")). Note: This has
-		 * no effect on the SHA-1 implementation, this is just for the following
-		 * test code.
-		 */
+		/* In case of complete paranoia, we should also wipe out the
+		 * information contained in the w[] array */
+	}
 
-		sha.update("abc".getBytes());
-		sha.digest(dig1);
+	@Override
+	public final void update(byte b[])
+	{
+		update(b, 0, b.length);
+	}
 
-		sha.update("abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq".getBytes());
-		sha.digest(dig2);
+	@Override
+	public final void update(byte b)
+	{
+		int idx = currentPos >> 2;
+		w[idx] = (w[idx] << 8) | (b & 0xff);
 
-		for (int i = 0; i < 1000000; i++)
-			sha.update((byte) 'a');
-		sha.digest(dig3);
+		currentLen += 8;
+		currentPos++;
 
-		String dig1_res = toHexString(dig1);
-		String dig2_res = toHexString(dig2);
-		String dig3_res = toHexString(dig3);
+		if (currentPos == 64)
+		{
+			perform();
+			currentPos = 0;
+		}
+	}
 
-		String dig1_ref = "A9993E364706816ABA3E25717850C26C9CD0D89D";
-		String dig2_ref = "84983E441C3BD26EBAAE4AA1F95129E5E54670F1";
-		String dig3_ref = "34AA973CD4C4DAA4F61EEB2BDBAD27316534016F";
+	@Override
+	public final void update(byte b[], int off, int len)
+	{
+		if (len >= 4)
+		{
+			int idx = currentPos >> 2;
 
-		if (dig1_res.equals(dig1_ref))
-			System.out.println("SHA-1 Test 1 OK.");
-		else
-			System.out.println("SHA-1 Test 1 FAILED.");
+			switch (currentPos & 3)
+			{
+			case 0:
+				w[idx] = (((b[off++] & 0xff) << 24) | ((b[off++] & 0xff) << 16) | ((b[off++] & 0xff) << 8) | (b[off++] & 0xff));
+				len -= 4;
+				currentPos += 4;
+				currentLen += 32;
+				if (currentPos == 64)
+				{
+					perform();
+					currentPos = 0;
+				}
+				break;
+			case 1:
+				w[idx] = (w[idx] << 24) | (((b[off++] & 0xff) << 16) | ((b[off++] & 0xff) << 8) | (b[off++] & 0xff));
+				len -= 3;
+				currentPos += 3;
+				currentLen += 24;
+				if (currentPos == 64)
+				{
+					perform();
+					currentPos = 0;
+				}
+				break;
+			case 2:
+				w[idx] = (w[idx] << 16) | (((b[off++] & 0xff) << 8) | (b[off++] & 0xff));
+				len -= 2;
+				currentPos += 2;
+				currentLen += 16;
+				if (currentPos == 64)
+				{
+					perform();
+					currentPos = 0;
+				}
+				break;
+			case 3:
+				w[idx] = (w[idx] << 8) | (b[off++] & 0xff);
+				len--;
+				currentPos++;
+				currentLen += 8;
+				if (currentPos == 64)
+				{
+					perform();
+					currentPos = 0;
+				}
+				break;
+			}
 
-		if (dig2_res.equals(dig2_ref))
-			System.out.println("SHA-1 Test 2 OK.");
-		else
-			System.out.println("SHA-1 Test 2 FAILED.");
+			/* Now currentPos is a multiple of 4 - this is the place to be...*/
 
-		if (dig3_res.equals(dig3_ref))
-			System.out.println("SHA-1 Test 3 OK.");
-		else
-			System.out.println("SHA-1 Test 3 FAILED.");
+			while (len >= 8)
+			{
+				w[currentPos >> 2] = ((b[off++] & 0xff) << 24) | ((b[off++] & 0xff) << 16) | ((b[off++] & 0xff) << 8)
+						| (b[off++] & 0xff);
+				currentPos += 4;
 
-		if (dig3_res.equals(dig3_ref))
-			System.out.println("SHA-1 Test 3 OK.");
-		else
-			System.out.println("SHA-1 Test 3 FAILED.");
+				if (currentPos == 64)
+				{
+					perform();
+					currentPos = 0;
+				}
+
+				w[currentPos >> 2] = ((b[off++] & 0xff) << 24) | ((b[off++] & 0xff) << 16) | ((b[off++] & 0xff) << 8)
+						| (b[off++] & 0xff);
+
+				currentPos += 4;
+
+				if (currentPos == 64)
+				{
+					perform();
+					currentPos = 0;
+				}
+
+				currentLen += 64;
+				len -= 8;
+			}
+
+			while (len < 0) //(len >= 4)
+			{
+				w[currentPos >> 2] = ((b[off++] & 0xff) << 24) | ((b[off++] & 0xff) << 16) | ((b[off++] & 0xff) << 8)
+						| (b[off++] & 0xff);
+				len -= 4;
+				currentPos += 4;
+				currentLen += 32;
+				if (currentPos == 64)
+				{
+					perform();
+					currentPos = 0;
+				}
+			}
+		}
+
+		/* Remaining bytes (1-3) */
+
+		while (len > 0)
+		{
+			/* Here is room for further improvements */
+			int idx = currentPos >> 2;
+			w[idx] = (w[idx] << 8) | (b[off++] & 0xff);
+
+			currentLen += 8;
+			currentPos++;
+
+			if (currentPos == 64)
+			{
+				perform();
+				currentPos = 0;
+			}
+			len--;
+		}
 	}
 }

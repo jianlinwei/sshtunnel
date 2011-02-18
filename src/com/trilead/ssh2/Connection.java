@@ -50,12 +50,6 @@ public class Connection
 	public final static String identification = "TrileadSSH2Java_213";
 
 	/**
-	 * Will be used to generate all random data needed for the current
-	 * connection. Note: SecureRandom.nextBytes() is thread safe.
-	 */
-	private SecureRandom generator;
-
-	/**
 	 * Unless you know what you are doing, you will never need this.
 	 * 
 	 * @return The list of supported cipher algorithms by this implementation.
@@ -85,6 +79,12 @@ public class Connection
 	{
 		return KexManager.getDefaultServerHostkeyAlgorithmList();
 	}
+
+	/**
+	 * Will be used to generate all random data needed for the current
+	 * connection. Note: SecureRandom.nextBytes() is thread safe.
+	 */
+	private SecureRandom generator;
 
 	private AuthenticationManager am;
 
@@ -138,6 +138,32 @@ public class Connection
 	}
 
 	/**
+	 * Add a {@link ConnectionMonitor} to this connection. Can be invoked at any
+	 * time, but it is best to add connection monitors before invoking
+	 * <code>connect()</code> to avoid glitches (e.g., you add a connection
+	 * monitor after a successful connect(), but the connection has died in the
+	 * mean time. Then, your connection monitor won't be notified.)
+	 * <p>
+	 * You can add as many monitors as you like.
+	 * 
+	 * @see ConnectionMonitor
+	 * 
+	 * @param cmon
+	 *            An object implementing the <code>ConnectionMonitor</code>
+	 *            interface.
+	 */
+	public synchronized void addConnectionMonitor(ConnectionMonitor cmon)
+	{
+		if (cmon == null)
+			throw new IllegalArgumentException("cmon argument is null");
+
+		connectionMonitors.addElement(cmon);
+
+		if (tm != null)
+			tm.setConnectionMonitors(connectionMonitors);
+	}
+
+	/**
 	 * After a successful connect, one has to authenticate oneself. This method
 	 * is based on DSA (it uses DSA to sign a challenge sent by the server).
 	 * <p>
@@ -169,6 +195,7 @@ public class Connection
 	 *             disappear in future builds.
 	 * 
 	 */
+	@Deprecated
 	public synchronized boolean authenticateWithDSA(String user, String pem, String password) throws IOException
 	{
 		if (tm == null)
@@ -276,57 +303,6 @@ public class Connection
 
 	/**
 	 * After a successful connect, one has to authenticate oneself. This method
-	 * sends username and password to the server.
-	 * <p>
-	 * If the authentication phase is complete, <code>true</code> will be
-	 * returned. If the server does not accept the request (or if further
-	 * authentication steps are needed), <code>false</code> is returned and
-	 * one can retry either by using this or any other authentication method
-	 * (use the <code>getRemainingAuthMethods</code> method to get a list of
-	 * the remaining possible methods).
-	 * <p>
-	 * Note: if this method fails, then please double-check that it is actually
-	 * offered by the server (use
-	 * {@link #getRemainingAuthMethods(String) getRemainingAuthMethods()}.
-	 * <p>
-	 * Often, password authentication is disabled, but users are not aware of
-	 * it. Many servers only offer "publickey" and "keyboard-interactive".
-	 * However, even though "keyboard-interactive" *feels* like password
-	 * authentication (e.g., when using the putty or openssh clients) it is
-	 * *not* the same mechanism.
-	 * 
-	 * @param user
-	 * @param password
-	 * @return if the connection is now authenticated.
-	 * @throws IOException
-	 */
-	public synchronized boolean authenticateWithPassword(String user, String password) throws IOException
-	{
-		if (tm == null)
-			throw new IllegalStateException("Connection is not established!");
-
-		if (authenticated)
-			throw new IllegalStateException("Connection is already authenticated!");
-
-		if (am == null)
-			am = new AuthenticationManager(tm);
-
-		if (cm == null)
-			cm = new ChannelManager(tm);
-
-		if (user == null)
-			throw new IllegalArgumentException("user argument is null");
-
-		if (password == null)
-			throw new IllegalArgumentException("password argument is null");
-
-		authenticated = am.authenticatePassword(user, password);
-
-		return authenticated;
-	}
-
-	/**
-	 * After a successful connect, one has to authenticate oneself. This method
 	 * can be used to explicitly use the special "none" authentication method
 	 * (where only a username has to be specified).
 	 * <p>
@@ -376,6 +352,57 @@ public class Connection
 		return authenticated;
 	}
 
+	/**
+	 * After a successful connect, one has to authenticate oneself. This method
+	 * sends username and password to the server.
+	 * <p>
+	 * If the authentication phase is complete, <code>true</code> will be
+	 * returned. If the server does not accept the request (or if further
+	 * authentication steps are needed), <code>false</code> is returned and
+	 * one can retry either by using this or any other authentication method
+	 * (use the <code>getRemainingAuthMethods</code> method to get a list of
+	 * the remaining possible methods).
+	 * <p>
+	 * Note: if this method fails, then please double-check that it is actually
+	 * offered by the server (use
+	 * {@link #getRemainingAuthMethods(String) getRemainingAuthMethods()}.
+	 * <p>
+	 * Often, password authentication is disabled, but users are not aware of
+	 * it. Many servers only offer "publickey" and "keyboard-interactive".
+	 * However, even though "keyboard-interactive" *feels* like password
+	 * authentication (e.g., when using the putty or openssh clients) it is
+	 * *not* the same mechanism.
+	 * 
+	 * @param user
+	 * @param password
+	 * @return if the connection is now authenticated.
+	 * @throws IOException
+	 */
+	public synchronized boolean authenticateWithPassword(String user, String password) throws IOException
+	{
+		if (tm == null)
+			throw new IllegalStateException("Connection is not established!");
+
+		if (authenticated)
+			throw new IllegalStateException("Connection is already authenticated!");
+
+		if (am == null)
+			am = new AuthenticationManager(tm);
+
+		if (cm == null)
+			cm = new ChannelManager(tm);
+
+		if (user == null)
+			throw new IllegalArgumentException("user argument is null");
+
+		if (password == null)
+			throw new IllegalArgumentException("password argument is null");
+
+		authenticated = am.authenticatePassword(user, password);
+
+		return authenticated;
+	}
+	
 	/**
 	 * After a successful connect, one has to authenticate oneself. The
 	 * authentication method "publickey" works by signing a challenge sent by
@@ -445,59 +472,6 @@ public class Connection
 
 		return authenticated;
 	}
-	
-	/**
-	 * After a successful connect, one has to authenticate oneself. The
-	 * authentication method "publickey" works by signing a challenge sent by
-	 * the server. The signature is either DSA or RSA based - it just depends on
-	 * the type of private key you specify, either a DSA or RSA private key in
-	 * PEM format. And yes, this is may seem to be a little confusing, the
-	 * method is called "publickey" in the SSH-2 protocol specification, however
-	 * since we need to generate a signature, you actually have to supply a
-	 * private key =).
-	 * <p>
-	 * If the authentication phase is complete, <code>true</code> will be
-	 * returned. If the server does not accept the request (or if further
-	 * authentication steps are needed), <code>false</code> is returned and
-	 * one can retry either by using this or any other authentication method
-	 * (use the <code>getRemainingAuthMethods</code> method to get a list of
-	 * the remaining possible methods).
-	 * 
-	 * @param user
-	 *            A <code>String</code> holding the username.
-	 * @param key
-	 *            A <code>RSAPrivateKey</code> or <code>DSAPrivateKey</code>
-	 *            containing a DSA or RSA private key of
-	 *            the user in Trilead object format.
-	 * 
-	 * @return whether the connection is now authenticated.
-	 * @throws IOException
-	 */
-	public synchronized boolean authenticateWithPublicKey(String user, Object key)
-			throws IOException
-	{
-		if (tm == null)
-			throw new IllegalStateException("Connection is not established!");
-
-		if (authenticated)
-			throw new IllegalStateException("Connection is already authenticated!");
-
-		if (am == null)
-			am = new AuthenticationManager(tm);
-
-		if (cm == null)
-			cm = new ChannelManager(tm);
-
-		if (user == null)
-			throw new IllegalArgumentException("user argument is null");
-
-		if (key == null)
-			throw new IllegalArgumentException("Key argument is null");
-
-		authenticated = am.authenticatePublicKey(user, key, getOrCreateSecureRND());
-
-		return authenticated;
-	}
 	/**
 	 * A convenience wrapper function which reads in a private key (PEM format,
 	 * either DSA or RSA) and then calls
@@ -550,43 +524,80 @@ public class Connection
 	}
 
 	/**
-	 * Add a {@link ConnectionMonitor} to this connection. Can be invoked at any
-	 * time, but it is best to add connection monitors before invoking
-	 * <code>connect()</code> to avoid glitches (e.g., you add a connection
-	 * monitor after a successful connect(), but the connection has died in the
-	 * mean time. Then, your connection monitor won't be notified.)
+	 * After a successful connect, one has to authenticate oneself. The
+	 * authentication method "publickey" works by signing a challenge sent by
+	 * the server. The signature is either DSA or RSA based - it just depends on
+	 * the type of private key you specify, either a DSA or RSA private key in
+	 * PEM format. And yes, this is may seem to be a little confusing, the
+	 * method is called "publickey" in the SSH-2 protocol specification, however
+	 * since we need to generate a signature, you actually have to supply a
+	 * private key =).
 	 * <p>
-	 * You can add as many monitors as you like.
+	 * If the authentication phase is complete, <code>true</code> will be
+	 * returned. If the server does not accept the request (or if further
+	 * authentication steps are needed), <code>false</code> is returned and
+	 * one can retry either by using this or any other authentication method
+	 * (use the <code>getRemainingAuthMethods</code> method to get a list of
+	 * the remaining possible methods).
 	 * 
-	 * @see ConnectionMonitor
+	 * @param user
+	 *            A <code>String</code> holding the username.
+	 * @param key
+	 *            A <code>RSAPrivateKey</code> or <code>DSAPrivateKey</code>
+	 *            containing a DSA or RSA private key of
+	 *            the user in Trilead object format.
 	 * 
-	 * @param cmon
-	 *            An object implementing the <code>ConnectionMonitor</code>
-	 *            interface.
+	 * @return whether the connection is now authenticated.
+	 * @throws IOException
 	 */
-	public synchronized void addConnectionMonitor(ConnectionMonitor cmon)
+	public synchronized boolean authenticateWithPublicKey(String user, Object key)
+			throws IOException
 	{
-		if (cmon == null)
-			throw new IllegalArgumentException("cmon argument is null");
+		if (tm == null)
+			throw new IllegalStateException("Connection is not established!");
 
-		connectionMonitors.addElement(cmon);
+		if (authenticated)
+			throw new IllegalStateException("Connection is already authenticated!");
 
-		if (tm != null)
-			tm.setConnectionMonitors(connectionMonitors);
+		if (am == null)
+			am = new AuthenticationManager(tm);
+
+		if (cm == null)
+			cm = new ChannelManager(tm);
+
+		if (user == null)
+			throw new IllegalArgumentException("user argument is null");
+
+		if (key == null)
+			throw new IllegalArgumentException("Key argument is null");
+
+		authenticated = am.authenticatePublicKey(user, key, getOrCreateSecureRND());
+
+		return authenticated;
 	}
 
 	/**
-	 * Controls whether compression is used on the link or not.
-	 * <p>
-	 * Note: This can only be called before connect()
-	 * @param enabled whether to enable compression
+	 * Cancel an earlier requested remote port forwarding. Currently active
+	 * forwardings will not be affected (e.g., disrupted). Note that further
+	 * connection forwarding requests may be received until this method has
+	 * returned.
+	 * 
+	 * @param bindPort
+	 *            the allocated port number on the server
 	 * @throws IOException
+	 *             if the remote side refuses the cancel request or another low
+	 *             level error occurs (e.g., the underlying connection is
+	 *             closed)
 	 */
-	public synchronized void setCompression(boolean enabled) throws IOException {
-		if (tm != null)
-			throw new IOException("Connection to " + hostname + " is already in connected state!");
-		
-		compression = enabled;
+	public synchronized void cancelRemotePortForwarding(int bindPort) throws IOException
+	{
+		if (tm == null)
+			throw new IllegalStateException("You need to establish a connection first.");
+
+		if (!authenticated)
+			throw new IllegalStateException("The connection is not authenticated.");
+
+		cm.requestCancelGlobalForward(bindPort);
 	}
 	
 	/**
@@ -782,6 +793,7 @@ public class Connection
 			{
 				final Runnable timeoutHandler = new Runnable()
 				{
+					@Override
 					public void run()
 					{
 						synchronized (state)
@@ -867,26 +879,22 @@ public class Connection
 	}
 
 	/**
-	 * Creates a new {@link LocalPortForwarder}. A
-	 * <code>LocalPortForwarder</code> forwards TCP/IP connections that arrive
-	 * at a local port via the secure tunnel to another host (which may or may
-	 * not be identical to the remote SSH-2 server).
+	 * Creates a new {@link DynamicPortForwarder}. A
+	 * <code>DynamicPortForwarder</code> forwards TCP/IP connections that arrive
+	 * at a local port via the secure tunnel to another host that is chosen via
+	 * the SOCKS protocol.
 	 * <p>
 	 * This method must only be called after one has passed successfully the
 	 * authentication step. There is no limit on the number of concurrent
 	 * forwardings.
 	 * 
-	 * @param local_port
-	 *            the local port the LocalPortForwarder shall bind to.
-	 * @param host_to_connect
-	 *            target address (IP or hostname)
-	 * @param port_to_connect
-	 *            target port
-	 * @return A {@link LocalPortForwarder} object.
+	 * @param addr
+	 *            specifies the InetSocketAddress where the local socket shall
+	 *            be bound to.
+	 * @return A {@link DynamicPortForwarder} object.
 	 * @throws IOException
 	 */
-	public synchronized LocalPortForwarder createLocalPortForwarder(int local_port, String host_to_connect,
-			int port_to_connect) throws IOException
+	public synchronized DynamicPortForwarder createDynamicPortForwarder(InetSocketAddress addr) throws IOException
 	{
 		if (tm == null)
 			throw new IllegalStateException("Cannot forward ports, you need to establish a connection first.");
@@ -894,7 +902,32 @@ public class Connection
 		if (!authenticated)
 			throw new IllegalStateException("Cannot forward ports, connection is not authenticated.");
 
-		return new LocalPortForwarder(cm, local_port, host_to_connect, port_to_connect);
+		return new DynamicPortForwarder(cm, addr);
+	}
+
+	/**
+	 * Creates a new {@link DynamicPortForwarder}. A
+	 * <code>DynamicPortForwarder</code> forwards TCP/IP connections that arrive
+	 * at a local port via the secure tunnel to another host that is chosen via
+	 * the SOCKS protocol.
+	 * <p>
+	 * This method must only be called after one has passed successfully the
+	 * authentication step. There is no limit on the number of concurrent
+	 * forwardings.
+	 * 
+	 * @param local_port
+	 * @return A {@link DynamicPortForwarder} object.
+	 * @throws IOException
+	 */
+	public synchronized DynamicPortForwarder createDynamicPortForwarder(int local_port) throws IOException
+	{
+		if (tm == null)
+			throw new IllegalStateException("Cannot forward ports, you need to establish a connection first.");
+
+		if (!authenticated)
+			throw new IllegalStateException("Cannot forward ports, connection is not authenticated.");
+
+		return new DynamicPortForwarder(cm, local_port);
 	}
 
 	/**
@@ -930,6 +963,37 @@ public class Connection
 	}
 
 	/**
+	 * Creates a new {@link LocalPortForwarder}. A
+	 * <code>LocalPortForwarder</code> forwards TCP/IP connections that arrive
+	 * at a local port via the secure tunnel to another host (which may or may
+	 * not be identical to the remote SSH-2 server).
+	 * <p>
+	 * This method must only be called after one has passed successfully the
+	 * authentication step. There is no limit on the number of concurrent
+	 * forwardings.
+	 * 
+	 * @param local_port
+	 *            the local port the LocalPortForwarder shall bind to.
+	 * @param host_to_connect
+	 *            target address (IP or hostname)
+	 * @param port_to_connect
+	 *            target port
+	 * @return A {@link LocalPortForwarder} object.
+	 * @throws IOException
+	 */
+	public synchronized LocalPortForwarder createLocalPortForwarder(int local_port, String host_to_connect,
+			int port_to_connect) throws IOException
+	{
+		if (tm == null)
+			throw new IllegalStateException("Cannot forward ports, you need to establish a connection first.");
+
+		if (!authenticated)
+			throw new IllegalStateException("Cannot forward ports, connection is not authenticated.");
+
+		return new LocalPortForwarder(cm, local_port, host_to_connect, port_to_connect);
+	}
+	
+	/**
 	 * Creates a new {@link LocalStreamForwarder}. A
 	 * <code>LocalStreamForwarder</code> manages an Input/Outputstream pair
 	 * that is being forwarded via the secure tunnel into a TCP/IP connection to
@@ -951,58 +1015,6 @@ public class Connection
 			throw new IllegalStateException("Cannot forward, connection is not authenticated.");
 
 		return new LocalStreamForwarder(cm, host_to_connect, port_to_connect);
-	}
-
-	/**
-	 * Creates a new {@link DynamicPortForwarder}. A
-	 * <code>DynamicPortForwarder</code> forwards TCP/IP connections that arrive
-	 * at a local port via the secure tunnel to another host that is chosen via
-	 * the SOCKS protocol.
-	 * <p>
-	 * This method must only be called after one has passed successfully the
-	 * authentication step. There is no limit on the number of concurrent
-	 * forwardings.
-	 * 
-	 * @param local_port
-	 * @return A {@link DynamicPortForwarder} object.
-	 * @throws IOException
-	 */
-	public synchronized DynamicPortForwarder createDynamicPortForwarder(int local_port) throws IOException
-	{
-		if (tm == null)
-			throw new IllegalStateException("Cannot forward ports, you need to establish a connection first.");
-
-		if (!authenticated)
-			throw new IllegalStateException("Cannot forward ports, connection is not authenticated.");
-
-		return new DynamicPortForwarder(cm, local_port);
-	}
-	
-	/**
-	 * Creates a new {@link DynamicPortForwarder}. A
-	 * <code>DynamicPortForwarder</code> forwards TCP/IP connections that arrive
-	 * at a local port via the secure tunnel to another host that is chosen via
-	 * the SOCKS protocol.
-	 * <p>
-	 * This method must only be called after one has passed successfully the
-	 * authentication step. There is no limit on the number of concurrent
-	 * forwardings.
-	 * 
-	 * @param addr
-	 *            specifies the InetSocketAddress where the local socket shall
-	 *            be bound to.
-	 * @return A {@link DynamicPortForwarder} object.
-	 * @throws IOException
-	 */
-	public synchronized DynamicPortForwarder createDynamicPortForwarder(InetSocketAddress addr) throws IOException
-	{
-		if (tm == null)
-			throw new IllegalStateException("Cannot forward ports, you need to establish a connection first.");
-
-		if (!authenticated)
-			throw new IllegalStateException("Cannot forward ports, connection is not authenticated.");
-
-		return new DynamicPortForwarder(cm, addr);
 	}
 	
 	/**
@@ -1029,6 +1041,51 @@ public class Connection
 	}
 
 	/**
+	 * Enable/disable debug logging. <b>Only do this when requested by Trilead
+	 * support.</b>
+	 * <p>
+	 * For speed reasons, some static variables used to check whether debugging
+	 * is enabled are not protected with locks. In other words, if you
+	 * dynamicaly enable/disable debug logging, then some threads may still use
+	 * the old setting. To be on the safe side, enable debugging before doing
+	 * the <code>connect()</code> call.
+	 * 
+	 * @param enable
+	 *            on/off
+	 * @param logger
+	 *            a {@link DebugLogger DebugLogger} instance, <code>null</code>
+	 *            means logging using the simple logger which logs all messages
+	 *            to to stderr. Ignored if enabled is <code>false</code>
+	 */
+	public synchronized void enableDebugging(boolean enable, DebugLogger logger)
+	{
+		Logger.enabled = enable;
+
+		if (enable == false)
+		{
+			Logger.logger = null;
+		}
+		else
+		{
+			if (logger == null)
+			{
+				logger = new DebugLogger()
+				{
+
+					@Override
+					public void log(int level, String className, String message)
+					{
+						long now = System.currentTimeMillis();
+						System.err.println(now + " : " + className + ": " + message);
+					}
+				};
+			}
+
+			Logger.logger = logger;
+		}
+	}
+
+	/**
 	 * Force an asynchronous key re-exchange (the call does not block). The
 	 * latest values set for MAC, Cipher and DH group exchange parameters will
 	 * be used. If a key exchange is currently in progress, then this method has
@@ -1050,26 +1107,6 @@ public class Connection
 	}
 
 	/**
-	 * Returns the hostname that was passed to the constructor.
-	 * 
-	 * @return the hostname
-	 */
-	public synchronized String getHostname()
-	{
-		return hostname;
-	}
-
-	/**
-	 * Returns the port that was passed to the constructor.
-	 * 
-	 * @return the TCP port
-	 */
-	public synchronized int getPort()
-	{
-		return port;
-	}
-
-	/**
 	 * Returns a {@link ConnectionInfo} object containing the details of the
 	 * connection. Can be called as soon as the connection has been established
 	 * (successfully connected).
@@ -1084,6 +1121,34 @@ public class Connection
 			throw new IllegalStateException(
 					"Cannot get details of connection, you need to establish a connection first.");
 		return tm.getConnectionInfo(1);
+	}
+
+	/**
+	 * Returns the hostname that was passed to the constructor.
+	 * 
+	 * @return the hostname
+	 */
+	public synchronized String getHostname()
+	{
+		return hostname;
+	}
+
+	private final SecureRandom getOrCreateSecureRND()
+	{
+		if (generator == null)
+			generator = new SecureRandom();
+
+		return generator;
+	}
+
+	/**
+	 * Returns the port that was passed to the constructor.
+	 * 
+	 * @return the TCP port
+	 */
+	public synchronized int getPort()
+	{
+		return port;
 	}
 
 	/**
@@ -1192,14 +1257,6 @@ public class Connection
 		return false;
 	}
 
-	private final SecureRandom getOrCreateSecureRND()
-	{
-		if (generator == null)
-			generator = new SecureRandom();
-
-		return generator;
-	}
-
 	/**
 	 * Open a new {@link Session} on this connection. Works only after one has
 	 * passed successfully the authentication step. There is no limit on the
@@ -1220,44 +1277,32 @@ public class Connection
 	}
 
 	/**
-	 * Send an SSH_MSG_IGNORE packet. This method will generate a random data
-	 * attribute (length between 0 (invlusive) and 16 (exclusive) bytes,
-	 * contents are random bytes).
+	 * This method can be used to perform end-to-end connection testing. It
+	 * sends a 'ping' message to the server and waits for the 'pong' from the
+	 * server.
 	 * <p>
-	 * This method must only be called once the connection is established.
+	 * When this method throws an exception, then you can assume that the
+	 * connection should be abandoned.
+	 * <p>
+	 * Note: Works only after one has passed successfully the authentication
+	 * step.
+	 * <p>
+	 * Implementation details: this method sends a SSH_MSG_GLOBAL_REQUEST
+	 * request ('trilead-ping') to the server and waits for the
+	 * SSH_MSG_REQUEST_FAILURE reply packet from the server.
 	 * 
 	 * @throws IOException
+	 *             in case of any problem
 	 */
-	public synchronized void sendIgnorePacket() throws IOException
+	public synchronized void ping() throws IOException
 	{
-		SecureRandom rnd = getOrCreateSecureRND();
-
-		byte[] data = new byte[rnd.nextInt(16)];
-		rnd.nextBytes(data);
-
-		sendIgnorePacket(data);
-	}
-
-	/**
-	 * Send an SSH_MSG_IGNORE packet with the given data attribute.
-	 * <p>
-	 * This method must only be called once the connection is established.
-	 * 
-	 * @throws IOException
-	 */
-	public synchronized void sendIgnorePacket(byte[] data) throws IOException
-	{
-		if (data == null)
-			throw new IllegalArgumentException("data argument must not be null.");
-
 		if (tm == null)
-			throw new IllegalStateException(
-					"Cannot send SSH_MSG_IGNORE packet, you need to establish a connection first.");
+			throw new IllegalStateException("You need to establish a connection first.");
 
-		PacketIgnore pi = new PacketIgnore();
-		pi.setData(data);
+		if (!authenticated)
+			throw new IllegalStateException("The connection is not authenticated.");
 
-		tm.sendMessage(pi.getPayload());
+		cm.requestGlobalTrileadPing();
 	}
 
 	/**
@@ -1309,6 +1354,106 @@ public class Connection
 	}
 
 	/**
+	 * Request a remote port forwarding. If successful, then forwarded
+	 * connections will be redirected to the given target address. You can
+	 * cancle a requested remote port forwarding by calling
+	 * {@link #cancelRemotePortForwarding(int) cancelRemotePortForwarding()}.
+	 * <p>
+	 * A call of this method will block until the peer either agreed or
+	 * disagreed to your request-
+	 * <p>
+	 * Note 1: this method typically fails if you
+	 * <ul>
+	 * <li>pass a port number for which the used remote user has not enough
+	 * permissions (i.e., port &lt; 1024)</li>
+	 * <li>or pass a port number that is already in use on the remote server</li>
+	 * <li>or if remote port forwarding is disabled on the server.</li>
+	 * </ul>
+	 * <p>
+	 * Note 2: (from the openssh man page): By default, the listening socket on
+	 * the server will be bound to the loopback interface only. This may be
+	 * overriden by specifying a bind address. Specifying a remote bind address
+	 * will only succeed if the server's <b>GatewayPorts</b> option is enabled
+	 * (see sshd_config(5)).
+	 * 
+	 * @param bindAddress
+	 *            address to bind to on the server:
+	 *            <ul>
+	 *            <li>"" means that connections are to be accepted on all
+	 *            protocol families supported by the SSH implementation</li>
+	 *            <li>"0.0.0.0" means to listen on all IPv4 addresses</li>
+	 *            <li>"::" means to listen on all IPv6 addresses</li>
+	 *            <li>"localhost" means to listen on all protocol families
+	 *            supported by the SSH implementation on loopback addresses
+	 *            only, [RFC3330] and RFC3513]</li>
+	 *            <li>"127.0.0.1" and "::1" indicate listening on the loopback
+	 *            interfaces for IPv4 and IPv6 respectively</li>
+	 *            </ul>
+	 * @param bindPort
+	 *            port number to bind on the server (must be &gt; 0)
+	 * @param targetAddress
+	 *            the target address (IP or hostname)
+	 * @param targetPort
+	 *            the target port
+	 * @throws IOException
+	 */
+	public synchronized void requestRemotePortForwarding(String bindAddress, int bindPort, String targetAddress,
+			int targetPort) throws IOException
+	{
+		if (tm == null)
+			throw new IllegalStateException("You need to establish a connection first.");
+
+		if (!authenticated)
+			throw new IllegalStateException("The connection is not authenticated.");
+
+		if ((bindAddress == null) || (targetAddress == null) || (bindPort <= 0) || (targetPort <= 0))
+			throw new IllegalArgumentException();
+
+		cm.requestGlobalForward(bindAddress, bindPort, targetAddress, targetPort);
+	}
+
+	/**
+	 * Send an SSH_MSG_IGNORE packet. This method will generate a random data
+	 * attribute (length between 0 (invlusive) and 16 (exclusive) bytes,
+	 * contents are random bytes).
+	 * <p>
+	 * This method must only be called once the connection is established.
+	 * 
+	 * @throws IOException
+	 */
+	public synchronized void sendIgnorePacket() throws IOException
+	{
+		SecureRandom rnd = getOrCreateSecureRND();
+
+		byte[] data = new byte[rnd.nextInt(16)];
+		rnd.nextBytes(data);
+
+		sendIgnorePacket(data);
+	}
+
+	/**
+	 * Send an SSH_MSG_IGNORE packet with the given data attribute.
+	 * <p>
+	 * This method must only be called once the connection is established.
+	 * 
+	 * @throws IOException
+	 */
+	public synchronized void sendIgnorePacket(byte[] data) throws IOException
+	{
+		if (data == null)
+			throw new IllegalArgumentException("data argument must not be null.");
+
+		if (tm == null)
+			throw new IllegalStateException(
+					"Cannot send SSH_MSG_IGNORE packet, you need to establish a connection first.");
+
+		PacketIgnore pi = new PacketIgnore();
+		pi.setData(data);
+
+		tm.sendMessage(pi.getPayload());
+	}
+
+	/**
 	 * Unless you know what you are doing, you will never need this.
 	 * 
 	 * @param ciphers
@@ -1337,6 +1482,20 @@ public class Connection
 	}
 
 	/**
+	 * Controls whether compression is used on the link or not.
+	 * <p>
+	 * Note: This can only be called before connect()
+	 * @param enabled whether to enable compression
+	 * @throws IOException
+	 */
+	public synchronized void setCompression(boolean enabled) throws IOException {
+		if (tm != null)
+			throw new IOException("Connection to " + hostname + " is already in connected state!");
+		
+		compression = enabled;
+	}
+
+	/**
 	 * Sets the parameters for the diffie-hellman group exchange. Unless you
 	 * know what you are doing, you will never need this. Default values are
 	 * defined in the {@link DHGexParameters} class.
@@ -1351,6 +1510,47 @@ public class Connection
 			throw new IllegalArgumentException();
 
 		dhgexpara = dgp;
+	}
+
+	/**
+	 * Used to tell the library that the connection shall be established through
+	 * a proxy server. It only makes sense to call this method before calling
+	 * the {@link #connect() connect()} method.
+	 * <p>
+	 * At the moment, only HTTP proxies are supported.
+	 * <p>
+	 * Note: This method can be called any number of times. The
+	 * {@link #connect() connect()} method will use the value set in the last
+	 * preceding invocation of this method.
+	 * 
+	 * @see HTTPProxyData
+	 * 
+	 * @param proxyData
+	 *            Connection information about the proxy. If <code>null</code>,
+	 *            then no proxy will be used (non surprisingly, this is also the
+	 *            default).
+	 */
+	public synchronized void setProxyData(ProxyData proxyData)
+	{
+		this.proxyData = proxyData;
+	}
+
+	/**
+	 * Provide your own instance of SecureRandom. Can be used, e.g., if you want
+	 * to seed the used SecureRandom generator manually.
+	 * <p>
+	 * The SecureRandom instance is used during key exchanges, public key
+	 * authentication, x11 cookie generation and the like.
+	 * 
+	 * @param rnd
+	 *            a SecureRandom instance
+	 */
+	public synchronized void setSecureRandom(SecureRandom rnd)
+	{
+		if (rnd == null)
+			throw new IllegalArgumentException();
+
+		this.generator = rnd;
 	}
 
 	/**
@@ -1424,202 +1624,5 @@ public class Connection
 
 		if (tm != null)
 			tm.setTcpNoDelay(enable);
-	}
-
-	/**
-	 * Used to tell the library that the connection shall be established through
-	 * a proxy server. It only makes sense to call this method before calling
-	 * the {@link #connect() connect()} method.
-	 * <p>
-	 * At the moment, only HTTP proxies are supported.
-	 * <p>
-	 * Note: This method can be called any number of times. The
-	 * {@link #connect() connect()} method will use the value set in the last
-	 * preceding invocation of this method.
-	 * 
-	 * @see HTTPProxyData
-	 * 
-	 * @param proxyData
-	 *            Connection information about the proxy. If <code>null</code>,
-	 *            then no proxy will be used (non surprisingly, this is also the
-	 *            default).
-	 */
-	public synchronized void setProxyData(ProxyData proxyData)
-	{
-		this.proxyData = proxyData;
-	}
-
-	/**
-	 * Request a remote port forwarding. If successful, then forwarded
-	 * connections will be redirected to the given target address. You can
-	 * cancle a requested remote port forwarding by calling
-	 * {@link #cancelRemotePortForwarding(int) cancelRemotePortForwarding()}.
-	 * <p>
-	 * A call of this method will block until the peer either agreed or
-	 * disagreed to your request-
-	 * <p>
-	 * Note 1: this method typically fails if you
-	 * <ul>
-	 * <li>pass a port number for which the used remote user has not enough
-	 * permissions (i.e., port &lt; 1024)</li>
-	 * <li>or pass a port number that is already in use on the remote server</li>
-	 * <li>or if remote port forwarding is disabled on the server.</li>
-	 * </ul>
-	 * <p>
-	 * Note 2: (from the openssh man page): By default, the listening socket on
-	 * the server will be bound to the loopback interface only. This may be
-	 * overriden by specifying a bind address. Specifying a remote bind address
-	 * will only succeed if the server's <b>GatewayPorts</b> option is enabled
-	 * (see sshd_config(5)).
-	 * 
-	 * @param bindAddress
-	 *            address to bind to on the server:
-	 *            <ul>
-	 *            <li>"" means that connections are to be accepted on all
-	 *            protocol families supported by the SSH implementation</li>
-	 *            <li>"0.0.0.0" means to listen on all IPv4 addresses</li>
-	 *            <li>"::" means to listen on all IPv6 addresses</li>
-	 *            <li>"localhost" means to listen on all protocol families
-	 *            supported by the SSH implementation on loopback addresses
-	 *            only, [RFC3330] and RFC3513]</li>
-	 *            <li>"127.0.0.1" and "::1" indicate listening on the loopback
-	 *            interfaces for IPv4 and IPv6 respectively</li>
-	 *            </ul>
-	 * @param bindPort
-	 *            port number to bind on the server (must be &gt; 0)
-	 * @param targetAddress
-	 *            the target address (IP or hostname)
-	 * @param targetPort
-	 *            the target port
-	 * @throws IOException
-	 */
-	public synchronized void requestRemotePortForwarding(String bindAddress, int bindPort, String targetAddress,
-			int targetPort) throws IOException
-	{
-		if (tm == null)
-			throw new IllegalStateException("You need to establish a connection first.");
-
-		if (!authenticated)
-			throw new IllegalStateException("The connection is not authenticated.");
-
-		if ((bindAddress == null) || (targetAddress == null) || (bindPort <= 0) || (targetPort <= 0))
-			throw new IllegalArgumentException();
-
-		cm.requestGlobalForward(bindAddress, bindPort, targetAddress, targetPort);
-	}
-
-	/**
-	 * Cancel an earlier requested remote port forwarding. Currently active
-	 * forwardings will not be affected (e.g., disrupted). Note that further
-	 * connection forwarding requests may be received until this method has
-	 * returned.
-	 * 
-	 * @param bindPort
-	 *            the allocated port number on the server
-	 * @throws IOException
-	 *             if the remote side refuses the cancel request or another low
-	 *             level error occurs (e.g., the underlying connection is
-	 *             closed)
-	 */
-	public synchronized void cancelRemotePortForwarding(int bindPort) throws IOException
-	{
-		if (tm == null)
-			throw new IllegalStateException("You need to establish a connection first.");
-
-		if (!authenticated)
-			throw new IllegalStateException("The connection is not authenticated.");
-
-		cm.requestCancelGlobalForward(bindPort);
-	}
-
-	/**
-	 * Provide your own instance of SecureRandom. Can be used, e.g., if you want
-	 * to seed the used SecureRandom generator manually.
-	 * <p>
-	 * The SecureRandom instance is used during key exchanges, public key
-	 * authentication, x11 cookie generation and the like.
-	 * 
-	 * @param rnd
-	 *            a SecureRandom instance
-	 */
-	public synchronized void setSecureRandom(SecureRandom rnd)
-	{
-		if (rnd == null)
-			throw new IllegalArgumentException();
-
-		this.generator = rnd;
-	}
-
-	/**
-	 * Enable/disable debug logging. <b>Only do this when requested by Trilead
-	 * support.</b>
-	 * <p>
-	 * For speed reasons, some static variables used to check whether debugging
-	 * is enabled are not protected with locks. In other words, if you
-	 * dynamicaly enable/disable debug logging, then some threads may still use
-	 * the old setting. To be on the safe side, enable debugging before doing
-	 * the <code>connect()</code> call.
-	 * 
-	 * @param enable
-	 *            on/off
-	 * @param logger
-	 *            a {@link DebugLogger DebugLogger} instance, <code>null</code>
-	 *            means logging using the simple logger which logs all messages
-	 *            to to stderr. Ignored if enabled is <code>false</code>
-	 */
-	public synchronized void enableDebugging(boolean enable, DebugLogger logger)
-	{
-		Logger.enabled = enable;
-
-		if (enable == false)
-		{
-			Logger.logger = null;
-		}
-		else
-		{
-			if (logger == null)
-			{
-				logger = new DebugLogger()
-				{
-
-					public void log(int level, String className, String message)
-					{
-						long now = System.currentTimeMillis();
-						System.err.println(now + " : " + className + ": " + message);
-					}
-				};
-			}
-
-			Logger.logger = logger;
-		}
-	}
-
-	/**
-	 * This method can be used to perform end-to-end connection testing. It
-	 * sends a 'ping' message to the server and waits for the 'pong' from the
-	 * server.
-	 * <p>
-	 * When this method throws an exception, then you can assume that the
-	 * connection should be abandoned.
-	 * <p>
-	 * Note: Works only after one has passed successfully the authentication
-	 * step.
-	 * <p>
-	 * Implementation details: this method sends a SSH_MSG_GLOBAL_REQUEST
-	 * request ('trilead-ping') to the server and waits for the
-	 * SSH_MSG_REQUEST_FAILURE reply packet from the server.
-	 * 
-	 * @throws IOException
-	 *             in case of any problem
-	 */
-	public synchronized void ping() throws IOException
-	{
-		if (tm == null)
-			throw new IllegalStateException("You need to establish a connection first.");
-
-		if (!authenticated)
-			throw new IllegalStateException("The connection is not authenticated.");
-
-		cm.requestGlobalTrileadPing();
 	}
 }

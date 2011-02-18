@@ -74,6 +74,34 @@ public class SFTPv3FileAttributes
 	public Long mtime = null;
 
 	/**
+	 * Turn the POSIX permissions into a 7 digit octal representation.
+	 * Note: the returned value is first masked with <code>0177777</code>.
+	 * 
+	 * @return <code>NULL</code> if permissions are not available.
+	 */
+	public String getOctalPermissions()
+	{
+		if (permissions == null)
+			return null;
+
+		String res = Integer.toString(permissions.intValue() & 0177777, 8);
+
+		StringBuffer sb = new StringBuffer();
+
+		int leadingZeros = 7 - res.length();
+
+		while (leadingZeros > 0)
+		{
+			sb.append('0');
+			leadingZeros--;
+		}
+
+		sb.append(res);
+
+		return sb.toString();
+	}
+	
+	/**
 	 * Checks if this entry is a directory.
 	 * 
 	 * @return Returns true if permissions are available and they indicate
@@ -113,33 +141,5 @@ public class SFTPv3FileAttributes
 			return false;
 		
 		return ((permissions.intValue() & 0120000) != 0);
-	}
-	
-	/**
-	 * Turn the POSIX permissions into a 7 digit octal representation.
-	 * Note: the returned value is first masked with <code>0177777</code>.
-	 * 
-	 * @return <code>NULL</code> if permissions are not available.
-	 */
-	public String getOctalPermissions()
-	{
-		if (permissions == null)
-			return null;
-
-		String res = Integer.toString(permissions.intValue() & 0177777, 8);
-
-		StringBuffer sb = new StringBuffer();
-
-		int leadingZeros = 7 - res.length();
-
-		while (leadingZeros > 0)
-		{
-			sb.append('0');
-			leadingZeros--;
-		}
-
-		sb.append(res);
-
-		return sb.toString();
 	}
 }

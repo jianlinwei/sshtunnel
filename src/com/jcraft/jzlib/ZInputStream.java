@@ -33,7 +33,9 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 package com.jcraft.jzlib;
-import java.io.*;
+import java.io.FilterInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 
 public class ZInputStream extends FilterInputStream {
 
@@ -46,9 +48,11 @@ public class ZInputStream extends FilterInputStream {
 
   protected InputStream in=null;
 
+  private boolean nomoreinput=false;
   public ZInputStream(InputStream in) {
     this(in, false);
   }
+
   public ZInputStream(InputStream in, boolean nowrap) {
     super(in);
     this.in=in;
@@ -58,6 +62,10 @@ public class ZInputStream extends FilterInputStream {
     z.next_in_index=0;
     z.avail_in=0;
   }
+
+  /*public int available() throws IOException {
+    return inf.finished() ? 0 : 1;
+  }*/
 
   public ZInputStream(InputStream in, int level) {
     super(in);
@@ -69,19 +77,38 @@ public class ZInputStream extends FilterInputStream {
     z.avail_in=0;
   }
 
-  /*public int available() throws IOException {
-    return inf.finished() ? 0 : 1;
-  }*/
+  @Override
+public void close() throws IOException{
+    in.close();
+  }
 
-  public int read() throws IOException {
+  public int getFlushMode() {
+    return(flush);
+  }
+
+  /**
+   * Returns the total number of bytes input so far.
+   */
+  public long getTotalIn() {
+    return z.total_in;
+  }
+
+  /**
+   * Returns the total number of bytes output so far.
+   */
+  public long getTotalOut() {
+    return z.total_out;
+  }
+
+  @Override
+public int read() throws IOException {
     if(read(buf1, 0, 1)==-1)
       return(-1);
     return(buf1[0]&0xFF);
   }
 
-  private boolean nomoreinput=false;
-
-  public int read(byte[] b, int off, int len) throws IOException {
+  @Override
+public int read(byte[] b, int off, int len) throws IOException {
     if(len==0)
       return(0);
     int err;
@@ -113,37 +140,16 @@ public class ZInputStream extends FilterInputStream {
     return(len-z.avail_out);
   }
 
-  public long skip(long n) throws IOException {
-    int len=512;
-    if(n<len)
-      len=(int)n;
-    byte[] tmp=new byte[len];
-    return((long)read(tmp));
-  }
-
-  public int getFlushMode() {
-    return(flush);
-  }
-
   public void setFlushMode(int flush) {
     this.flush=flush;
   }
 
-  /**
-   * Returns the total number of bytes input so far.
-   */
-  public long getTotalIn() {
-    return z.total_in;
-  }
-
-  /**
-   * Returns the total number of bytes output so far.
-   */
-  public long getTotalOut() {
-    return z.total_out;
-  }
-
-  public void close() throws IOException{
-    in.close();
+  @Override
+public long skip(long n) throws IOException {
+    int len=512;
+    if(n<len)
+      len=(int)n;
+    byte[] tmp=new byte[len];
+    return(read(tmp));
   }
 }

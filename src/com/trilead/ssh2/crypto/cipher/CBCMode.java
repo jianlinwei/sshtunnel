@@ -15,10 +15,6 @@ public class CBCMode implements BlockCipher
 	byte[] cbc_vector;
 	byte[] tmp_vector;
 
-	public void init(boolean forEncryption, byte[] key)
-	{
-	}
-	
 	public CBCMode(BlockCipher tc, byte[] iv, boolean doEncrypt)
 			throws IllegalArgumentException
 	{
@@ -34,22 +30,7 @@ public class CBCMode implements BlockCipher
 		this.tmp_vector = new byte[blockSize];
 		System.arraycopy(iv, 0, cbc_vector, 0, blockSize);
 	}
-
-	public int getBlockSize()
-	{
-		return blockSize;
-	}
-
-	private void encryptBlock(byte[] src, int srcoff, byte[] dst, int dstoff)
-	{
-		for (int i = 0; i < blockSize; i++)
-			cbc_vector[i] ^= src[srcoff + i];
-
-		tc.transformBlock(cbc_vector, 0, dst, dstoff);
-
-		System.arraycopy(dst, dstoff, cbc_vector, 0, blockSize);
-	}
-
+	
 	private void decryptBlock(byte[] src, int srcoff, byte[] dst, int dstoff)
 	{
 		/* Assume the worst, src and dst are overlapping... */
@@ -68,6 +49,28 @@ public class CBCMode implements BlockCipher
 		tmp_vector = swap;
 	}
 
+	private void encryptBlock(byte[] src, int srcoff, byte[] dst, int dstoff)
+	{
+		for (int i = 0; i < blockSize; i++)
+			cbc_vector[i] ^= src[srcoff + i];
+
+		tc.transformBlock(cbc_vector, 0, dst, dstoff);
+
+		System.arraycopy(dst, dstoff, cbc_vector, 0, blockSize);
+	}
+
+	@Override
+	public int getBlockSize()
+	{
+		return blockSize;
+	}
+
+	@Override
+	public void init(boolean forEncryption, byte[] key)
+	{
+	}
+
+	@Override
 	public void transformBlock(byte[] src, int srcoff, byte[] dst, int dstoff)
 	{
 		if (doEncrypt)

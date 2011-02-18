@@ -15,12 +15,6 @@ public class PacketIgnore
 
 	byte[] data;
 
-	public void setData(byte[] data)
-	{
-		this.data = data;
-		payload = null;
-	}
-
 	public PacketIgnore()
 	{
 	}
@@ -55,5 +49,11 @@ public class PacketIgnore
 			payload = tw.getBytes();
 		}
 		return payload;
+	}
+
+	public void setData(byte[] data)
+	{
+		this.data = data;
+		payload = null;
 	}
 }

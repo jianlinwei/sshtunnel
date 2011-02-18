@@ -42,6 +42,155 @@ public class Session
 	}
 
 	/**
+	 * Close this session. NEVER forget to call this method to free up resources -
+	 * even if you got an exception from one of the other methods (or when
+	 * getting an Exception on the Input- or OutputStreams). Sometimes these other
+	 * methods may throw an exception, saying that the underlying channel is
+	 * closed (this can happen, e.g., if the other server sent a close message.)
+	 * However, as long as you have not called the <code>close()</code>
+	 * method, you may be wasting (local) resources.
+	 * 
+	 */
+	public void close()
+	{
+		synchronized (this)
+		{
+			if (flag_closed)
+				return;
+
+			flag_closed = true;
+
+			if (x11FakeCookie != null)
+				cm.unRegisterX11Cookie(x11FakeCookie, true);
+
+			try
+			{
+				cm.closeChannel(cn, "Closed due to user request", true);
+			}
+			catch (IOException ignored)
+			{
+			}
+		}
+	}
+
+	/**
+	 * Execute a command on the remote machine.
+	 * 
+	 * @param cmd
+	 *            The command to execute on the remote host.
+	 * @throws IOException
+	 */
+	public void execCommand(String cmd) throws IOException
+	{
+		if (cmd == null)
+			throw new IllegalArgumentException("cmd argument may not be null");
+
+		synchronized (this)
+		{
+			/* The following is just a nicer error, we would catch it anyway later in the channel code */
+			if (flag_closed)
+				throw new IOException("This session is closed.");
+
+			if (flag_execution_started)
+				throw new IOException("A remote execution has already started.");
+
+			flag_execution_started = true;
+		}
+
+		cm.requestExecCommand(cn, cmd);
+	}
+
+	/**
+	 * Get the name of the signal by which the process on the remote side was
+	 * stopped - if available and applicable. Be careful - not all server
+	 * implementations return this value.
+	 * 
+	 * @return An <code>String</code> holding the name of the signal, or
+	 *         <code>null</code> if the process exited normally or is still
+	 *         running (or if the server forgot to send this information).
+	 */
+	public String getExitSignal()
+	{
+		return cn.getExitSignal();
+	}
+	
+	/**
+	 * Get the exit code/status from the remote command - if available. Be
+	 * careful - not all server implementations return this value. It is
+	 * generally a good idea to call this method only when all data from the
+	 * remote side has been consumed (see also the <code<WaitForCondition</code> method).
+	 * 
+	 * @return An <code>Integer</code> holding the exit code, or
+	 *         <code>null</code> if no exit code is (yet) available.
+	 */
+	public Integer getExitStatus()
+	{
+		return cn.getExitStatus();
+	}
+
+	public InputStream getStderr()
+	{
+		return cn.getStderrStream();
+	}
+
+	public OutputStream getStdin()
+	{
+		return cn.getStdinStream();
+	}
+
+	public InputStream getStdout()
+	{
+		return cn.getStdoutStream();
+	}
+
+	/**
+	 * This method can be used to perform end-to-end session (i.e., SSH channel)
+	 * testing. It sends a 'ping' message to the server and waits for the 'pong'
+	 * from the server.
+	 * <p>
+	 * Implementation details: this method sends a SSH_MSG_CHANNEL_REQUEST request
+	 * ('trilead-ping') to the server and waits for the SSH_MSG_CHANNEL_FAILURE reply
+	 * packet.
+	 * 
+	 * @throws IOException in case of any problem or when the session is closed
+	 */
+	public void ping() throws IOException
+	{
+		synchronized (this)
+		{
+			/*
+			 * The following is just a nicer error, we would catch it anyway
+			 * later in the channel code
+			 */
+			if (flag_closed)
+				throw new IOException("This session is closed.");
+		}
+
+		cm.requestChannelTrileadPing(cn);
+	}
+
+	/**
+	 * Request authentication agent forwarding.
+	 * @param agent object that implements the callbacks
+	 *
+	 * @throws IOException in case of any problem or when the session is closed
+	 */
+	public synchronized boolean requestAuthAgentForwarding(AuthAgentCallback agent) throws IOException
+	{
+		synchronized (this)
+		{
+			/*
+			 * The following is just a nicer error, we would catch it anyway
+			 * later in the channel code
+			 */
+			if (flag_closed)
+				throw new IOException("This session is closed.");
+		}
+
+		return cm.requestChannelAgentForwarding(cn, agent);
+	}
+
+	/**
 	 * Basically just a wrapper for lazy people - identical to calling
 	 * <code>requestPTY("dumb", 0, 0, 0, 0, null)</code>.
 	 * 
@@ -128,36 +277,6 @@ public class Session
 
 		cm.requestPTY(cn, term, term_width_characters, term_height_characters, term_width_pixels, term_height_pixels,
 				terminal_modes);
-	}
-	
-	/**
-	 * Inform other side of connection that our PTY has resized.
-	 * <p>
-	 * Zero dimension parameters are ignored. The character/row dimensions
-     * override the pixel dimensions (when nonzero). Pixel dimensions refer to
-     * the drawable area of the window. The dimension parameters are only
-     * informational.
-     * 
-     * @param term_width_characters
-     *            terminal width, characters (e.g., 80)
-     * @param term_height_characters
-     *            terminal height, rows (e.g., 24)
-     * @param term_width_pixels
-     *            terminal width, pixels (e.g., 640)
-     * @param term_height_pixels
-     *            terminal height, pixels (e.g., 480)
-	 * @throws IOException
-	 */
-	public void resizePTY(int term_width_characters, int term_height_characters, int term_width_pixels,
-			int term_height_pixels) throws IOException {
-		synchronized (this)
-		{
-			/* The following is just a nicer error, we would catch it anyway later in the channel code */
-			if (flag_closed)
-				throw new IOException("This session is closed.");
-		}
-		
-		cm.resizePTY(cn, term_width_characters, term_height_characters, term_width_pixels, term_height_pixels);
 	}
 
 	/**
@@ -253,30 +372,33 @@ public class Session
 	}
 
 	/**
-	 * Execute a command on the remote machine.
-	 * 
-	 * @param cmd
-	 *            The command to execute on the remote host.
+	 * Inform other side of connection that our PTY has resized.
+	 * <p>
+	 * Zero dimension parameters are ignored. The character/row dimensions
+     * override the pixel dimensions (when nonzero). Pixel dimensions refer to
+     * the drawable area of the window. The dimension parameters are only
+     * informational.
+     * 
+     * @param term_width_characters
+     *            terminal width, characters (e.g., 80)
+     * @param term_height_characters
+     *            terminal height, rows (e.g., 24)
+     * @param term_width_pixels
+     *            terminal width, pixels (e.g., 640)
+     * @param term_height_pixels
+     *            terminal height, pixels (e.g., 480)
 	 * @throws IOException
 	 */
-	public void execCommand(String cmd) throws IOException
-	{
-		if (cmd == null)
-			throw new IllegalArgumentException("cmd argument may not be null");
-
+	public void resizePTY(int term_width_characters, int term_height_characters, int term_width_pixels,
+			int term_height_pixels) throws IOException {
 		synchronized (this)
 		{
 			/* The following is just a nicer error, we would catch it anyway later in the channel code */
 			if (flag_closed)
 				throw new IOException("This session is closed.");
-
-			if (flag_execution_started)
-				throw new IOException("A remote execution has already started.");
-
-			flag_execution_started = true;
 		}
-
-		cm.requestExecCommand(cn, cmd);
+		
+		cm.resizePTY(cn, term_width_characters, term_height_characters, term_width_pixels, term_height_pixels);
 	}
 
 	/**
@@ -329,114 +451,6 @@ public class Session
 	}
 
 	/**
-	 * This method can be used to perform end-to-end session (i.e., SSH channel)
-	 * testing. It sends a 'ping' message to the server and waits for the 'pong'
-	 * from the server.
-	 * <p>
-	 * Implementation details: this method sends a SSH_MSG_CHANNEL_REQUEST request
-	 * ('trilead-ping') to the server and waits for the SSH_MSG_CHANNEL_FAILURE reply
-	 * packet.
-	 * 
-	 * @throws IOException in case of any problem or when the session is closed
-	 */
-	public void ping() throws IOException
-	{
-		synchronized (this)
-		{
-			/*
-			 * The following is just a nicer error, we would catch it anyway
-			 * later in the channel code
-			 */
-			if (flag_closed)
-				throw new IOException("This session is closed.");
-		}
-
-		cm.requestChannelTrileadPing(cn);
-	}
-
-	/**
-	 * Request authentication agent forwarding.
-	 * @param agent object that implements the callbacks
-	 *
-	 * @throws IOException in case of any problem or when the session is closed
-	 */
-	public synchronized boolean requestAuthAgentForwarding(AuthAgentCallback agent) throws IOException
-	{
-		synchronized (this)
-		{
-			/*
-			 * The following is just a nicer error, we would catch it anyway
-			 * later in the channel code
-			 */
-			if (flag_closed)
-				throw new IOException("This session is closed.");
-		}
-
-		return cm.requestChannelAgentForwarding(cn, agent);
-	}
-
-	public InputStream getStdout()
-	{
-		return cn.getStdoutStream();
-	}
-
-	public InputStream getStderr()
-	{
-		return cn.getStderrStream();
-	}
-
-	public OutputStream getStdin()
-	{
-		return cn.getStdinStream();
-	}
-
-	/**
-	 * This method blocks until there is more data available on either the
-	 * stdout or stderr InputStream of this <code>Session</code>. Very useful
-	 * if you do not want to use two parallel threads for reading from the two
-	 * InputStreams. One can also specify a timeout. NOTE: do NOT call this
-	 * method if you use concurrent threads that operate on either of the two
-	 * InputStreams of this <code>Session</code> (otherwise this method may
-	 * block, even though more data is available).
-	 * 
-	 * @param timeout
-	 *            The (non-negative) timeout in <code>ms</code>. <code>0</code> means no
-	 *            timeout, the call may block forever.
-	 * @return
-	 *            <ul>
-	 *            <li><code>0</code> if no more data will arrive.</li>
-	 *            <li><code>1</code> if more data is available.</li>
-	 *            <li><code>-1</code> if a timeout occurred.</li>
-	 *            </ul>
-	 *            
-	 * @throws    IOException
-	 * @deprecated This method has been replaced with a much more powerful wait-for-condition
-	 *             interface and therefore acts only as a wrapper.
-	 * 
-	 */
-	public int waitUntilDataAvailable(long timeout) throws IOException
-	{
-		if (timeout < 0)
-			throw new IllegalArgumentException("timeout must not be negative!");
-
-		int conditions = cm.waitForCondition(cn, timeout, ChannelCondition.STDOUT_DATA | ChannelCondition.STDERR_DATA
-				| ChannelCondition.EOF);
-
-		if ((conditions & ChannelCondition.TIMEOUT) != 0)
-			return -1;
-
-		if ((conditions & (ChannelCondition.STDOUT_DATA | ChannelCondition.STDERR_DATA)) != 0)
-			return 1;
-
-		/* Here we do not need to check separately for CLOSED, since CLOSED implies EOF */
-
-		if ((conditions & ChannelCondition.EOF) != 0)
-			return 0;
-
-		throw new IllegalStateException("Unexpected condition result (" + conditions + ")");
-	}
-
-	/**
 	 * This method blocks until certain conditions hold true on the underlying SSH-2 channel.
 	 * <p>
 	 * This method returns as soon as one of the following happens:
@@ -469,62 +483,49 @@ public class Session
 	}
 
 	/**
-	 * Get the exit code/status from the remote command - if available. Be
-	 * careful - not all server implementations return this value. It is
-	 * generally a good idea to call this method only when all data from the
-	 * remote side has been consumed (see also the <code<WaitForCondition</code> method).
+	 * This method blocks until there is more data available on either the
+	 * stdout or stderr InputStream of this <code>Session</code>. Very useful
+	 * if you do not want to use two parallel threads for reading from the two
+	 * InputStreams. One can also specify a timeout. NOTE: do NOT call this
+	 * method if you use concurrent threads that operate on either of the two
+	 * InputStreams of this <code>Session</code> (otherwise this method may
+	 * block, even though more data is available).
 	 * 
-	 * @return An <code>Integer</code> holding the exit code, or
-	 *         <code>null</code> if no exit code is (yet) available.
-	 */
-	public Integer getExitStatus()
-	{
-		return cn.getExitStatus();
-	}
-
-	/**
-	 * Get the name of the signal by which the process on the remote side was
-	 * stopped - if available and applicable. Be careful - not all server
-	 * implementations return this value.
-	 * 
-	 * @return An <code>String</code> holding the name of the signal, or
-	 *         <code>null</code> if the process exited normally or is still
-	 *         running (or if the server forgot to send this information).
-	 */
-	public String getExitSignal()
-	{
-		return cn.getExitSignal();
-	}
-
-	/**
-	 * Close this session. NEVER forget to call this method to free up resources -
-	 * even if you got an exception from one of the other methods (or when
-	 * getting an Exception on the Input- or OutputStreams). Sometimes these other
-	 * methods may throw an exception, saying that the underlying channel is
-	 * closed (this can happen, e.g., if the other server sent a close message.)
-	 * However, as long as you have not called the <code>close()</code>
-	 * method, you may be wasting (local) resources.
+	 * @param timeout
+	 *            The (non-negative) timeout in <code>ms</code>. <code>0</code> means no
+	 *            timeout, the call may block forever.
+	 * @return
+	 *            <ul>
+	 *            <li><code>0</code> if no more data will arrive.</li>
+	 *            <li><code>1</code> if more data is available.</li>
+	 *            <li><code>-1</code> if a timeout occurred.</li>
+	 *            </ul>
+	 *            
+	 * @throws    IOException
+	 * @deprecated This method has been replaced with a much more powerful wait-for-condition
+	 *             interface and therefore acts only as a wrapper.
 	 * 
 	 */
-	public void close()
+	@Deprecated
+	public int waitUntilDataAvailable(long timeout) throws IOException
 	{
-		synchronized (this)
-		{
-			if (flag_closed)
-				return;
+		if (timeout < 0)
+			throw new IllegalArgumentException("timeout must not be negative!");
 
-			flag_closed = true;
+		int conditions = cm.waitForCondition(cn, timeout, ChannelCondition.STDOUT_DATA | ChannelCondition.STDERR_DATA
+				| ChannelCondition.EOF);
 
-			if (x11FakeCookie != null)
-				cm.unRegisterX11Cookie(x11FakeCookie, true);
+		if ((conditions & ChannelCondition.TIMEOUT) != 0)
+			return -1;
 
-			try
-			{
-				cm.closeChannel(cn, "Closed due to user request", true);
-			}
-			catch (IOException ignored)
-			{
-			}
-		}
+		if ((conditions & (ChannelCondition.STDOUT_DATA | ChannelCondition.STDERR_DATA)) != 0)
+			return 1;
+
+		/* Here we do not need to check separately for CLOSED, since CLOSED implies EOF */
+
+		if ((conditions & ChannelCondition.EOF) != 0)
+			return 0;
+
+		throw new IllegalStateException("Unexpected condition result (" + conditions + ")");
 	}
 }

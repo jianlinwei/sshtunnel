@@ -1,6 +1,10 @@
 package net.sourceforge.jsocks;
-import java.net.*;
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InterruptedIOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
 
 /**
   Datagram socket to interract through the firewall.<BR>
@@ -53,6 +57,19 @@ public class Socks5DatagramSocket extends DatagramSocket{
       this(Proxy.defaultProxy,0,null);
    }
    /**
+     Used by UDPRelayServer.
+    */
+   Socks5DatagramSocket(boolean server_mode,UDPEncapsulation encapsulation,
+                        InetAddress relayIP,int relayPort)
+                        throws IOException{
+      super();
+      this.server_mode = server_mode;
+      this.relayIP = relayIP;
+      this.relayPort = relayPort;
+      this.encapsulation = encapsulation;
+      this.proxy = null;
+   }
+   /**
       Construct Datagram socket for communication over SOCKS5 proxy
       server. And binds it to the specified local port.
       This constructor uses default proxy, the one set with
@@ -64,6 +81,7 @@ public class Socks5DatagramSocket extends DatagramSocket{
                                                 IOException{
       this(Proxy.defaultProxy,port,null);
    }
+
    /**
       Construct Datagram socket for communication over SOCKS5 proxy
       server. And binds it to the specified local port and address.
@@ -119,72 +137,85 @@ public class Socks5DatagramSocket extends DatagramSocket{
    }
 
    /**
-     Used by UDPRelayServer.
+    * Closes datagram socket, and proxy connection.
     */
-   Socks5DatagramSocket(boolean server_mode,UDPEncapsulation encapsulation,
-                        InetAddress relayIP,int relayPort)
-                        throws IOException{
-      super();
-      this.server_mode = server_mode;
-      this.relayIP = relayIP;
-      this.relayPort = relayPort;
-      this.encapsulation = encapsulation;
-      this.proxy = null;
+   @Override
+public void close(){
+      if(!server_mode) proxy.endSession();
+      super.close();
+   }
+   private byte[] formHeader(InetAddress ip, int port){
+      Socks5Message request = new Socks5Message(0,ip,port);
+      request.data[0] = 0;
+      return request.data;
    }
 
    /**
-     Sends the Datagram either through the proxy or directly depending
-     on current proxy settings and destination address. <BR>
-
-     <B> NOTE: </B> DatagramPacket size should be at least 10 bytes less
-                    than the systems limit.
-
-     <P>
-     See documentation on java.net.DatagramSocket
-     for full details on how to use this method. 
-     @param dp Datagram to send.
-     @throws IOException If error happens with I/O.
+    * Address assigned by the proxy, to which datagrams are send for relay.
+    * It is not necesseraly the same address, to which other party should send
+    * datagrams.
+      @return Address to which datagrams are send for association.
     */
-   public void send(DatagramPacket dp) throws IOException{
-     //If the host should be accessed directly, send it as is.
-     if(!server_mode){
-        super.send(dp);
-        //debug("Sending directly:");
-        return;
+   @Override
+public InetAddress getLocalAddress(){
+     if(server_mode) return super.getLocalAddress();
+     return relayIP;
+   }
+
+   /**
+    * Returns port assigned by the proxy, to which datagrams are relayed.
+    * It is not the same port to which other party should send datagrams.
+      @return Port assigned by socks server to which datagrams are send
+      for association.
+    */
+   @Override
+public int getLocalPort(){
+     if(server_mode) return super.getLocalPort();
+     return relayPort;
+   }
+   /**
+     This method checks wether proxy still runs udp forwarding service
+     for this socket.
+     <p>
+     This methods checks wether the primary connection to proxy server
+     is active. If it is, chances are that proxy continues to forward
+     datagrams being send from this socket. If it was closed, most likely
+     datagrams are no longer being forwarded by the server.
+     <p>
+     Proxy might decide to stop forwarding datagrams, in which case it
+     should close primary connection. This method allows to check, wether
+     this have been done.
+     <p>
+     You can specify timeout for which we should be checking EOF condition
+     on the primary connection. Timeout is in milliseconds. Specifying 0 as
+     timeout implies infinity, in which case method will block, until 
+     connection to proxy is closed or an error happens, and then return false.
+     <p>
+     One possible scenario is to call isProxyactive(0) in separate thread,
+     and once it returned notify other threads about this event.
+
+     @param timeout For how long this method should block, before returning.
+     @return true if connection to proxy is active, false if eof or error
+             condition have been encountered on the connection.
+   */
+   public boolean isProxyAlive(int timeout){
+     if(server_mode) return false;
+     if(proxy != null){
+         try{
+           proxy.proxySocket.setSoTimeout(timeout);
+
+           int eof = proxy.in.read();
+           if(eof < 0) return false; // EOF encountered.
+           else return true;         // This really should not happen
+
+         }catch(InterruptedIOException iioe){
+            return true;          // read timed out.
+         }catch(IOException ioe){
+            return false;
+         }
      }
-
-     byte[] head = formHeader(dp.getAddress(),dp.getPort());
-     byte[] buf = new byte[head.length + dp.getLength()];
-     byte[] data = dp.getData();
-     //Merge head and data
-     System.arraycopy(head,0,buf,0,head.length);
-     //System.arraycopy(data,dp.getOffset(),buf,head.length,dp.getLength());
-     System.arraycopy(data,0,buf,head.length,dp.getLength());
-
-     if(encapsulation != null)
-        buf = encapsulation.udpEncapsulate(buf,true);
-
-     super.send(new DatagramPacket(buf,buf.length,relayIP,relayPort));
+     return false;
    }
-   /**
-     This method allows to send datagram packets with address type DOMAINNAME.
-     SOCKS5 allows to specify host as names rather than ip addresses.Using
-     this method one can send udp datagrams through the proxy, without having
-     to know the ip address of the destination host.
-     <p> 
-     If proxy specified for that socket has an option resolveAddrLocally set
-     to true host will be resolved, and the datagram will be send with address
-     type IPV4, if resolve fails, UnknownHostException is thrown.
-     @param dp Datagram to send, it should contain valid port and data
-     @param host Host name to which datagram should be send.
-     @throws IOException If error happens with I/O, or the host can't be 
-     resolved when proxy settings say that hosts should be resolved locally.
-     @see Socks5Proxy#resolveAddrLocally(boolean)
-    */
-    public void send(DatagramPacket dp, String host) throws IOException {
-		dp.setAddress(InetAddress.getByName(host));
-		super.send(dp);
-	}
 
    /**
     * Receives udp packet. If packet have arrived from the proxy relay server,
@@ -196,7 +227,8 @@ public class Socks5DatagramSocket extends DatagramSocket{
     * For hostnames and IPV6 it is even more.
       @param dp Datagram in which all relevent information will be copied.
     */
-   public void receive(DatagramPacket dp) throws IOException{
+   @Override
+public void receive(DatagramPacket dp) throws IOException{
       super.receive(dp);
 
       if(server_mode){
@@ -261,87 +293,64 @@ public class Socks5DatagramSocket extends DatagramSocket{
    }
 
    /**
-    * Returns port assigned by the proxy, to which datagrams are relayed.
-    * It is not the same port to which other party should send datagrams.
-      @return Port assigned by socks server to which datagrams are send
-      for association.
+     Sends the Datagram either through the proxy or directly depending
+     on current proxy settings and destination address. <BR>
+
+     <B> NOTE: </B> DatagramPacket size should be at least 10 bytes less
+                    than the systems limit.
+
+     <P>
+     See documentation on java.net.DatagramSocket
+     for full details on how to use this method. 
+     @param dp Datagram to send.
+     @throws IOException If error happens with I/O.
     */
-   public int getLocalPort(){
-     if(server_mode) return super.getLocalPort();
-     return relayPort;
-   }
-   /**
-    * Address assigned by the proxy, to which datagrams are send for relay.
-    * It is not necesseraly the same address, to which other party should send
-    * datagrams.
-      @return Address to which datagrams are send for association.
-    */
-   public InetAddress getLocalAddress(){
-     if(server_mode) return super.getLocalAddress();
-     return relayIP;
-   }
-
-   /**
-    * Closes datagram socket, and proxy connection.
-    */
-   public void close(){
-      if(!server_mode) proxy.endSession();
-      super.close();
-   }
-
-   /**
-     This method checks wether proxy still runs udp forwarding service
-     for this socket.
-     <p>
-     This methods checks wether the primary connection to proxy server
-     is active. If it is, chances are that proxy continues to forward
-     datagrams being send from this socket. If it was closed, most likely
-     datagrams are no longer being forwarded by the server.
-     <p>
-     Proxy might decide to stop forwarding datagrams, in which case it
-     should close primary connection. This method allows to check, wether
-     this have been done.
-     <p>
-     You can specify timeout for which we should be checking EOF condition
-     on the primary connection. Timeout is in milliseconds. Specifying 0 as
-     timeout implies infinity, in which case method will block, until 
-     connection to proxy is closed or an error happens, and then return false.
-     <p>
-     One possible scenario is to call isProxyactive(0) in separate thread,
-     and once it returned notify other threads about this event.
-
-     @param timeout For how long this method should block, before returning.
-     @return true if connection to proxy is active, false if eof or error
-             condition have been encountered on the connection.
-   */
-   public boolean isProxyAlive(int timeout){
-     if(server_mode) return false;
-     if(proxy != null){
-         try{
-           proxy.proxySocket.setSoTimeout(timeout);
-
-           int eof = proxy.in.read();
-           if(eof < 0) return false; // EOF encountered.
-           else return true;         // This really should not happen
-
-         }catch(InterruptedIOException iioe){
-            return true;          // read timed out.
-         }catch(IOException ioe){
-            return false;
-         }
+   @Override
+public void send(DatagramPacket dp) throws IOException{
+     //If the host should be accessed directly, send it as is.
+     if(!server_mode){
+        super.send(dp);
+        //debug("Sending directly:");
+        return;
      }
-     return false;
+
+     byte[] head = formHeader(dp.getAddress(),dp.getPort());
+     byte[] buf = new byte[head.length + dp.getLength()];
+     byte[] data = dp.getData();
+     //Merge head and data
+     System.arraycopy(head,0,buf,0,head.length);
+     //System.arraycopy(data,dp.getOffset(),buf,head.length,dp.getLength());
+     System.arraycopy(data,0,buf,head.length,dp.getLength());
+
+     if(encapsulation != null)
+        buf = encapsulation.udpEncapsulate(buf,true);
+
+     super.send(new DatagramPacket(buf,buf.length,relayIP,relayPort));
    }
 
 //PRIVATE METHODS
 //////////////////
 
 
-   private byte[] formHeader(InetAddress ip, int port){
-      Socks5Message request = new Socks5Message(0,ip,port);
-      request.data[0] = 0;
-      return request.data;
-   }
+   /**
+     This method allows to send datagram packets with address type DOMAINNAME.
+     SOCKS5 allows to specify host as names rather than ip addresses.Using
+     this method one can send udp datagrams through the proxy, without having
+     to know the ip address of the destination host.
+     <p> 
+     If proxy specified for that socket has an option resolveAddrLocally set
+     to true host will be resolved, and the datagram will be send with address
+     type IPV4, if resolve fails, UnknownHostException is thrown.
+     @param dp Datagram to send, it should contain valid port and data
+     @param host Host name to which datagram should be send.
+     @throws IOException If error happens with I/O, or the host can't be 
+     resolved when proxy settings say that hosts should be resolved locally.
+     @see Socks5Proxy#resolveAddrLocally(boolean)
+    */
+    public void send(DatagramPacket dp, String host) throws IOException {
+		dp.setAddress(InetAddress.getByName(host));
+		super.send(dp);
+	}
 
 
 /*======================================================================

@@ -32,48 +32,6 @@ public class HashForSSH2Types
 			throw new IllegalArgumentException("Unknown algorithm " + type);
 	}
 
-	public void updateByte(byte b)
-	{
-		/* HACK - to test it with J2ME */
-		byte[] tmp = new byte[1];
-		tmp[0] = b;
-		md.update(tmp);
-	}
-
-	public void updateBytes(byte[] b)
-	{
-		md.update(b);
-	}
-
-	public void updateUINT32(int v)
-	{
-		md.update((byte) (v >> 24));
-		md.update((byte) (v >> 16));
-		md.update((byte) (v >> 8));
-		md.update((byte) (v));
-	}
-
-	public void updateByteString(byte[] b)
-	{
-		updateUINT32(b.length);
-		updateBytes(b);
-	}
-
-	public void updateBigInt(BigInteger b)
-	{
-		updateByteString(b.toByteArray());
-	}
-
-	public void reset()
-	{
-		md.reset();
-	}
-
-	public int getDigestLength()
-	{
-		return md.getDigestLength();
-	}
-
 	public byte[] getDigest()
 	{
 		byte[] tmp = new byte[md.getDigestLength()];
@@ -89,5 +47,47 @@ public class HashForSSH2Types
 	public void getDigest(byte[] out, int off)
 	{
 		md.digest(out, off);
+	}
+
+	public int getDigestLength()
+	{
+		return md.getDigestLength();
+	}
+
+	public void reset()
+	{
+		md.reset();
+	}
+
+	public void updateBigInt(BigInteger b)
+	{
+		updateByteString(b.toByteArray());
+	}
+
+	public void updateByte(byte b)
+	{
+		/* HACK - to test it with J2ME */
+		byte[] tmp = new byte[1];
+		tmp[0] = b;
+		md.update(tmp);
+	}
+
+	public void updateBytes(byte[] b)
+	{
+		md.update(b);
+	}
+
+	public void updateByteString(byte[] b)
+	{
+		updateUINT32(b.length);
+		updateBytes(b);
+	}
+
+	public void updateUINT32(int v)
+	{
+		md.update((byte) (v >> 24));
+		md.update((byte) (v >> 16));
+		md.update((byte) (v >> 8));
+		md.update((byte) (v));
 	}
 }

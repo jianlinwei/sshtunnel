@@ -47,17 +47,6 @@ public class BlockCipherFactory
 		ciphers.addElement(new CipherEntry("3des-cbc", 8, 24, "com.trilead.ssh2.crypto.cipher.DESede"));
 	}
 
-	public static String[] getDefaultCipherList()
-	{
-		String list[] = new String[ciphers.size()];
-		for (int i = 0; i < ciphers.size(); i++)
-		{
-			CipherEntry ce = ciphers.elementAt(i);
-			list[i] = new String(ce.type);
-		}
-		return list;
-	}
-
 	public static void checkCipherList(String[] cipherCandidates)
 	{
 		for (int i = 0; i < cipherCandidates.length; i++)
@@ -90,6 +79,23 @@ public class BlockCipherFactory
 		}
 	}
 
+	public static int getBlockSize(String type)
+	{
+		CipherEntry ce = getEntry(type);
+		return ce.blocksize;
+	}
+
+	public static String[] getDefaultCipherList()
+	{
+		String list[] = new String[ciphers.size()];
+		for (int i = 0; i < ciphers.size(); i++)
+		{
+			CipherEntry ce = ciphers.elementAt(i);
+			list[i] = new String(ce.type);
+		}
+		return list;
+	}
+
 	private static CipherEntry getEntry(String type)
 	{
 		for (int i = 0; i < ciphers.size(); i++)
@@ -99,12 +105,6 @@ public class BlockCipherFactory
 				return ce;
 		}
 		throw new IllegalArgumentException("Unkown algorithm " + type);
-	}
-
-	public static int getBlockSize(String type)
-	{
-		CipherEntry ce = getEntry(type);
-		return ce.blocksize;
 	}
 
 	public static int getKeySize(String type)

@@ -20,16 +20,6 @@ public class LocalAcceptThread extends Thread implements IChannelWorkerThread
 
 	final ServerSocket ss;
 
-	public LocalAcceptThread(ChannelManager cm, int local_port, String host_to_connect, int port_to_connect)
-			throws IOException
-	{
-		this.cm = cm;
-		this.host_to_connect = host_to_connect;
-		this.port_to_connect = port_to_connect;
-
-		ss = new ServerSocket(local_port);
-	}
-
 	public LocalAcceptThread(ChannelManager cm, InetSocketAddress localAddress, String host_to_connect,
 			int port_to_connect) throws IOException
 	{
@@ -41,6 +31,17 @@ public class LocalAcceptThread extends Thread implements IChannelWorkerThread
 		ss.bind(localAddress);
 	}
 
+	public LocalAcceptThread(ChannelManager cm, int local_port, String host_to_connect, int port_to_connect)
+			throws IOException
+	{
+		this.cm = cm;
+		this.host_to_connect = host_to_connect;
+		this.port_to_connect = port_to_connect;
+
+		ss = new ServerSocket(local_port);
+	}
+
+	@Override
 	public void run()
 	{
 		try
@@ -119,6 +120,7 @@ public class LocalAcceptThread extends Thread implements IChannelWorkerThread
 		}
 	}
 
+	@Override
 	public void stopWorking()
 	{
 		try

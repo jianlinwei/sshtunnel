@@ -2,7 +2,6 @@
 package com.trilead.ssh2.packets;
 
 import java.io.IOException;
-
 import java.math.BigInteger;
 
 /**

@@ -40,12 +40,28 @@ public class DhGroupExchange
 		this.g = g;
 	}
 
-	public void init(SecureRandom rnd)
+	public byte[] calculateH(byte[] clientversion, byte[] serverversion, byte[] clientKexPayload,
+			byte[] serverKexPayload, byte[] hostKey, DHGexParameters para)
 	{
-		k = null;
+		HashForSSH2Types hash = new HashForSSH2Types("SHA1");
 
-		x = new BigInteger(p.bitLength() - 1, rnd);
-		e = g.modPow(x, p);
+		hash.updateByteString(clientversion);
+		hash.updateByteString(serverversion);
+		hash.updateByteString(clientKexPayload);
+		hash.updateByteString(serverKexPayload);
+		hash.updateByteString(hostKey);
+		if (para.getMin_group_len() > 0)
+			hash.updateUINT32(para.getMin_group_len());
+		hash.updateUINT32(para.getPref_group_len());
+		if (para.getMax_group_len() > 0)
+			hash.updateUINT32(para.getMax_group_len());
+		hash.updateBigInt(p);
+		hash.updateBigInt(g);
+		hash.updateBigInt(e);
+		hash.updateBigInt(f);
+		hash.updateBigInt(k);
+
+		return hash.getDigest();
 	}
 
 	/**
@@ -70,6 +86,14 @@ public class DhGroupExchange
 		return k;
 	}
 
+	public void init(SecureRandom rnd)
+	{
+		k = null;
+
+		x = new BigInteger(p.bitLength() - 1, rnd);
+		e = g.modPow(x, p);
+	}
+
 	/**
 	 * Sets f and calculates the shared secret.
 	 */
@@ -85,29 +109,5 @@ public class DhGroupExchange
 
 		this.f = f;
 		this.k = f.modPow(x, p);
-	}
-
-	public byte[] calculateH(byte[] clientversion, byte[] serverversion, byte[] clientKexPayload,
-			byte[] serverKexPayload, byte[] hostKey, DHGexParameters para)
-	{
-		HashForSSH2Types hash = new HashForSSH2Types("SHA1");
-
-		hash.updateByteString(clientversion);
-		hash.updateByteString(serverversion);
-		hash.updateByteString(clientKexPayload);
-		hash.updateByteString(serverKexPayload);
-		hash.updateByteString(hostKey);
-		if (para.getMin_group_len() > 0)
-			hash.updateUINT32(para.getMin_group_len());
-		hash.updateUINT32(para.getPref_group_len());
-		if (para.getMax_group_len() > 0)
-			hash.updateUINT32(para.getMax_group_len());
-		hash.updateBigInt(p);
-		hash.updateBigInt(g);
-		hash.updateBigInt(e);
-		hash.updateBigInt(f);
-		hash.updateBigInt(k);
-
-		return hash.getDigest();
 	}
 }

@@ -77,55 +77,6 @@ final public class ZStream{
   public long adler;
   Adler32 _adler=new Adler32();
 
-  public int inflateInit(){
-    return inflateInit(DEF_WBITS);
-  }
-  public int inflateInit(boolean nowrap){
-    return inflateInit(DEF_WBITS, nowrap);
-  }
-  public int inflateInit(int w){
-    return inflateInit(w, false);
-  }
-
-  public int inflateInit(int w, boolean nowrap){
-    istate=new Inflate();
-    return istate.inflateInit(this, nowrap?-w:w);
-  }
-
-  public int inflate(int f){
-    if(istate==null) return Z_STREAM_ERROR;
-    return istate.inflate(this, f);
-  }
-  public int inflateEnd(){
-    if(istate==null) return Z_STREAM_ERROR;
-    int ret=istate.inflateEnd(this);
-    istate = null;
-    return ret;
-  }
-  public int inflateSync(){
-    if(istate == null)
-      return Z_STREAM_ERROR;
-    return istate.inflateSync(this);
-  }
-  public int inflateSetDictionary(byte[] dictionary, int dictLength){
-    if(istate == null)
-      return Z_STREAM_ERROR;
-    return istate.inflateSetDictionary(this, dictionary, dictLength);
-  }
-
-  public int deflateInit(int level){
-    return deflateInit(level, MAX_WBITS);
-  }
-  public int deflateInit(int level, boolean nowrap){
-    return deflateInit(level, MAX_WBITS, nowrap);
-  }
-  public int deflateInit(int level, int bits){
-    return deflateInit(level, bits, false);
-  }
-  public int deflateInit(int level, int bits, boolean nowrap){
-    dstate=new Deflate();
-    return dstate.deflateInit(this, level, nowrap?-bits:bits);
-  }
   public int deflate(int flush){
     if(dstate==null){
       return Z_STREAM_ERROR;
@@ -137,6 +88,21 @@ final public class ZStream{
     int ret=dstate.deflateEnd();
     dstate=null;
     return ret;
+  }
+  public int deflateInit(int level){
+    return deflateInit(level, MAX_WBITS);
+  }
+
+  public int deflateInit(int level, boolean nowrap){
+    return deflateInit(level, MAX_WBITS, nowrap);
+  }
+
+  public int deflateInit(int level, int bits){
+    return deflateInit(level, bits, false);
+  }
+  public int deflateInit(int level, int bits, boolean nowrap){
+    dstate=new Deflate();
+    return dstate.deflateInit(this, level, nowrap?-bits:bits);
   }
   public int deflateParams(int level, int strategy){
     if(dstate==null) return Z_STREAM_ERROR;
@@ -179,6 +145,47 @@ final public class ZStream{
       dstate.pending_out=0;
     }
   }
+  public void free(){
+    next_in=null;
+    next_out=null;
+    msg=null;
+    _adler=null;
+  }
+  public int inflate(int f){
+    if(istate==null) return Z_STREAM_ERROR;
+    return istate.inflate(this, f);
+  }
+  public int inflateEnd(){
+    if(istate==null) return Z_STREAM_ERROR;
+    int ret=istate.inflateEnd(this);
+    istate = null;
+    return ret;
+  }
+  public int inflateInit(){
+    return inflateInit(DEF_WBITS);
+  }
+  public int inflateInit(boolean nowrap){
+    return inflateInit(DEF_WBITS, nowrap);
+  }
+  public int inflateInit(int w){
+    return inflateInit(w, false);
+  }
+  public int inflateInit(int w, boolean nowrap){
+    istate=new Inflate();
+    return istate.inflateInit(this, nowrap?-w:w);
+  }
+
+  public int inflateSetDictionary(byte[] dictionary, int dictLength){
+    if(istate == null)
+      return Z_STREAM_ERROR;
+    return istate.inflateSetDictionary(this, dictionary, dictLength);
+  }
+
+  public int inflateSync(){
+    if(istate == null)
+      return Z_STREAM_ERROR;
+    return istate.inflateSync(this);
+  }
 
   // Read a new buffer from the current input stream, update the adler32
   // and total number of bytes read.  All deflate() input goes through
@@ -200,12 +207,5 @@ final public class ZStream{
     next_in_index  += len;
     total_in += len;
     return len;
-  }
-
-  public void free(){
-    next_in=null;
-    next_out=null;
-    msg=null;
-    _adler=null;
   }
 }

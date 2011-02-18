@@ -6,9 +6,9 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 
-public class SSHTunnelReceiver extends BroadcastReceiver {
+public class PUFFReceiver extends BroadcastReceiver {
 	
-	public static final String PREFS_NAME = "SSHTunnel";
+	public static final String PREFS_NAME = "PUFF";
 	
 	private String host;
 	private int port;
@@ -40,7 +40,7 @@ public class SSHTunnelReceiver extends BroadcastReceiver {
 			isAutoSetProxy = settings.getBoolean("IsAutoSetProxy", false);
 			
 			
-			Intent it = new Intent(context, SSHTunnelService.class);
+			Intent it = new Intent(context, PUFFService.class);
 			Bundle bundle = new Bundle();
 			bundle.putString("host", host);
 			bundle.putString("user", user);

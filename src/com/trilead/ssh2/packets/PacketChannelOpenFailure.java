@@ -17,15 +17,6 @@ public class PacketChannelOpenFailure
 	public String description;
 	public String languageTag;
 
-	public PacketChannelOpenFailure(int recipientChannelID, int reasonCode, String description,
-			String languageTag)
-	{
-		this.recipientChannelID = recipientChannelID;
-		this.reasonCode = reasonCode;
-		this.description = description;
-		this.languageTag = languageTag;
-	}
-
 	public PacketChannelOpenFailure(byte payload[], int off, int len) throws IOException
 	{
 		this.payload = new byte[len];
@@ -47,6 +38,15 @@ public class PacketChannelOpenFailure
 		
 		if (tr.remain() != 0)
 			throw new IOException("Padding in SSH_MSG_CHANNEL_OPEN_FAILURE packet!");
+	}
+
+	public PacketChannelOpenFailure(int recipientChannelID, int reasonCode, String description,
+			String languageTag)
+	{
+		this.recipientChannelID = recipientChannelID;
+		this.reasonCode = reasonCode;
+		this.description = description;
+		this.languageTag = languageTag;
 	}
 
 	public byte[] getPayload()

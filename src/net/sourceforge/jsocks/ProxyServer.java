@@ -60,25 +60,68 @@ public class ProxyServer implements Runnable{
 /////////////////////
 
 
-   /**
-    Creates a proxy server with given Authentication scheme.
-    @param auth Authentication scheme to be used.
-    */
-   public ProxyServer(ServerAuthenticator auth){
-     this.auth = auth;
-   }
+   static final String command_names[] = {"CONNECT","BIND","UDP_ASSOCIATE"};
 
 //Other constructors
 ////////////////////
 
-   protected ProxyServer(ServerAuthenticator auth,Socket s){
-      this.auth  = auth;
-      this.sock  = s;
-      mode = START_MODE;
+   static final String command2String(int cmd){
+      if(cmd > 0 && cmd < 4) return command_names[cmd-1];
+      else return "Unknown Command "+cmd;
    }
 
 //Public methods
 /////////////////
+
+   /**
+    Get proxy.
+    @return Proxy wich is used to handle user requests.
+   */
+   public static Proxy getProxy(){
+      return proxy;
+   }
+   
+   static final void log(ProxyMessage msg){
+      log("Request version:"+msg.version+
+          "\tCommand: "+command2String(msg.command));
+      log("IP:"+msg.ip +"\tPort:"+msg.port+
+         (msg.version==4?"\tUser:"+msg.user:""));
+   }
+
+   static final void log(String s){
+     if(log != null){
+       log.println(s);
+       log.flush();
+     }
+   }
+
+   /**
+    Sets the timeout for BIND command, how long the server should
+    wait for the incoming connection.<br>
+    Zero timeout implies infinity.<br>
+    Default timeout is 3 minutes.
+   */
+   public static void setAcceptTimeout(int timeout){
+      acceptTimeout = timeout;
+   }
+   /**
+     Sets the size of the datagrams used in the UDPRelayServer.<br>
+     Default size is 64K, a bit more than maximum possible size of the
+     datagram.
+    */
+   public static void setDatagramSize(int size){
+      UDPRelayServer.setDatagramSize(size);
+   }
+
+   /**
+    Sets the timeout for connections, how long shoud server wait
+    for data to arrive before dropping the connection.<br>
+    Zero timeout implies infinity.<br>
+    Default timeout is 3 minutes.
+   */
+   public static void setIddleTimeout(int timeout){
+      iddleTimeout = timeout;
+   }
 
    /**
      Set the logging stream. Specifying null disables logging.
@@ -92,7 +135,8 @@ public class ProxyServer implements Runnable{
 
       UDPRelayServer.log = log;
    }
-   
+
+
    /**
     Set proxy.
     <p>
@@ -109,33 +153,6 @@ public class ProxyServer implements Runnable{
    }
 
    /**
-    Get proxy.
-    @return Proxy wich is used to handle user requests.
-   */
-   public static Proxy getProxy(){
-      return proxy;
-   }
-
-   /**
-    Sets the timeout for connections, how long shoud server wait
-    for data to arrive before dropping the connection.<br>
-    Zero timeout implies infinity.<br>
-    Default timeout is 3 minutes.
-   */
-   public static void setIddleTimeout(int timeout){
-      iddleTimeout = timeout;
-   }
-   /**
-    Sets the timeout for BIND command, how long the server should
-    wait for the incoming connection.<br>
-    Zero timeout implies infinity.<br>
-    Default timeout is 3 minutes.
-   */
-   public static void setAcceptTimeout(int timeout){
-      acceptTimeout = timeout;
-   }
-
-   /**
     Sets the timeout for UDPRelay server.<br>
     Zero timeout implies infinity.<br>
     Default timeout is 3 minutes.
@@ -145,159 +162,80 @@ public class ProxyServer implements Runnable{
    }
 
    /**
-     Sets the size of the datagrams used in the UDPRelayServer.<br>
-     Default size is 64K, a bit more than maximum possible size of the
-     datagram.
+    Creates a proxy server with given Authentication scheme.
+    @param auth Authentication scheme to be used.
     */
-   public static void setDatagramSize(int size){
-      UDPRelayServer.setDatagramSize(size);
+   public ProxyServer(ServerAuthenticator auth){
+     this.auth = auth;
    }
 
-
-   /**
-     Start the Proxy server at given port.<br>
-     This methods blocks.
-    */
-   public void start(int port){
-      start(port,5,null);
+protected ProxyServer(ServerAuthenticator auth,Socket s){
+      this.auth  = auth;
+      this.sock  = s;
+      mode = START_MODE;
    }
 
-   /**
-     Create a server with the specified port, listen backlog, and local 
-     IP address to bind to. The localIP argument can be used on a multi-homed
-     host for a ServerSocket that will only accept connect requests to one of 
-     its addresses. If localIP is null, it will default accepting connections 
-     on any/all local addresses. The port must be between 0 and 65535, 
-     inclusive. <br>
-     This methods blocks. 
-    */
-   public void start(int port,int backlog,InetAddress localIP){
+private synchronized void abort(){
+      if(mode == ABORT_MODE) return;
+      mode = ABORT_MODE;
       try{
-        ss = new ServerSocket(port,backlog,localIP);
-        log("Starting SOCKS Proxy on:"+ss.getInetAddress().getHostAddress()+":"
-                                      +ss.getLocalPort());
-        while(true){
-          Socket s = ss.accept();
-          log("Accepted from:"+s.getInetAddress().getHostName()+":"
-                              +s.getPort());
-          ProxyServer ps = new ProxyServer(auth,s);
-          (new Thread(ps)).start();
-        }
-      }catch(IOException ioe){
-        ioe.printStackTrace();
-      }finally{
-      }
-   }
-
-   /**
-     Stop server operation.It would be wise to interrupt thread running the
-     server afterwards.
-    */
-   public void stop(){
-     try{
-       if(ss != null) ss.close();
-     }catch(IOException ioe){
-     }
-   }
-
-//Runnable interface
-////////////////////
-   public void run(){
-      switch(mode){
-        case START_MODE:
-         try{
-           startSession();
-         }catch(IOException ioe){
-           handleException(ioe);
-           //ioe.printStackTrace();
-         }finally{
-           abort();
-           if(auth!=null) auth.endSession();
-           log("Main thread(client->remote)stopped.");
-         }
-        break;
-        case ACCEPT_MODE:
-          try{
-            doAccept();
-            mode = PIPE_MODE;
-            pipe_thread1.interrupt(); //Tell other thread that connection have
-                                      //been accepted.
-            pipe(remote_in,out);
-          }catch(IOException ioe){
-            //log("Accept exception:"+ioe);
-            handleException(ioe);
-          }finally{
-            abort();
-            log("Accept thread(remote->client) stopped");
-          }
-        break;
-        case PIPE_MODE:
-         try{
-            pipe(remote_in,out);
-         }catch(IOException ioe){
-         }finally{
-            abort();
-            log("Support thread(remote->client) stopped");
-         }
-        break;
-        case ABORT_MODE:
-        break;
-        default:
-         log("Unexpected MODE "+mode);
-      }
-   }
-
-//Private methods
-/////////////////
-   private void startSession() throws IOException{
-     sock.setSoTimeout(iddleTimeout);
-
-     try{
-        auth = auth.startSession(sock);
-     }catch(IOException ioe){
-       log("Auth throwed exception:"+ioe);
-       auth = null;
-       return;
-     }
-
-     if(auth == null){ //Authentication failed
-        log("Authentication failed");
-        return;
-     }
-
-     in = auth.getInputStream();
-     out = auth.getOutputStream();
-
-     msg = readMsg(in);
-     handleRequest(msg);
+         log("Aborting operation");
+         if(remote_sock != null) remote_sock.close();
+         if(sock != null) sock.close();
+         if(relayServer!=null) relayServer.stop();
+         if(ss!=null) ss.close();
+         if(pipe_thread1 != null) pipe_thread1.interrupt();
+         if(pipe_thread2 != null) pipe_thread2.interrupt();
+      }catch(IOException ioe){}
    }
    
-   protected void handleRequest(ProxyMessage msg)
-                throws IOException{
-      if(!auth.checkRequest(msg)) throw new 
-                                  SocksException(Proxy.SOCKS_FAILURE);
+   private void doAccept() throws IOException{
+      Socket s;
+      long startTime = System.currentTimeMillis();
 
-      if(msg.ip == null){
-        if(msg instanceof Socks5Message){
-          msg.ip = InetAddress.getByName(msg.host);
-        }else
-          throw new SocksException(Proxy.SOCKS_FAILURE);
+      while(true){
+         s = ss.accept();
+         if(s.getInetAddress().equals(msg.ip)){
+            //got the connection from the right host
+            //Close listenning socket.
+            ss.close();
+            break;
+         }else if(ss instanceof SocksServerSocket){
+            //We can't accept more then one connection
+            s.close();
+            ss.close();
+            throw new SocksException(Proxy.SOCKS_FAILURE);
+         }else{
+            if(acceptTimeout!=0){ //If timeout is not infinit
+               int newTimeout = acceptTimeout-(int)(System.currentTimeMillis()-
+                                                           startTime);
+               if(newTimeout <= 0) throw new InterruptedIOException(
+                                "In doAccept()");
+               ss.setSoTimeout(newTimeout);
+            }
+            s.close(); //Drop all connections from other hosts
+         }
       }
-      log(msg);
 
-      switch(msg.command){
-        case Proxy.SOCKS_CMD_CONNECT:
-          onConnect(msg);
-        break;
-        case Proxy.SOCKS_CMD_BIND:
-          onBind(msg);
-        break;
-        case Proxy.SOCKS_CMD_UDP_ASSOCIATE:
-          onUDP(msg);
-        break;
-        default:
-          throw new SocksException(Proxy.SOCKS_CMD_NOT_SUPPORTED);
-      }
+      //Accepted connection
+      remote_sock = s;
+      remote_in = s.getInputStream();
+      remote_out = s.getOutputStream();
+
+      //Set timeout
+      remote_sock.setSoTimeout(iddleTimeout);
+
+      log("Accepted from "+s.getInetAddress()+":"+s.getPort());
+
+      ProxyMessage response;
+
+      if(msg.version == 5)
+         response = new Socks5Message(Proxy.SOCKS_SUCCESS, s.getInetAddress(),
+                                                           s.getPort());
+      else
+         response = new Socks4Message(Socks4Message.REPLY_OK,
+                                      s.getInetAddress(), s.getPort());
+      response.write(out);
    }
 
    private void handleException(IOException ioe){
@@ -326,25 +264,32 @@ public class ProxyServer implements Runnable{
       sendErrorMessage(error_code);
    }
 
-   private void onConnect(ProxyMessage msg) throws IOException{
-      Socket s;
-      ProxyMessage response = null;
+   protected void handleRequest(ProxyMessage msg)
+                throws IOException{
+      if(!auth.checkRequest(msg)) throw new 
+                                  SocksException(Proxy.SOCKS_FAILURE);
 
-      s = new Socket(msg.ip,msg.port);
-
-      log("Connected to "+s.getInetAddress()+":"+s.getPort());
-
-      if(msg instanceof Socks5Message){
-        response = new Socks5Message(Proxy.SOCKS_SUCCESS,
-                                         s.getLocalAddress(),
-                                         s.getLocalPort());
-      }else{
-        response = new Socks4Message(Socks4Message.REPLY_OK,
-                                     s.getLocalAddress(),s.getLocalPort());
-
+      if(msg.ip == null){
+        if(msg instanceof Socks5Message){
+          msg.ip = InetAddress.getByName(msg.host);
+        }else
+          throw new SocksException(Proxy.SOCKS_FAILURE);
       }
-      response.write(out);
-      startPipe(s);
+      log(msg);
+
+      switch(msg.command){
+        case Proxy.SOCKS_CMD_CONNECT:
+          onConnect(msg);
+        break;
+        case Proxy.SOCKS_CMD_BIND:
+          onBind(msg);
+        break;
+        case Proxy.SOCKS_CMD_UDP_ASSOCIATE:
+          onUDP(msg);
+        break;
+        default:
+          throw new SocksException(Proxy.SOCKS_CMD_NOT_SUPPORTED);
+      }
    }
 
    private void onBind(ProxyMessage msg) throws IOException{
@@ -408,6 +353,30 @@ public class ProxyServer implements Runnable{
       pipe(in,remote_out);
    }
 
+   private void onConnect(ProxyMessage msg) throws IOException{
+      Socket s;
+      ProxyMessage response = null;
+
+      s = new Socket(msg.ip,msg.port);
+
+      log("Connected to "+s.getInetAddress()+":"+s.getPort());
+
+      if(msg instanceof Socks5Message){
+        response = new Socks5Message(Proxy.SOCKS_SUCCESS,
+                                         s.getLocalAddress(),
+                                         s.getLocalPort());
+      }else{
+        response = new Socks4Message(Socks4Message.REPLY_OK,
+                                     s.getLocalAddress(),s.getLocalPort());
+
+      }
+      response.write(out);
+      startPipe(s);
+   }
+
+//Private methods
+//////////////////
+
    private void onUDP(ProxyMessage msg) throws IOException{
       if(msg.ip.getHostAddress().equals("0.0.0.0"))
          msg.ip = sock.getInetAddress();
@@ -432,56 +401,27 @@ public class ProxyServer implements Runnable{
       }
    }
 
-//Private methods
-//////////////////
+   private void pipe(InputStream in,OutputStream out) throws IOException{
+      lastReadTime = System.currentTimeMillis();
+      byte[] buf = new byte[BUF_SIZE];
+      int len = 0;
+      while(len >= 0){
+         try{
+           if(len!=0){
+             out.write(buf,0,len);
+             out.flush();
+           }
+           len= in.read(buf);
+           lastReadTime = System.currentTimeMillis();
+         }catch(InterruptedIOException iioe){
+           if(iddleTimeout == 0) return;//Other thread interrupted us.
+           long timeSinceRead = System.currentTimeMillis() - lastReadTime;
+           if(timeSinceRead >= iddleTimeout - 1000) //-1s for adjustment.
+              return;
+           len = 0;
 
-   private void doAccept() throws IOException{
-      Socket s;
-      long startTime = System.currentTimeMillis();
-
-      while(true){
-         s = ss.accept();
-         if(s.getInetAddress().equals(msg.ip)){
-            //got the connection from the right host
-            //Close listenning socket.
-            ss.close();
-            break;
-         }else if(ss instanceof SocksServerSocket){
-            //We can't accept more then one connection
-            s.close();
-            ss.close();
-            throw new SocksException(Proxy.SOCKS_FAILURE);
-         }else{
-            if(acceptTimeout!=0){ //If timeout is not infinit
-               int newTimeout = acceptTimeout-(int)(System.currentTimeMillis()-
-                                                           startTime);
-               if(newTimeout <= 0) throw new InterruptedIOException(
-                                "In doAccept()");
-               ss.setSoTimeout(newTimeout);
-            }
-            s.close(); //Drop all connections from other hosts
          }
       }
-
-      //Accepted connection
-      remote_sock = s;
-      remote_in = s.getInputStream();
-      remote_out = s.getOutputStream();
-
-      //Set timeout
-      remote_sock.setSoTimeout(iddleTimeout);
-
-      log("Accepted from "+s.getInetAddress()+":"+s.getPort());
-
-      ProxyMessage response;
-
-      if(msg.version == 5)
-         response = new Socks5Message(Proxy.SOCKS_SUCCESS, s.getInetAddress(),
-                                                           s.getPort());
-      else
-         response = new Socks4Message(Socks4Message.REPLY_OK,
-                                      s.getInetAddress(), s.getPort());
-      response.write(out);
    }
 
    protected ProxyMessage readMsg(InputStream in) throws IOException{
@@ -507,17 +447,51 @@ public class ProxyServer implements Runnable{
       return msg;
    }
 
-   private void startPipe(Socket s){
-      mode = PIPE_MODE;
-      remote_sock = s;
-      try{
-         remote_in = s.getInputStream();
-         remote_out = s.getOutputStream();
-         pipe_thread1 = Thread.currentThread();
-         pipe_thread2 = new Thread(this);
-         pipe_thread2.start();
-         pipe(in,remote_out);
-      }catch(IOException ioe){
+   //Runnable interface
+////////////////////
+   @Override
+public void run(){
+      switch(mode){
+        case START_MODE:
+         try{
+           startSession();
+         }catch(IOException ioe){
+           handleException(ioe);
+           //ioe.printStackTrace();
+         }finally{
+           abort();
+           if(auth!=null) auth.endSession();
+           log("Main thread(client->remote)stopped.");
+         }
+        break;
+        case ACCEPT_MODE:
+          try{
+            doAccept();
+            mode = PIPE_MODE;
+            pipe_thread1.interrupt(); //Tell other thread that connection have
+                                      //been accepted.
+            pipe(remote_in,out);
+          }catch(IOException ioe){
+            //log("Accept exception:"+ioe);
+            handleException(ioe);
+          }finally{
+            abort();
+            log("Accept thread(remote->client) stopped");
+          }
+        break;
+        case PIPE_MODE:
+         try{
+            pipe(remote_in,out);
+         }catch(IOException ioe){
+         }finally{
+            abort();
+            log("Support thread(remote->client) stopped");
+         }
+        break;
+        case ABORT_MODE:
+        break;
+        default:
+         log("Unexpected MODE "+mode);
       }
    }
 
@@ -532,60 +506,87 @@ public class ProxyServer implements Runnable{
       }catch(IOException ioe){}
    }
 
-   private synchronized void abort(){
-      if(mode == ABORT_MODE) return;
-      mode = ABORT_MODE;
+   /**
+     Start the Proxy server at given port.<br>
+     This methods blocks.
+    */
+   public void start(int port){
+      start(port,5,null);
+   }
+
+   /**
+     Create a server with the specified port, listen backlog, and local 
+     IP address to bind to. The localIP argument can be used on a multi-homed
+     host for a ServerSocket that will only accept connect requests to one of 
+     its addresses. If localIP is null, it will default accepting connections 
+     on any/all local addresses. The port must be between 0 and 65535, 
+     inclusive. <br>
+     This methods blocks. 
+    */
+   public void start(int port,int backlog,InetAddress localIP){
       try{
-         log("Aborting operation");
-         if(remote_sock != null) remote_sock.close();
-         if(sock != null) sock.close();
-         if(relayServer!=null) relayServer.stop();
-         if(ss!=null) ss.close();
-         if(pipe_thread1 != null) pipe_thread1.interrupt();
-         if(pipe_thread2 != null) pipe_thread2.interrupt();
-      }catch(IOException ioe){}
-   }
-
-   static final void log(String s){
-     if(log != null){
-       log.println(s);
-       log.flush();
-     }
-   }
-
-   static final void log(ProxyMessage msg){
-      log("Request version:"+msg.version+
-          "\tCommand: "+command2String(msg.command));
-      log("IP:"+msg.ip +"\tPort:"+msg.port+
-         (msg.version==4?"\tUser:"+msg.user:""));
-   }
-
-   private void pipe(InputStream in,OutputStream out) throws IOException{
-      lastReadTime = System.currentTimeMillis();
-      byte[] buf = new byte[BUF_SIZE];
-      int len = 0;
-      while(len >= 0){
-         try{
-           if(len!=0){
-             out.write(buf,0,len);
-             out.flush();
-           }
-           len= in.read(buf);
-           lastReadTime = System.currentTimeMillis();
-         }catch(InterruptedIOException iioe){
-           if(iddleTimeout == 0) return;//Other thread interrupted us.
-           long timeSinceRead = System.currentTimeMillis() - lastReadTime;
-           if(timeSinceRead >= iddleTimeout - 1000) //-1s for adjustment.
-              return;
-           len = 0;
-
-         }
+        ss = new ServerSocket(port,backlog,localIP);
+        log("Starting SOCKS Proxy on:"+ss.getInetAddress().getHostAddress()+":"
+                                      +ss.getLocalPort());
+        while(true){
+          Socket s = ss.accept();
+          log("Accepted from:"+s.getInetAddress().getHostName()+":"
+                              +s.getPort());
+          ProxyServer ps = new ProxyServer(auth,s);
+          (new Thread(ps)).start();
+        }
+      }catch(IOException ioe){
+        ioe.printStackTrace();
+      }finally{
       }
    }
-   static final String command_names[] = {"CONNECT","BIND","UDP_ASSOCIATE"};
 
-   static final String command2String(int cmd){
-      if(cmd > 0 && cmd < 4) return command_names[cmd-1];
-      else return "Unknown Command "+cmd;
+   private void startPipe(Socket s){
+      mode = PIPE_MODE;
+      remote_sock = s;
+      try{
+         remote_in = s.getInputStream();
+         remote_out = s.getOutputStream();
+         pipe_thread1 = Thread.currentThread();
+         pipe_thread2 = new Thread(this);
+         pipe_thread2.start();
+         pipe(in,remote_out);
+      }catch(IOException ioe){
+      }
+   }
+   //Private methods
+/////////////////
+   private void startSession() throws IOException{
+     sock.setSoTimeout(iddleTimeout);
+
+     try{
+        auth = auth.startSession(sock);
+     }catch(IOException ioe){
+       log("Auth throwed exception:"+ioe);
+       auth = null;
+       return;
+     }
+
+     if(auth == null){ //Authentication failed
+        log("Authentication failed");
+        return;
+     }
+
+     in = auth.getInputStream();
+     out = auth.getOutputStream();
+
+     msg = readMsg(in);
+     handleRequest(msg);
+   }
+
+   /**
+     Stop server operation.It would be wise to interrupt thread running the
+     server afterwards.
+    */
+   public void stop(){
+     try{
+       if(ss != null) ss.close();
+     }catch(IOException ioe){
+     }
    }
 }

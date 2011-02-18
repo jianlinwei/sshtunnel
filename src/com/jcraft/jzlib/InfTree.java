@@ -219,11 +219,24 @@ final class InfTree{
   // If BMAX needs to be larger than 16, then h and x[] should be uLong.
   static final int BMAX=15;         // maximum bit length of any code
 
+  static int inflate_trees_fixed(int[] bl,  //literal desired/actual bit depth
+                                 int[] bd,  //distance desired/actual bit depth
+                                 int[][] tl,//literal/length tree result
+                                 int[][] td,//distance tree result 
+                                 ZStream z  //for memory allocation
+				 ){
+    bl[0]=fixed_bl;
+    bd[0]=fixed_bd;
+    tl[0]=fixed_tl;
+    td[0]=fixed_td;
+    return Z_OK;
+  }
   int[] hn = null;  // hufts used in space
   int[] v = null;   // work area for huft_build 
   int[] c = null;   // bit length count table
   int[] r = null;   // table entry for structure assignment
   int[] u = null;   // table stack
+
   int[] x = null;   // bit offsets, then code stack
 
   private int huft_build(int[] b, // code lengths in bits (all assumed <= BMAX)
@@ -369,7 +382,7 @@ final class InfTree{
             r[0]=(byte)j;     // bits in this table
             r[1]=(byte)l;     // bits to dump before this table
             j=i>>>(w - l);
-            r[2] = (int)(q - u[h-1] - j);               // offset to this table
+            r[2] = (q - u[h-1] - j);               // offset to this table
             System.arraycopy(r, 0, hp, (u[h-1]+j)*3, 3); // connect to last table
           }
           else{
@@ -483,19 +496,6 @@ final class InfTree{
       return result;
     }
 
-    return Z_OK;
-  }
-
-  static int inflate_trees_fixed(int[] bl,  //literal desired/actual bit depth
-                                 int[] bd,  //distance desired/actual bit depth
-                                 int[][] tl,//literal/length tree result
-                                 int[][] td,//distance tree result 
-                                 ZStream z  //for memory allocation
-				 ){
-    bl[0]=fixed_bl;
-    bd[0]=fixed_bd;
-    tl[0]=fixed_tl;
-    td[0]=fixed_td;
     return Z_OK;
   }
 

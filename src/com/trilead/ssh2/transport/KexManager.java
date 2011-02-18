@@ -45,27 +45,64 @@ public class KexManager
 {
 	private static final Logger log = Logger.getLogger(KexManager.class);
 
+	public static final void checkKexAlgorithmList(String[] algos)
+	{
+		for (int i = 0; i < algos.length; i++)
+		{
+			if ("diffie-hellman-group-exchange-sha1".equals(algos[i]))
+				continue;
+
+			if ("diffie-hellman-group14-sha1".equals(algos[i]))
+				continue;
+
+			if ("diffie-hellman-group1-sha1".equals(algos[i]))
+				continue;
+
+			throw new IllegalArgumentException("Unknown kex algorithm '" + algos[i] + "'");
+		}
+	}
+	public static final void checkServerHostkeyAlgorithmsList(String[] algos)
+	{
+		for (int i = 0; i < algos.length; i++)
+		{
+			if (("ssh-rsa".equals(algos[i]) == false) && ("ssh-dss".equals(algos[i]) == false))
+				throw new IllegalArgumentException("Unknown server host key algorithm '" + algos[i] + "'");
+		}
+	}
+	public static final String[] getDefaultKexAlgorithmList()
+	{
+		return new String[] { "diffie-hellman-group-exchange-sha1", "diffie-hellman-group14-sha1",
+				"diffie-hellman-group1-sha1" };
+	}
+	public static final String[] getDefaultServerHostkeyAlgorithmList()
+	{
+		return new String[] { "ssh-rsa", "ssh-dss" };
+	}
 	KexState kxs;
+
 	int kexCount = 0;
 	KeyMaterial km;
+
 	byte[] sessionId;
+
 	ClientServerHello csh;
 
 	final Object accessLock = new Object();
-	ConnectionInfo lastConnInfo = null;
 
+	ConnectionInfo lastConnInfo = null;
 	boolean connectionClosed = false;
 
 	boolean ignore_next_kex_packet = false;
-
 	final TransportManager tm;
-
 	CryptoWishList nextKEXcryptoWishList;
 	DHGexParameters nextKEXdhgexParameters;
 
 	ServerHostKeyVerifier verifier;
+
 	final String hostname;
+
 	final int port;
+
 	final SecureRandom rnd;
 
 	public KexManager(TransportManager tm, ClientServerHello csh, CryptoWishList initialCwl, String hostname, int port,
@@ -81,49 +118,6 @@ public class KexManager
 		this.rnd = rnd;
 	}
 
-	public ConnectionInfo getOrWaitForConnectionInfo(int minKexCount) throws IOException
-	{
-		synchronized (accessLock)
-		{
-			while (true)
-			{
-				if ((lastConnInfo != null) && (lastConnInfo.keyExchangeCounter >= minKexCount))
-					return lastConnInfo;
-
-				if (connectionClosed)
-					throw (IOException) new IOException("Key exchange was not finished, connection is closed.")
-							.initCause(tm.getReasonClosedCause());
-
-				try
-				{
-					accessLock.wait();
-				}
-				catch (InterruptedException e)
-				{
-				}
-			}
-		}
-	}
-
-	private String getFirstMatch(String[] client, String[] server) throws NegotiateException
-	{
-		if (client == null || server == null)
-			throw new IllegalArgumentException();
-
-		if (client.length == 0)
-			return null;
-
-		for (int i = 0; i < client.length; i++)
-		{
-			for (int j = 0; j < server.length; j++)
-			{
-				if (client[i].equals(server[j]))
-					return client[i];
-			}
-		}
-		throw new NegotiateException();
-	}
-
 	private boolean compareFirstOfNameList(String[] a, String[] b)
 	{
 		if (a == null || b == null)
@@ -136,117 +130,6 @@ public class KexManager
 			return false;
 
 		return (a[0].equals(b[0]));
-	}
-
-	private boolean isGuessOK(KexParameters cpar, KexParameters spar)
-	{
-		if (cpar == null || spar == null)
-			throw new IllegalArgumentException();
-
-		if (compareFirstOfNameList(cpar.kex_algorithms, spar.kex_algorithms) == false)
-		{
-			return false;
-		}
-
-		if (compareFirstOfNameList(cpar.server_host_key_algorithms, spar.server_host_key_algorithms) == false)
-		{
-			return false;
-		}
-
-		/*
-		 * We do NOT check here if the other algorithms can be agreed on, this
-		 * is just a check if kex_algorithms and server_host_key_algorithms were
-		 * guessed right!
-		 */
-
-		return true;
-	}
-
-	private NegotiatedParameters mergeKexParameters(KexParameters client, KexParameters server)
-	{
-		NegotiatedParameters np = new NegotiatedParameters();
-
-		try
-		{
-			np.kex_algo = getFirstMatch(client.kex_algorithms, server.kex_algorithms);
-
-			log.log(20, "kex_algo=" + np.kex_algo);
-
-			np.server_host_key_algo = getFirstMatch(client.server_host_key_algorithms,
-					server.server_host_key_algorithms);
-
-			log.log(20, "server_host_key_algo=" + np.server_host_key_algo);
-
-			np.enc_algo_client_to_server = getFirstMatch(client.encryption_algorithms_client_to_server,
-					server.encryption_algorithms_client_to_server);
-			np.enc_algo_server_to_client = getFirstMatch(client.encryption_algorithms_server_to_client,
-					server.encryption_algorithms_server_to_client);
-
-			log.log(20, "enc_algo_client_to_server=" + np.enc_algo_client_to_server);
-			log.log(20, "enc_algo_server_to_client=" + np.enc_algo_server_to_client);
-
-			np.mac_algo_client_to_server = getFirstMatch(client.mac_algorithms_client_to_server,
-					server.mac_algorithms_client_to_server);
-			np.mac_algo_server_to_client = getFirstMatch(client.mac_algorithms_server_to_client,
-					server.mac_algorithms_server_to_client);
-
-			log.log(20, "mac_algo_client_to_server=" + np.mac_algo_client_to_server);
-			log.log(20, "mac_algo_server_to_client=" + np.mac_algo_server_to_client);
-
-			np.comp_algo_client_to_server = getFirstMatch(client.compression_algorithms_client_to_server,
-					server.compression_algorithms_client_to_server);
-			np.comp_algo_server_to_client = getFirstMatch(client.compression_algorithms_server_to_client,
-					server.compression_algorithms_server_to_client);
-
-			log.log(20, "comp_algo_client_to_server=" + np.comp_algo_client_to_server);
-			log.log(20, "comp_algo_server_to_client=" + np.comp_algo_server_to_client);
-
-		}
-		catch (NegotiateException e)
-		{
-			return null;
-		}
-
-		try
-		{
-			np.lang_client_to_server = getFirstMatch(client.languages_client_to_server,
-					server.languages_client_to_server);
-		}
-		catch (NegotiateException e1)
-		{
-			np.lang_client_to_server = null;
-		}
-
-		try
-		{
-			np.lang_server_to_client = getFirstMatch(client.languages_server_to_client,
-					server.languages_server_to_client);
-		}
-		catch (NegotiateException e2)
-		{
-			np.lang_server_to_client = null;
-		}
-
-		if (isGuessOK(client, server))
-			np.guessOK = true;
-
-		return np;
-	}
-
-	public synchronized void initiateKEX(CryptoWishList cwl, DHGexParameters dhgex) throws IOException
-	{
-		nextKEXcryptoWishList = cwl;
-		nextKEXdhgexParameters = dhgex;
-
-		if (kxs == null)
-		{
-			kxs = new KexState();
-
-			kxs.dhgexParameters = nextKEXdhgexParameters;
-			PacketKexInit kp = new PacketKexInit(nextKEXcryptoWishList, rnd);
-			kxs.localKEX = kp;
-			tm.sendKexMessage(kp.getPayload());
-		}
 	}
 
 	private boolean establishKeyMaterial()
@@ -307,66 +190,47 @@ public class KexManager
 		tm.kexFinished();
 	}
 
-	public static final String[] getDefaultServerHostkeyAlgorithmList()
+	private String getFirstMatch(String[] client, String[] server) throws NegotiateException
 	{
-		return new String[] { "ssh-rsa", "ssh-dss" };
+		if (client == null || server == null)
+			throw new IllegalArgumentException();
+
+		if (client.length == 0)
+			return null;
+
+		for (int i = 0; i < client.length; i++)
+		{
+			for (int j = 0; j < server.length; j++)
+			{
+				if (client[i].equals(server[j]))
+					return client[i];
+			}
+		}
+		throw new NegotiateException();
 	}
 
-	public static final void checkServerHostkeyAlgorithmsList(String[] algos)
+	public ConnectionInfo getOrWaitForConnectionInfo(int minKexCount) throws IOException
 	{
-		for (int i = 0; i < algos.length; i++)
+		synchronized (accessLock)
 		{
-			if (("ssh-rsa".equals(algos[i]) == false) && ("ssh-dss".equals(algos[i]) == false))
-				throw new IllegalArgumentException("Unknown server host key algorithm '" + algos[i] + "'");
+			while (true)
+			{
+				if ((lastConnInfo != null) && (lastConnInfo.keyExchangeCounter >= minKexCount))
+					return lastConnInfo;
+
+				if (connectionClosed)
+					throw (IOException) new IOException("Key exchange was not finished, connection is closed.")
+							.initCause(tm.getReasonClosedCause());
+
+				try
+				{
+					accessLock.wait();
+				}
+				catch (InterruptedException e)
+				{
+				}
+			}
 		}
-	}
-
-	public static final String[] getDefaultKexAlgorithmList()
-	{
-		return new String[] { "diffie-hellman-group-exchange-sha1", "diffie-hellman-group14-sha1",
-				"diffie-hellman-group1-sha1" };
-	}
-
-	public static final void checkKexAlgorithmList(String[] algos)
-	{
-		for (int i = 0; i < algos.length; i++)
-		{
-			if ("diffie-hellman-group-exchange-sha1".equals(algos[i]))
-				continue;
-
-			if ("diffie-hellman-group14-sha1".equals(algos[i]))
-				continue;
-
-			if ("diffie-hellman-group1-sha1".equals(algos[i]))
-				continue;
-
-			throw new IllegalArgumentException("Unknown kex algorithm '" + algos[i] + "'");
-		}
-	}
-
-	private boolean verifySignature(byte[] sig, byte[] hostkey) throws IOException
-	{
-		if (kxs.np.server_host_key_algo.equals("ssh-rsa"))
-		{
-			RSASignature rs = RSASHA1Verify.decodeSSHRSASignature(sig);
-			RSAPublicKey rpk = RSASHA1Verify.decodeSSHRSAPublicKey(hostkey);
-
-			log.log(50, "Verifying ssh-rsa signature");
-
-			return RSASHA1Verify.verifySignature(kxs.H, rs, rpk);
-		}
-
-		if (kxs.np.server_host_key_algo.equals("ssh-dss"))
-		{
-			DSASignature ds = DSASHA1Verify.decodeSSHDSASignature(sig);
-			DSAPublicKey dpk = DSASHA1Verify.decodeSSHDSAPublicKey(hostkey);
-
-			log.log(50, "Verifying ssh-dss signature");
-
-			return DSASHA1Verify.verifySignature(kxs.H, ds, dpk);
-		}
-
-		throw new IOException("Unknown server host key algorithm '" + kxs.np.server_host_key_algo + "'");
 	}
 
 	public synchronized void handleMessage(byte[] msg, int msglen) throws IOException
@@ -634,5 +498,141 @@ public class KexManager
 		}
 
 		throw new IllegalStateException("Unkown KEX method! (" + kxs.np.kex_algo + ")");
+	}
+
+	public synchronized void initiateKEX(CryptoWishList cwl, DHGexParameters dhgex) throws IOException
+	{
+		nextKEXcryptoWishList = cwl;
+		nextKEXdhgexParameters = dhgex;
+
+		if (kxs == null)
+		{
+			kxs = new KexState();
+
+			kxs.dhgexParameters = nextKEXdhgexParameters;
+			PacketKexInit kp = new PacketKexInit(nextKEXcryptoWishList, rnd);
+			kxs.localKEX = kp;
+			tm.sendKexMessage(kp.getPayload());
+		}
+	}
+
+	private boolean isGuessOK(KexParameters cpar, KexParameters spar)
+	{
+		if (cpar == null || spar == null)
+			throw new IllegalArgumentException();
+
+		if (compareFirstOfNameList(cpar.kex_algorithms, spar.kex_algorithms) == false)
+		{
+			return false;
+		}
+
+		if (compareFirstOfNameList(cpar.server_host_key_algorithms, spar.server_host_key_algorithms) == false)
+		{
+			return false;
+		}
+
+		/*
+		 * We do NOT check here if the other algorithms can be agreed on, this
+		 * is just a check if kex_algorithms and server_host_key_algorithms were
+		 * guessed right!
+		 */
+
+		return true;
+	}
+
+	private NegotiatedParameters mergeKexParameters(KexParameters client, KexParameters server)
+	{
+		NegotiatedParameters np = new NegotiatedParameters();
+
+		try
+		{
+			np.kex_algo = getFirstMatch(client.kex_algorithms, server.kex_algorithms);
+
+			log.log(20, "kex_algo=" + np.kex_algo);
+
+			np.server_host_key_algo = getFirstMatch(client.server_host_key_algorithms,
+					server.server_host_key_algorithms);
+
+			log.log(20, "server_host_key_algo=" + np.server_host_key_algo);
+
+			np.enc_algo_client_to_server = getFirstMatch(client.encryption_algorithms_client_to_server,
+					server.encryption_algorithms_client_to_server);
+			np.enc_algo_server_to_client = getFirstMatch(client.encryption_algorithms_server_to_client,
+					server.encryption_algorithms_server_to_client);
+
+			log.log(20, "enc_algo_client_to_server=" + np.enc_algo_client_to_server);
+			log.log(20, "enc_algo_server_to_client=" + np.enc_algo_server_to_client);
+
+			np.mac_algo_client_to_server = getFirstMatch(client.mac_algorithms_client_to_server,
+					server.mac_algorithms_client_to_server);
+			np.mac_algo_server_to_client = getFirstMatch(client.mac_algorithms_server_to_client,
+					server.mac_algorithms_server_to_client);
+
+			log.log(20, "mac_algo_client_to_server=" + np.mac_algo_client_to_server);
+			log.log(20, "mac_algo_server_to_client=" + np.mac_algo_server_to_client);
+
+			np.comp_algo_client_to_server = getFirstMatch(client.compression_algorithms_client_to_server,
+					server.compression_algorithms_client_to_server);
+			np.comp_algo_server_to_client = getFirstMatch(client.compression_algorithms_server_to_client,
+					server.compression_algorithms_server_to_client);
+
+			log.log(20, "comp_algo_client_to_server=" + np.comp_algo_client_to_server);
+			log.log(20, "comp_algo_server_to_client=" + np.comp_algo_server_to_client);
+
+		}
+		catch (NegotiateException e)
+		{
+			return null;
+		}
+
+		try
+		{
+			np.lang_client_to_server = getFirstMatch(client.languages_client_to_server,
+					server.languages_client_to_server);
+		}
+		catch (NegotiateException e1)
+		{
+			np.lang_client_to_server = null;
+		}
+
+		try
+		{
+			np.lang_server_to_client = getFirstMatch(client.languages_server_to_client,
+					server.languages_server_to_client);
+		}
+		catch (NegotiateException e2)
+		{
+			np.lang_server_to_client = null;
+		}
+
+		if (isGuessOK(client, server))
+			np.guessOK = true;
+
+		return np;
+	}
+
+	private boolean verifySignature(byte[] sig, byte[] hostkey) throws IOException
+	{
+		if (kxs.np.server_host_key_algo.equals("ssh-rsa"))
+		{
+			RSASignature rs = RSASHA1Verify.decodeSSHRSASignature(sig);
+			RSAPublicKey rpk = RSASHA1Verify.decodeSSHRSAPublicKey(hostkey);
+
+			log.log(50, "Verifying ssh-rsa signature");
+
+			return RSASHA1Verify.verifySignature(kxs.H, rs, rpk);
+		}
+
+		if (kxs.np.server_host_key_algo.equals("ssh-dss"))
+		{
+			DSASignature ds = DSASHA1Verify.decodeSSHDSASignature(sig);
+			DSAPublicKey dpk = DSASHA1Verify.decodeSSHDSAPublicKey(hostkey);
+
+			log.log(50, "Verifying ssh-dss signature");
+
+			return DSASHA1Verify.verifySignature(kxs.H, ds, dpk);
+		}
+
+		throw new IOException("Unknown server host key algorithm '" + kxs.np.server_host_key_algo + "'");
 	}
 }

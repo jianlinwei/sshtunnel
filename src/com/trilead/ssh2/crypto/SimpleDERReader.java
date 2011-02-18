@@ -1,7 +1,6 @@
 package com.trilead.ssh2.crypto;
 
 import java.io.IOException;
-
 import java.math.BigInteger;
 
 /**
@@ -26,16 +25,23 @@ public class SimpleDERReader
 		resetInput(b, off, len);
 	}
 
-	public void resetInput(byte[] b)
+	public int available()
 	{
-		resetInput(b, 0, b.length);
+		return count;
 	}
 	
-	public void resetInput(byte[] b, int off, int len)
+	public int ignoreNextObject() throws IOException
 	{
-		buffer = b;
-		pos = off;
-		count = len;
+		int type = readByte() & 0xff;
+
+		int len = readLength();
+
+		if ((len < 0) || len > available())
+			throw new IOException("Illegal len in DER object (" + len  + ")");
+
+		readBytes(len);
+		
+		return type;
 	}
 
 	private byte readByte() throws IOException
@@ -61,9 +67,23 @@ public class SimpleDERReader
 		return b;
 	}
 
-	public int available()
+	public BigInteger readInt() throws IOException
 	{
-		return count;
+		int type = readByte() & 0xff;
+		
+		if (type != 0x02)
+			throw new IOException("Expected DER Integer, but found type " + type);
+		
+		int len = readLength();
+
+		if ((len < 0) || len > available())
+			throw new IOException("Illegal len in DER object (" + len  + ")");
+
+		byte[] b = readBytes(len);
+		
+		BigInteger bi = new BigInteger(b);
+		
+		return bi;
 	}
 
 	private int readLength() throws IOException
@@ -90,26 +110,12 @@ public class SimpleDERReader
 		return len;
 	}
 
-	public int ignoreNextObject() throws IOException
-	{
-		int type = readByte() & 0xff;
-
-		int len = readLength();
-
-		if ((len < 0) || len > available())
-			throw new IOException("Illegal len in DER object (" + len  + ")");
-
-		readBytes(len);
-		
-		return type;
-	}
-	
-	public BigInteger readInt() throws IOException
+	public byte[] readOctetString() throws IOException
 	{
 		int type = readByte() & 0xff;
 		
-		if (type != 0x02)
-			throw new IOException("Expected DER Integer, but found type " + type);
+		if (type != 0x04)
+			throw new IOException("Expected DER Octetstring, but found type " + type);
 		
 		int len = readLength();
 
@@ -117,12 +123,10 @@ public class SimpleDERReader
 			throw new IOException("Illegal len in DER object (" + len  + ")");
 
 		byte[] b = readBytes(len);
-		
-		BigInteger bi = new BigInteger(b);
-		
-		return bi;
-	}
 
+		return b;
+	}
+	
 	public byte[] readSequenceAsByteArray() throws IOException
 	{
 		int type = readByte() & 0xff;
@@ -139,22 +143,17 @@ public class SimpleDERReader
 
 		return b;
 	}
-	
-	public byte[] readOctetString() throws IOException
+
+	public void resetInput(byte[] b)
 	{
-		int type = readByte() & 0xff;
-		
-		if (type != 0x04)
-			throw new IOException("Expected DER Octetstring, but found type " + type);
-		
-		int len = readLength();
-
-		if ((len < 0) || len > available())
-			throw new IOException("Illegal len in DER object (" + len  + ")");
-
-		byte[] b = readBytes(len);
-
-		return b;
+		resetInput(b, 0, b.length);
+	}
+	
+	public void resetInput(byte[] b, int off, int len)
+	{
+		buffer = b;
+		pos = off;
+		count = len;
 	}
 
 }

@@ -48,37 +48,13 @@ public final class HMAC implements Digest
 		md.update(k_xor_ipad);
 	}
 
-	public final int getDigestLength()
-	{
-		return size;
-	}
-
-	public final void update(byte b)
-	{
-		md.update(b);
-	}
-
-	public final void update(byte[] b)
-	{
-		md.update(b);
-	}
-
-	public final void update(byte[] b, int off, int len)
-	{
-		md.update(b, off, len);
-	}
-
-	public final void reset()
-	{
-		md.reset();
-		md.update(k_xor_ipad);
-	}
-
+	@Override
 	public final void digest(byte[] out)
 	{
 		digest(out, 0);
 	}
 
+	@Override
 	public final void digest(byte[] out, int off)
 	{
 		md.digest(tmp);
@@ -91,5 +67,36 @@ public final class HMAC implements Digest
 		System.arraycopy(tmp, 0, out, off, size);
 
 		md.update(k_xor_ipad);
+	}
+
+	@Override
+	public final int getDigestLength()
+	{
+		return size;
+	}
+
+	@Override
+	public final void reset()
+	{
+		md.reset();
+		md.update(k_xor_ipad);
+	}
+
+	@Override
+	public final void update(byte b)
+	{
+		md.update(b);
+	}
+
+	@Override
+	public final void update(byte[] b)
+	{
+		md.update(b);
+	}
+
+	@Override
+	public final void update(byte[] b, int off, int len)
+	{
+		md.update(b, off, len);
 	}
 }

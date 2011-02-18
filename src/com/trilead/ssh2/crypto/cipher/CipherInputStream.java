@@ -35,33 +35,6 @@ public class CipherInputStream
 		changeCipher(tc);
 	}
 
-	private int fill_buffer() throws IOException
-	{
-		input_buffer_pos = 0;
-		input_buffer_size = bi.read(input_buffer, 0, BUFF_SIZE);
-		return input_buffer_size;
-	}
-
-	private int internal_read(byte[] b, int off, int len) throws IOException
-	{
-		if (input_buffer_size < 0)
-			return -1;
-
-		if (input_buffer_pos >= input_buffer_size)
-		{
-			if (fill_buffer() <= 0)
-				return -1;
-		}
-		
-		int avail = input_buffer_size - input_buffer_pos;
-		int thiscopy = (len > avail) ? avail : len;
-
-		System.arraycopy(input_buffer, input_buffer_pos, b, off, thiscopy);
-		input_buffer_pos += thiscopy;
-
-		return thiscopy;
-	}
-
 	public void changeCipher(BlockCipher bc)
 	{
 		this.currentCipher = bc;
@@ -69,6 +42,13 @@ public class CipherInputStream
 		buffer = new byte[blockSize];
 		enc = new byte[blockSize];
 		pos = blockSize;
+	}
+
+	private int fill_buffer() throws IOException
+	{
+		input_buffer_pos = 0;
+		input_buffer_size = bi.read(input_buffer, 0, BUFF_SIZE);
+		return input_buffer_size;
 	}
 
 	private void getBlock() throws IOException
@@ -91,6 +71,35 @@ public class CipherInputStream
 			throw new IOException("Error while decrypting block.");
 		}
 		pos = 0;
+	}
+
+	private int internal_read(byte[] b, int off, int len) throws IOException
+	{
+		if (input_buffer_size < 0)
+			return -1;
+
+		if (input_buffer_pos >= input_buffer_size)
+		{
+			if (fill_buffer() <= 0)
+				return -1;
+		}
+		
+		int avail = input_buffer_size - input_buffer_pos;
+		int thiscopy = (len > avail) ? avail : len;
+
+		System.arraycopy(input_buffer, input_buffer_pos, b, off, thiscopy);
+		input_buffer_pos += thiscopy;
+
+		return thiscopy;
+	}
+
+	public int read() throws IOException
+	{
+		if (pos >= blockSize)
+		{
+			getBlock();
+		}
+		return buffer[pos++] & 0xff;
 	}
 
 	public int read(byte[] dst) throws IOException
@@ -116,15 +125,6 @@ public class CipherInputStream
 			count += copy;
 		}
 		return count;
-	}
-
-	public int read() throws IOException
-	{
-		if (pos >= blockSize)
-		{
-			getBlock();
-		}
-		return buffer[pos++] & 0xff;
 	}
 
 	public int readPlain(byte[] b, int off, int len) throws IOException

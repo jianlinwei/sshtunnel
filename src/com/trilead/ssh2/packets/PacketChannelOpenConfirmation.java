@@ -17,15 +17,6 @@ public class PacketChannelOpenConfirmation
 	public int initialWindowSize;
 	public int maxPacketSize;
 
-	public PacketChannelOpenConfirmation(int recipientChannelID, int senderChannelID, int initialWindowSize,
-			int maxPacketSize)
-	{
-		this.recipientChannelID = recipientChannelID;
-		this.senderChannelID = senderChannelID;
-		this.initialWindowSize = initialWindowSize;
-		this.maxPacketSize = maxPacketSize;
-	}
-
 	public PacketChannelOpenConfirmation(byte payload[], int off, int len) throws IOException
 	{
 		this.payload = new byte[len];
@@ -47,6 +38,15 @@ public class PacketChannelOpenConfirmation
 		
 		if (tr.remain() != 0)
 			throw new IOException("Padding in SSH_MSG_CHANNEL_OPEN_CONFIRMATION packet!");
+	}
+
+	public PacketChannelOpenConfirmation(int recipientChannelID, int senderChannelID, int initialWindowSize,
+			int maxPacketSize)
+	{
+		this.recipientChannelID = recipientChannelID;
+		this.senderChannelID = senderChannelID;
+		this.initialWindowSize = initialWindowSize;
+		this.maxPacketSize = maxPacketSize;
 	}
 
 	public byte[] getPayload()

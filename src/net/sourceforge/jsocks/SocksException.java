@@ -7,6 +7,28 @@ package net.sourceforge.jsocks;
 public class SocksException extends java.io.IOException{
 	private static final long serialVersionUID = 6141184566248512277L;
 
+   static final String UNASSIGNED_ERROR_MESSAGE =
+                  "Unknown error message";
+   static final String serverReplyMessage[] = { 
+                  "Succeeded", 
+                  "General SOCKS server failure",
+                  "Connection not allowed by ruleset",
+                  "Network unreachable",
+                  "Host unreachable",
+                  "Connection refused",
+                  "TTL expired",
+                  "Command not supported",
+                  "Address type not supported" };
+   static final String localErrorMessage[] ={
+                  "SOCKS server not specified",
+                  "Unable to contact SOCKS server",
+                  "IO error",
+                  "None of Authentication methods are supported",
+                  "Authentication failed",
+                  "General SOCKS fault" };
+   String errString;
+
+   public int errCode;
    /**
     Construct a SocksException with given error code.
     <p>
@@ -28,6 +50,7 @@ public class SocksException extends java.io.IOException{
                       UNASSIGNED_ERROR_MESSAGE;
        }
    }
+
    /**
     Constructs a SocksException with given error code and message.
     @param errCode  Error code.
@@ -37,6 +60,7 @@ public class SocksException extends java.io.IOException{
        this.errCode = errCode;
        this.errString = errString;
    }
+
    /**
     Get the error code associated with this exception.
     @return Error code associated with this exception.
@@ -48,33 +72,10 @@ public class SocksException extends java.io.IOException{
     Get human readable representation of this exception.
     @return String represntation of this exception.
    */
-   public String toString(){
+   @Override
+public String toString(){
       return errString;
    }
-
-   static final String UNASSIGNED_ERROR_MESSAGE =
-                  "Unknown error message";
-   static final String serverReplyMessage[] = { 
-                  "Succeeded", 
-                  "General SOCKS server failure",
-                  "Connection not allowed by ruleset",
-                  "Network unreachable",
-                  "Host unreachable",
-                  "Connection refused",
-                  "TTL expired",
-                  "Command not supported",
-                  "Address type not supported" };
-
-   static final String localErrorMessage[] ={
-                  "SOCKS server not specified",
-                  "Unable to contact SOCKS server",
-                  "IO error",
-                  "None of Authentication methods are supported",
-                  "Authentication failed",
-                  "General SOCKS fault" };
-
-   String errString;
-   public int errCode;
 
 }//End of SocksException class
 

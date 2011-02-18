@@ -92,50 +92,7 @@ final class Inflate{
 
   InfBlocks blocks;     // current inflate_blocks state
 
-  int inflateReset(ZStream z){
-    if(z == null || z.istate == null) return Z_STREAM_ERROR;
-    
-    z.total_in = z.total_out = 0;
-    z.msg = null;
-    z.istate.mode = z.istate.nowrap!=0 ? BLOCKS : METHOD;
-    z.istate.blocks.reset(z, null);
-    return Z_OK;
-  }
-
-  int inflateEnd(ZStream z){
-    if(blocks != null)
-      blocks.free(z);
-    blocks=null;
-    //    ZFREE(z, z->state);
-    return Z_OK;
-  }
-
-  int inflateInit(ZStream z, int w){
-    z.msg = null;
-    blocks = null;
-
-    // handle undocumented nowrap option (no zlib header or check)
-    nowrap = 0;
-    if(w < 0){
-      w = - w;
-      nowrap = 1;
-    }
-
-    // set window size
-    if(w<8 ||w>15){
-      inflateEnd(z);
-      return Z_STREAM_ERROR;
-    }
-    wbits=w;
-
-    z.istate.blocks=new InfBlocks(z, 
-				  z.istate.nowrap!=0 ? null : this,
-				  1<<w);
-
-    // reset state
-    inflateReset(z);
-    return Z_OK;
-  }
+  static private byte[] mark = {(byte)0, (byte)0, (byte)0xff, (byte)0xff};
 
   int inflate(ZStream z, int f){
     int r;
@@ -287,6 +244,51 @@ final class Inflate{
     }
   }
 
+  int inflateEnd(ZStream z){
+    if(blocks != null)
+      blocks.free(z);
+    blocks=null;
+    //    ZFREE(z, z->state);
+    return Z_OK;
+  }
+
+  int inflateInit(ZStream z, int w){
+    z.msg = null;
+    blocks = null;
+
+    // handle undocumented nowrap option (no zlib header or check)
+    nowrap = 0;
+    if(w < 0){
+      w = - w;
+      nowrap = 1;
+    }
+
+    // set window size
+    if(w<8 ||w>15){
+      inflateEnd(z);
+      return Z_STREAM_ERROR;
+    }
+    wbits=w;
+
+    z.istate.blocks=new InfBlocks(z, 
+				  z.istate.nowrap!=0 ? null : this,
+				  1<<w);
+
+    // reset state
+    inflateReset(z);
+    return Z_OK;
+  }
+
+
+  int inflateReset(ZStream z){
+    if(z == null || z.istate == null) return Z_STREAM_ERROR;
+    
+    z.total_in = z.total_out = 0;
+    z.msg = null;
+    z.istate.mode = z.istate.nowrap!=0 ? BLOCKS : METHOD;
+    z.istate.blocks.reset(z, null);
+    return Z_OK;
+  }
 
   int inflateSetDictionary(ZStream z, byte[] dictionary, int dictLength){
     int index=0;
@@ -308,8 +310,6 @@ final class Inflate{
     z.istate.mode = BLOCKS;
     return Z_OK;
   }
-
-  static private byte[] mark = {(byte)0, (byte)0, (byte)0xff, (byte)0xff};
 
   int inflateSync(ZStream z){
     int n;       // number of bytes to look at

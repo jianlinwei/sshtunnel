@@ -4,7 +4,6 @@ package com.trilead.ssh2.packets;
 import java.io.IOException;
 import java.security.SecureRandom;
 
-import com.trilead.ssh2.compression.CompressionFactory;
 import com.trilead.ssh2.crypto.CryptoWishList;
 import com.trilead.ssh2.transport.KexParameters;
 
@@ -20,25 +19,6 @@ public class PacketKexInit
 	byte[] payload;
 
 	KexParameters kp = new KexParameters();
-
-	public PacketKexInit(CryptoWishList cwl, SecureRandom rnd)
-	{
-		kp.cookie = new byte[16];
-		rnd.nextBytes(kp.cookie);
-
-		kp.kex_algorithms = cwl.kexAlgorithms;
-		kp.server_host_key_algorithms = cwl.serverHostKeyAlgorithms;
-		kp.encryption_algorithms_client_to_server = cwl.c2s_enc_algos;
-		kp.encryption_algorithms_server_to_client = cwl.s2c_enc_algos;
-		kp.mac_algorithms_client_to_server = cwl.c2s_mac_algos;
-		kp.mac_algorithms_server_to_client = cwl.s2c_mac_algos;
-		kp.compression_algorithms_client_to_server = cwl.c2s_comp_algos;
-		kp.compression_algorithms_server_to_client = cwl.s2c_comp_algos;
-		kp.languages_client_to_server = new String[] {};
-		kp.languages_server_to_client = new String[] {};
-		kp.first_kex_packet_follows = false;
-		kp.reserved_field1 = 0;
-	}
 
 	public PacketKexInit(byte payload[], int off, int len) throws IOException
 	{
@@ -70,33 +50,23 @@ public class PacketKexInit
 			throw new IOException("Padding in KexInitPacket!");
 	}
 
-	public byte[] getPayload()
+	public PacketKexInit(CryptoWishList cwl, SecureRandom rnd)
 	{
-		if (payload == null)
-		{
-			TypesWriter tw = new TypesWriter();
-			tw.writeByte(Packets.SSH_MSG_KEXINIT);
-			tw.writeBytes(kp.cookie, 0, 16);
-			tw.writeNameList(kp.kex_algorithms);
-			tw.writeNameList(kp.server_host_key_algorithms);
-			tw.writeNameList(kp.encryption_algorithms_client_to_server);
-			tw.writeNameList(kp.encryption_algorithms_server_to_client);
-			tw.writeNameList(kp.mac_algorithms_client_to_server);
-			tw.writeNameList(kp.mac_algorithms_server_to_client);
-			tw.writeNameList(kp.compression_algorithms_client_to_server);
-			tw.writeNameList(kp.compression_algorithms_server_to_client);
-			tw.writeNameList(kp.languages_client_to_server);
-			tw.writeNameList(kp.languages_server_to_client);
-			tw.writeBoolean(kp.first_kex_packet_follows);
-			tw.writeUINT32(kp.reserved_field1);
-			payload = tw.getBytes();
-		}
-		return payload;
-	}
+		kp.cookie = new byte[16];
+		rnd.nextBytes(kp.cookie);
 
-	public KexParameters getKexParameters()
-	{
-		return kp;
+		kp.kex_algorithms = cwl.kexAlgorithms;
+		kp.server_host_key_algorithms = cwl.serverHostKeyAlgorithms;
+		kp.encryption_algorithms_client_to_server = cwl.c2s_enc_algos;
+		kp.encryption_algorithms_server_to_client = cwl.s2c_enc_algos;
+		kp.mac_algorithms_client_to_server = cwl.c2s_mac_algos;
+		kp.mac_algorithms_server_to_client = cwl.s2c_mac_algos;
+		kp.compression_algorithms_client_to_server = cwl.c2s_comp_algos;
+		kp.compression_algorithms_server_to_client = cwl.s2c_comp_algos;
+		kp.languages_client_to_server = new String[] {};
+		kp.languages_server_to_client = new String[] {};
+		kp.first_kex_packet_follows = false;
+		kp.reserved_field1 = 0;
 	}
 
 	public String[] getCompression_algorithms_client_to_server()
@@ -124,14 +94,14 @@ public class PacketKexInit
 		return kp.encryption_algorithms_server_to_client;
 	}
 
-	public boolean isFirst_kex_packet_follows()
-	{
-		return kp.first_kex_packet_follows;
-	}
-
 	public String[] getKex_algorithms()
 	{
 		return kp.kex_algorithms;
+	}
+
+	public KexParameters getKexParameters()
+	{
+		return kp;
 	}
 
 	public String[] getLanguages_client_to_server()
@@ -154,6 +124,30 @@ public class PacketKexInit
 		return kp.mac_algorithms_server_to_client;
 	}
 
+	public byte[] getPayload()
+	{
+		if (payload == null)
+		{
+			TypesWriter tw = new TypesWriter();
+			tw.writeByte(Packets.SSH_MSG_KEXINIT);
+			tw.writeBytes(kp.cookie, 0, 16);
+			tw.writeNameList(kp.kex_algorithms);
+			tw.writeNameList(kp.server_host_key_algorithms);
+			tw.writeNameList(kp.encryption_algorithms_client_to_server);
+			tw.writeNameList(kp.encryption_algorithms_server_to_client);
+			tw.writeNameList(kp.mac_algorithms_client_to_server);
+			tw.writeNameList(kp.mac_algorithms_server_to_client);
+			tw.writeNameList(kp.compression_algorithms_client_to_server);
+			tw.writeNameList(kp.compression_algorithms_server_to_client);
+			tw.writeNameList(kp.languages_client_to_server);
+			tw.writeNameList(kp.languages_server_to_client);
+			tw.writeBoolean(kp.first_kex_packet_follows);
+			tw.writeUINT32(kp.reserved_field1);
+			payload = tw.getBytes();
+		}
+		return payload;
+	}
+
 	public int getReserved_field1()
 	{
 		return kp.reserved_field1;
@@ -162,5 +156,10 @@ public class PacketKexInit
 	public String[] getServer_host_key_algorithms()
 	{
 		return kp.server_host_key_algorithms;
+	}
+
+	public boolean isFirst_kex_packet_follows()
+	{
+		return kp.first_kex_packet_follows;
 	}
 }

@@ -39,17 +39,6 @@ public class RSASHA1Verify
 		return new RSAPublicKey(e, n);
 	}
 
-	public static byte[] encodeSSHRSAPublicKey(RSAPublicKey pk) throws IOException
-	{
-		TypesWriter tw = new TypesWriter();
-
-		tw.writeString("ssh-rsa");
-		tw.writeMPInt(pk.getE());
-		tw.writeMPInt(pk.getN());
-
-		return tw.getBytes();
-	}
-
 	public static RSASignature decodeSSHRSASignature(byte[] sig) throws IOException
 	{
 		TypesReader tr = new TypesReader(sig);
@@ -78,6 +67,17 @@ public class RSASHA1Verify
 			throw new IOException("Padding in RSA signature!");
 
 		return new RSASignature(new BigInteger(1, s));
+	}
+
+	public static byte[] encodeSSHRSAPublicKey(RSAPublicKey pk) throws IOException
+	{
+		TypesWriter tw = new TypesWriter();
+
+		tw.writeString("ssh-rsa");
+		tw.writeMPInt(pk.getE());
+		tw.writeMPInt(pk.getN());
+
+		return tw.getBytes();
 	}
 
 	public static byte[] encodeSSHRSASignature(RSASignature sig) throws IOException

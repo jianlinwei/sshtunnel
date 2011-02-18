@@ -367,21 +367,15 @@ public class AES implements BlockCipher
 			0xca81f3af, 0xb93ec468, 0x382c3424, 0xc25f40a3, 0x1672c31d, 0xbc0c25e2, 0x288b493c, 0xff41950d, 0x397101a8,
 			0x08deb30c, 0xd89ce4b4, 0x6490c156, 0x7b6184cb, 0xd570b632, 0x48745c6c, 0xd04257b8 };
 
-	private final int shift(int r, int shift)
-	{
-		return (((r >>> shift) | (r << (32 - shift))));
-	}
+	private static final int m1 = 0x80808080;
 
 	/* multiply four bytes in GF(2^8) by 'x' {02} in parallel */
 
-	private static final int m1 = 0x80808080;
 	private static final int m2 = 0x7f7f7f7f;
 	private static final int m3 = 0x0000001b;
+	private int ROUNDS;
 
-	private final int FFmulX(int x)
-	{
-		return (((x & m2) << 1) ^ (((x & m1) >>> 7) * m3));
-	}
+	private int[][] WorkingKey = null;
 
 	/*
 	 * The following defines provide alternative definitions of FFmulX that
@@ -395,19 +389,106 @@ public class AES implements BlockCipher
 	 * 
 	 */
 
-	private final int inv_mcol(int x)
-	{
-		int f2 = FFmulX(x);
-		int f4 = FFmulX(f2);
-		int f8 = FFmulX(f4);
-		int f9 = x ^ f8;
+	private int C0, C1, C2, C3;
 
-		return f2 ^ f4 ^ f8 ^ shift(f2 ^ f9, 8) ^ shift(f4 ^ f9, 16) ^ shift(f9, 24);
+	private boolean doEncrypt;
+
+	private static final int BLOCK_SIZE = 16;
+
+	/**
+	 * default constructor - 128 bit block size.
+	 */
+	public AES()
+	{
 	}
-
-	private final int subWord(int x)
+	private final void decryptBlock(int[][] KW)
 	{
-		return (S[x & 255] & 255 | ((S[(x >> 8) & 255] & 255) << 8) | ((S[(x >> 16) & 255] & 255) << 16) | S[(x >> 24) & 255] << 24);
+		int r, r0, r1, r2, r3;
+
+		C0 ^= KW[ROUNDS][0];
+		C1 ^= KW[ROUNDS][1];
+		C2 ^= KW[ROUNDS][2];
+		C3 ^= KW[ROUNDS][3];
+
+		for (r = ROUNDS - 1; r > 1;)
+		{
+			r0 = Tinv0[C0 & 255] ^ Tinv1[(C3 >> 8) & 255] ^ Tinv2[(C2 >> 16) & 255] ^ Tinv3[(C1 >> 24) & 255]
+					^ KW[r][0];
+			r1 = Tinv0[C1 & 255] ^ Tinv1[(C0 >> 8) & 255] ^ Tinv2[(C3 >> 16) & 255] ^ Tinv3[(C2 >> 24) & 255]
+					^ KW[r][1];
+			r2 = Tinv0[C2 & 255] ^ Tinv1[(C1 >> 8) & 255] ^ Tinv2[(C0 >> 16) & 255] ^ Tinv3[(C3 >> 24) & 255]
+					^ KW[r][2];
+			r3 = Tinv0[C3 & 255] ^ Tinv1[(C2 >> 8) & 255] ^ Tinv2[(C1 >> 16) & 255] ^ Tinv3[(C0 >> 24) & 255]
+					^ KW[r--][3];
+			C0 = Tinv0[r0 & 255] ^ Tinv1[(r3 >> 8) & 255] ^ Tinv2[(r2 >> 16) & 255] ^ Tinv3[(r1 >> 24) & 255]
+					^ KW[r][0];
+			C1 = Tinv0[r1 & 255] ^ Tinv1[(r0 >> 8) & 255] ^ Tinv2[(r3 >> 16) & 255] ^ Tinv3[(r2 >> 24) & 255]
+					^ KW[r][1];
+			C2 = Tinv0[r2 & 255] ^ Tinv1[(r1 >> 8) & 255] ^ Tinv2[(r0 >> 16) & 255] ^ Tinv3[(r3 >> 24) & 255]
+					^ KW[r][2];
+			C3 = Tinv0[r3 & 255] ^ Tinv1[(r2 >> 8) & 255] ^ Tinv2[(r1 >> 16) & 255] ^ Tinv3[(r0 >> 24) & 255]
+					^ KW[r--][3];
+		}
+
+		r0 = Tinv0[C0 & 255] ^ Tinv1[(C3 >> 8) & 255] ^ Tinv2[(C2 >> 16) & 255] ^ Tinv3[(C1 >> 24) & 255] ^ KW[r][0];
+		r1 = Tinv0[C1 & 255] ^ Tinv1[(C0 >> 8) & 255] ^ Tinv2[(C3 >> 16) & 255] ^ Tinv3[(C2 >> 24) & 255] ^ KW[r][1];
+		r2 = Tinv0[C2 & 255] ^ Tinv1[(C1 >> 8) & 255] ^ Tinv2[(C0 >> 16) & 255] ^ Tinv3[(C3 >> 24) & 255] ^ KW[r][2];
+		r3 = Tinv0[C3 & 255] ^ Tinv1[(C2 >> 8) & 255] ^ Tinv2[(C1 >> 16) & 255] ^ Tinv3[(C0 >> 24) & 255] ^ KW[r--][3];
+
+		// the final round's table is a simple function of Si so we don't use a
+		// whole other four tables for it
+
+		C0 = (Si[r0 & 255] & 255) ^ ((Si[(r3 >> 8) & 255] & 255) << 8) ^ ((Si[(r2 >> 16) & 255] & 255) << 16)
+				^ (Si[(r1 >> 24) & 255] << 24) ^ KW[0][0];
+		C1 = (Si[r1 & 255] & 255) ^ ((Si[(r0 >> 8) & 255] & 255) << 8) ^ ((Si[(r3 >> 16) & 255] & 255) << 16)
+				^ (Si[(r2 >> 24) & 255] << 24) ^ KW[0][1];
+		C2 = (Si[r2 & 255] & 255) ^ ((Si[(r1 >> 8) & 255] & 255) << 8) ^ ((Si[(r0 >> 16) & 255] & 255) << 16)
+				^ (Si[(r3 >> 24) & 255] << 24) ^ KW[0][2];
+		C3 = (Si[r3 & 255] & 255) ^ ((Si[(r2 >> 8) & 255] & 255) << 8) ^ ((Si[(r1 >> 16) & 255] & 255) << 16)
+				^ (Si[(r0 >> 24) & 255] << 24) ^ KW[0][3];
+	}
+	private final void encryptBlock(int[][] KW)
+	{
+		int r, r0, r1, r2, r3;
+
+		C0 ^= KW[0][0];
+		C1 ^= KW[0][1];
+		C2 ^= KW[0][2];
+		C3 ^= KW[0][3];
+
+		for (r = 1; r < ROUNDS - 1;)
+		{
+			r0 = T0[C0 & 255] ^ T1[(C1 >> 8) & 255] ^ T2[(C2 >> 16) & 255] ^ T3[(C3 >> 24) & 255] ^ KW[r][0];
+			r1 = T0[C1 & 255] ^ T1[(C2 >> 8) & 255] ^ T2[(C3 >> 16) & 255] ^ T3[(C0 >> 24) & 255] ^ KW[r][1];
+			r2 = T0[C2 & 255] ^ T1[(C3 >> 8) & 255] ^ T2[(C0 >> 16) & 255] ^ T3[(C1 >> 24) & 255] ^ KW[r][2];
+			r3 = T0[C3 & 255] ^ T1[(C0 >> 8) & 255] ^ T2[(C1 >> 16) & 255] ^ T3[(C2 >> 24) & 255] ^ KW[r++][3];
+			C0 = T0[r0 & 255] ^ T1[(r1 >> 8) & 255] ^ T2[(r2 >> 16) & 255] ^ T3[(r3 >> 24) & 255] ^ KW[r][0];
+			C1 = T0[r1 & 255] ^ T1[(r2 >> 8) & 255] ^ T2[(r3 >> 16) & 255] ^ T3[(r0 >> 24) & 255] ^ KW[r][1];
+			C2 = T0[r2 & 255] ^ T1[(r3 >> 8) & 255] ^ T2[(r0 >> 16) & 255] ^ T3[(r1 >> 24) & 255] ^ KW[r][2];
+			C3 = T0[r3 & 255] ^ T1[(r0 >> 8) & 255] ^ T2[(r1 >> 16) & 255] ^ T3[(r2 >> 24) & 255] ^ KW[r++][3];
+		}
+
+		r0 = T0[C0 & 255] ^ T1[(C1 >> 8) & 255] ^ T2[(C2 >> 16) & 255] ^ T3[(C3 >> 24) & 255] ^ KW[r][0];
+		r1 = T0[C1 & 255] ^ T1[(C2 >> 8) & 255] ^ T2[(C3 >> 16) & 255] ^ T3[(C0 >> 24) & 255] ^ KW[r][1];
+		r2 = T0[C2 & 255] ^ T1[(C3 >> 8) & 255] ^ T2[(C0 >> 16) & 255] ^ T3[(C1 >> 24) & 255] ^ KW[r][2];
+		r3 = T0[C3 & 255] ^ T1[(C0 >> 8) & 255] ^ T2[(C1 >> 16) & 255] ^ T3[(C2 >> 24) & 255] ^ KW[r++][3];
+
+		// the final round's table is a simple function of S so we don't use a
+		// whole other four tables for it
+
+		C0 = (S[r0 & 255] & 255) ^ ((S[(r1 >> 8) & 255] & 255) << 8) ^ ((S[(r2 >> 16) & 255] & 255) << 16)
+				^ (S[(r3 >> 24) & 255] << 24) ^ KW[r][0];
+		C1 = (S[r1 & 255] & 255) ^ ((S[(r2 >> 8) & 255] & 255) << 8) ^ ((S[(r3 >> 16) & 255] & 255) << 16)
+				^ (S[(r0 >> 24) & 255] << 24) ^ KW[r][1];
+		C2 = (S[r2 & 255] & 255) ^ ((S[(r3 >> 8) & 255] & 255) << 8) ^ ((S[(r0 >> 16) & 255] & 255) << 16)
+				^ (S[(r1 >> 24) & 255] << 24) ^ KW[r][2];
+		C3 = (S[r3 & 255] & 255) ^ ((S[(r0 >> 8) & 255] & 255) << 8) ^ ((S[(r1 >> 16) & 255] & 255) << 16)
+				^ (S[(r2 >> 24) & 255] << 24) ^ KW[r][3];
+
+	}
+	private final int FFmulX(int x)
+	{
+		return (((x & m2) << 1) ^ (((x & m1) >>> 7) * m3));
 	}
 
 	/**
@@ -476,18 +557,15 @@ public class AES implements BlockCipher
 		return W;
 	}
 
-	private int ROUNDS;
-	private int[][] WorkingKey = null;
-	private int C0, C1, C2, C3;
-	private boolean doEncrypt;
-
-	private static final int BLOCK_SIZE = 16;
-
-	/**
-	 * default constructor - 128 bit block size.
-	 */
-	public AES()
+	public final String getAlgorithmName()
 	{
+		return "AES";
+	}
+
+	@Override
+	public final int getBlockSize()
+	{
+		return BLOCK_SIZE;
 	}
 
 	/**
@@ -501,20 +579,46 @@ public class AES implements BlockCipher
 	 *                if the params argument is inappropriate.
 	 */
 
+	@Override
 	public final void init(boolean forEncryption, byte[] key)
 	{
 		WorkingKey = generateWorkingKey(key, forEncryption);
 		this.doEncrypt = forEncryption;
 	}
 
-	public final String getAlgorithmName()
+	private final int inv_mcol(int x)
 	{
-		return "AES";
+		int f2 = FFmulX(x);
+		int f4 = FFmulX(f2);
+		int f8 = FFmulX(f4);
+		int f9 = x ^ f8;
+
+		return f2 ^ f4 ^ f8 ^ shift(f2 ^ f9, 8) ^ shift(f4 ^ f9, 16) ^ shift(f9, 24);
 	}
 
-	public final int getBlockSize()
+	private final void packBlock(byte[] bytes, int off)
 	{
-		return BLOCK_SIZE;
+		int index = off;
+
+		bytes[index++] = (byte) C0;
+		bytes[index++] = (byte) (C0 >> 8);
+		bytes[index++] = (byte) (C0 >> 16);
+		bytes[index++] = (byte) (C0 >> 24);
+
+		bytes[index++] = (byte) C1;
+		bytes[index++] = (byte) (C1 >> 8);
+		bytes[index++] = (byte) (C1 >> 16);
+		bytes[index++] = (byte) (C1 >> 24);
+
+		bytes[index++] = (byte) C2;
+		bytes[index++] = (byte) (C2 >> 8);
+		bytes[index++] = (byte) (C2 >> 16);
+		bytes[index++] = (byte) (C2 >> 24);
+
+		bytes[index++] = (byte) C3;
+		bytes[index++] = (byte) (C3 >> 8);
+		bytes[index++] = (byte) (C3 >> 16);
+		bytes[index++] = (byte) (C3 >> 24);
 	}
 
 	public final int processBlock(byte[] in, int inOff, byte[] out, int outOff)
@@ -554,6 +658,22 @@ public class AES implements BlockCipher
 	{
 	}
 
+	private final int shift(int r, int shift)
+	{
+		return (((r >>> shift) | (r << (32 - shift))));
+	}
+
+	private final int subWord(int x)
+	{
+		return (S[x & 255] & 255 | ((S[(x >> 8) & 255] & 255) << 8) | ((S[(x >> 16) & 255] & 255) << 16) | S[(x >> 24) & 255] << 24);
+	}
+
+	@Override
+	public void transformBlock(byte[] src, int srcoff, byte[] dst, int dstoff)
+	{
+		processBlock(src, srcoff, dst, dstoff);
+	}
+
 	private final void unpackBlock(byte[] bytes, int off)
 	{
 		int index = off;
@@ -577,122 +697,5 @@ public class AES implements BlockCipher
 		C3 |= (bytes[index++] & 0xff) << 8;
 		C3 |= (bytes[index++] & 0xff) << 16;
 		C3 |= bytes[index++] << 24;
-	}
-
-	private final void packBlock(byte[] bytes, int off)
-	{
-		int index = off;
-
-		bytes[index++] = (byte) C0;
-		bytes[index++] = (byte) (C0 >> 8);
-		bytes[index++] = (byte) (C0 >> 16);
-		bytes[index++] = (byte) (C0 >> 24);
-
-		bytes[index++] = (byte) C1;
-		bytes[index++] = (byte) (C1 >> 8);
-		bytes[index++] = (byte) (C1 >> 16);
-		bytes[index++] = (byte) (C1 >> 24);
-
-		bytes[index++] = (byte) C2;
-		bytes[index++] = (byte) (C2 >> 8);
-		bytes[index++] = (byte) (C2 >> 16);
-		bytes[index++] = (byte) (C2 >> 24);
-
-		bytes[index++] = (byte) C3;
-		bytes[index++] = (byte) (C3 >> 8);
-		bytes[index++] = (byte) (C3 >> 16);
-		bytes[index++] = (byte) (C3 >> 24);
-	}
-
-	private final void encryptBlock(int[][] KW)
-	{
-		int r, r0, r1, r2, r3;
-
-		C0 ^= KW[0][0];
-		C1 ^= KW[0][1];
-		C2 ^= KW[0][2];
-		C3 ^= KW[0][3];
-
-		for (r = 1; r < ROUNDS - 1;)
-		{
-			r0 = T0[C0 & 255] ^ T1[(C1 >> 8) & 255] ^ T2[(C2 >> 16) & 255] ^ T3[(C3 >> 24) & 255] ^ KW[r][0];
-			r1 = T0[C1 & 255] ^ T1[(C2 >> 8) & 255] ^ T2[(C3 >> 16) & 255] ^ T3[(C0 >> 24) & 255] ^ KW[r][1];
-			r2 = T0[C2 & 255] ^ T1[(C3 >> 8) & 255] ^ T2[(C0 >> 16) & 255] ^ T3[(C1 >> 24) & 255] ^ KW[r][2];
-			r3 = T0[C3 & 255] ^ T1[(C0 >> 8) & 255] ^ T2[(C1 >> 16) & 255] ^ T3[(C2 >> 24) & 255] ^ KW[r++][3];
-			C0 = T0[r0 & 255] ^ T1[(r1 >> 8) & 255] ^ T2[(r2 >> 16) & 255] ^ T3[(r3 >> 24) & 255] ^ KW[r][0];
-			C1 = T0[r1 & 255] ^ T1[(r2 >> 8) & 255] ^ T2[(r3 >> 16) & 255] ^ T3[(r0 >> 24) & 255] ^ KW[r][1];
-			C2 = T0[r2 & 255] ^ T1[(r3 >> 8) & 255] ^ T2[(r0 >> 16) & 255] ^ T3[(r1 >> 24) & 255] ^ KW[r][2];
-			C3 = T0[r3 & 255] ^ T1[(r0 >> 8) & 255] ^ T2[(r1 >> 16) & 255] ^ T3[(r2 >> 24) & 255] ^ KW[r++][3];
-		}
-
-		r0 = T0[C0 & 255] ^ T1[(C1 >> 8) & 255] ^ T2[(C2 >> 16) & 255] ^ T3[(C3 >> 24) & 255] ^ KW[r][0];
-		r1 = T0[C1 & 255] ^ T1[(C2 >> 8) & 255] ^ T2[(C3 >> 16) & 255] ^ T3[(C0 >> 24) & 255] ^ KW[r][1];
-		r2 = T0[C2 & 255] ^ T1[(C3 >> 8) & 255] ^ T2[(C0 >> 16) & 255] ^ T3[(C1 >> 24) & 255] ^ KW[r][2];
-		r3 = T0[C3 & 255] ^ T1[(C0 >> 8) & 255] ^ T2[(C1 >> 16) & 255] ^ T3[(C2 >> 24) & 255] ^ KW[r++][3];
-
-		// the final round's table is a simple function of S so we don't use a
-		// whole other four tables for it
-
-		C0 = (S[r0 & 255] & 255) ^ ((S[(r1 >> 8) & 255] & 255) << 8) ^ ((S[(r2 >> 16) & 255] & 255) << 16)
-				^ (S[(r3 >> 24) & 255] << 24) ^ KW[r][0];
-		C1 = (S[r1 & 255] & 255) ^ ((S[(r2 >> 8) & 255] & 255) << 8) ^ ((S[(r3 >> 16) & 255] & 255) << 16)
-				^ (S[(r0 >> 24) & 255] << 24) ^ KW[r][1];
-		C2 = (S[r2 & 255] & 255) ^ ((S[(r3 >> 8) & 255] & 255) << 8) ^ ((S[(r0 >> 16) & 255] & 255) << 16)
-				^ (S[(r1 >> 24) & 255] << 24) ^ KW[r][2];
-		C3 = (S[r3 & 255] & 255) ^ ((S[(r0 >> 8) & 255] & 255) << 8) ^ ((S[(r1 >> 16) & 255] & 255) << 16)
-				^ (S[(r2 >> 24) & 255] << 24) ^ KW[r][3];
-
-	}
-
-	private final void decryptBlock(int[][] KW)
-	{
-		int r, r0, r1, r2, r3;
-
-		C0 ^= KW[ROUNDS][0];
-		C1 ^= KW[ROUNDS][1];
-		C2 ^= KW[ROUNDS][2];
-		C3 ^= KW[ROUNDS][3];
-
-		for (r = ROUNDS - 1; r > 1;)
-		{
-			r0 = Tinv0[C0 & 255] ^ Tinv1[(C3 >> 8) & 255] ^ Tinv2[(C2 >> 16) & 255] ^ Tinv3[(C1 >> 24) & 255]
-					^ KW[r][0];
-			r1 = Tinv0[C1 & 255] ^ Tinv1[(C0 >> 8) & 255] ^ Tinv2[(C3 >> 16) & 255] ^ Tinv3[(C2 >> 24) & 255]
-					^ KW[r][1];
-			r2 = Tinv0[C2 & 255] ^ Tinv1[(C1 >> 8) & 255] ^ Tinv2[(C0 >> 16) & 255] ^ Tinv3[(C3 >> 24) & 255]
-					^ KW[r][2];
-			r3 = Tinv0[C3 & 255] ^ Tinv1[(C2 >> 8) & 255] ^ Tinv2[(C1 >> 16) & 255] ^ Tinv3[(C0 >> 24) & 255]
-					^ KW[r--][3];
-			C0 = Tinv0[r0 & 255] ^ Tinv1[(r3 >> 8) & 255] ^ Tinv2[(r2 >> 16) & 255] ^ Tinv3[(r1 >> 24) & 255]
-					^ KW[r][0];
-			C1 = Tinv0[r1 & 255] ^ Tinv1[(r0 >> 8) & 255] ^ Tinv2[(r3 >> 16) & 255] ^ Tinv3[(r2 >> 24) & 255]
-					^ KW[r][1];
-			C2 = Tinv0[r2 & 255] ^ Tinv1[(r1 >> 8) & 255] ^ Tinv2[(r0 >> 16) & 255] ^ Tinv3[(r3 >> 24) & 255]
-					^ KW[r][2];
-			C3 = Tinv0[r3 & 255] ^ Tinv1[(r2 >> 8) & 255] ^ Tinv2[(r1 >> 16) & 255] ^ Tinv3[(r0 >> 24) & 255]
-					^ KW[r--][3];
-		}
-
-		r0 = Tinv0[C0 & 255] ^ Tinv1[(C3 >> 8) & 255] ^ Tinv2[(C2 >> 16) & 255] ^ Tinv3[(C1 >> 24) & 255] ^ KW[r][0];
-		r1 = Tinv0[C1 & 255] ^ Tinv1[(C0 >> 8) & 255] ^ Tinv2[(C3 >> 16) & 255] ^ Tinv3[(C2 >> 24) & 255] ^ KW[r][1];
-		r2 = Tinv0[C2 & 255] ^ Tinv1[(C1 >> 8) & 255] ^ Tinv2[(C0 >> 16) & 255] ^ Tinv3[(C3 >> 24) & 255] ^ KW[r][2];
-		r3 = Tinv0[C3 & 255] ^ Tinv1[(C2 >> 8) & 255] ^ Tinv2[(C1 >> 16) & 255] ^ Tinv3[(C0 >> 24) & 255] ^ KW[r--][3];
-
-		// the final round's table is a simple function of Si so we don't use a
-		// whole other four tables for it
-
-		C0 = (Si[r0 & 255] & 255) ^ ((Si[(r3 >> 8) & 255] & 255) << 8) ^ ((Si[(r2 >> 16) & 255] & 255) << 16)
-				^ (Si[(r1 >> 24) & 255] << 24) ^ KW[0][0];
-		C1 = (Si[r1 & 255] & 255) ^ ((Si[(r0 >> 8) & 255] & 255) << 8) ^ ((Si[(r3 >> 16) & 255] & 255) << 16)
-				^ (Si[(r2 >> 24) & 255] << 24) ^ KW[0][1];
-		C2 = (Si[r2 & 255] & 255) ^ ((Si[(r1 >> 8) & 255] & 255) << 8) ^ ((Si[(r0 >> 16) & 255] & 255) << 16)
-				^ (Si[(r3 >> 24) & 255] << 24) ^ KW[0][2];
-		C3 = (Si[r3 & 255] & 255) ^ ((Si[(r2 >> 8) & 255] & 255) << 8) ^ ((Si[(r1 >> 16) & 255] & 255) << 16)
-				^ (Si[(r0 >> 24) & 255] << 24) ^ KW[0][3];
-	}
-
-	public void transformBlock(byte[] src, int srcoff, byte[] dst, int dstoff)
-	{
-		processBlock(src, srcoff, dst, dstoff);
 	}
 }

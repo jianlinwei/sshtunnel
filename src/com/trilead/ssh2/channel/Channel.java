@@ -157,21 +157,6 @@ public class Channel
 
 	/* Methods to allow access from classes outside of this package */
 
-	public ChannelInputStream getStderrStream()
-	{
-		return stderrStream;
-	}
-
-	public ChannelOutputStream getStdinStream()
-	{
-		return stdinStream;
-	}
-
-	public ChannelInputStream getStdoutStream()
-	{
-		return stdoutStream;
-	}
-
 	public String getExitSignal()
 	{
 		synchronized (this)
@@ -194,6 +179,21 @@ public class Channel
 		{
 			return reasonClosed;
 		}
+	}
+
+	public ChannelInputStream getStderrStream()
+	{
+		return stderrStream;
+	}
+
+	public ChannelOutputStream getStdinStream()
+	{
+		return stdinStream;
+	}
+
+	public ChannelInputStream getStdoutStream()
+	{
+		return stdoutStream;
 	}
 
 	public void setReasonClosed(String reasonClosed)

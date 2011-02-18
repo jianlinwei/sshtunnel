@@ -47,17 +47,6 @@ public class CompressionFactory {
 		compressors.addElement(new CompressorEntry("none", ""));
 	}
 
-	public static String[] getDefaultCompressorList()
-	{
-		String list[] = new String[compressors.size()];
-		for (int i = 0; i < compressors.size(); i++)
-		{
-			CompressorEntry ce = compressors.elementAt(i);
-			list[i] = new String(ce.type);
-		}
-		return list;
-	}
-
 	public static void checkCompressorList(String[] compressorCandidates)
 	{
 		for (int i = 0; i < compressorCandidates.length; i++)
@@ -81,6 +70,17 @@ public class CompressionFactory {
 		{
 			throw new IllegalArgumentException("Cannot instantiate " + type);
 		}
+	}
+
+	public static String[] getDefaultCompressorList()
+	{
+		String list[] = new String[compressors.size()];
+		for (int i = 0; i < compressors.size(); i++)
+		{
+			CompressorEntry ce = compressors.elementAt(i);
+			list[i] = new String(ce.type);
+		}
+		return list;
 	}
 
 	private static CompressorEntry getEntry(String type)

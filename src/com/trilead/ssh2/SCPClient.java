@@ -24,13 +24,13 @@ import java.io.OutputStream;
 
 public class SCPClient
 {
-	Connection conn;
-
 	class LenNamePair
 	{
 		long length;
 		String filename;
 	}
+
+	Connection conn;
 
 	public SCPClient(Connection conn)
 	{
@@ -39,52 +39,133 @@ public class SCPClient
 		this.conn = conn;
 	}
 
-	private void readResponse(InputStream is) throws IOException
+	/**
+	 * Download a file from the remote server and pipe its contents into an
+	 * <code>OutputStream</code>. Please note that, to enable flexible usage
+	 * of this method, the <code>OutputStream</code> will not be closed nor
+	 * flushed.
+	 * 
+	 * @param remoteFile
+	 *            Path and name of the remote file.
+	 * @param target
+	 *            OutputStream where the contents of the file will be sent to.
+	 * @throws IOException
+	 */
+	public void get(String remoteFile, OutputStream target) throws IOException
 	{
-		int c = is.read();
-
-		if (c == 0)
-			return;
-
-		if (c == -1)
-			throw new IOException("Remote scp terminated unexpectedly.");
-
-		if ((c != 1) && (c != 2))
-			throw new IOException("Remote scp sent illegal error code.");
-
-		if (c == 2)
-			throw new IOException("Remote scp terminated with error.");
-
-		String err = receiveLine(is);
-		throw new IOException("Remote scp terminated with error (" + err + ").");
+		get(new String[] { remoteFile }, new OutputStream[] { target });
 	}
 
-	private String receiveLine(InputStream is) throws IOException
+	private void get(String remoteFiles[], OutputStream[] targets) throws IOException
 	{
-		StringBuffer sb = new StringBuffer(30);
+		Session sess = null;
 
-		while (true)
+		if ((remoteFiles == null) || (targets == null))
+			throw new IllegalArgumentException("Null argument.");
+
+		if (remoteFiles.length != targets.length)
+			throw new IllegalArgumentException("Length of arguments does not match.");
+
+		if (remoteFiles.length == 0)
+			return;
+
+		String cmd = "scp -f";
+
+		for (int i = 0; i < remoteFiles.length; i++)
 		{
-			/*
-			 * This is a random limit - if your path names are longer, then
-			 * adjust it
-			 */
+			if (remoteFiles[i] == null)
+				throw new IllegalArgumentException("Cannot accept null filename.");
 
-			if (sb.length() > 8192)
-				throw new IOException("Remote scp sent a too long line");
+			String tmp = remoteFiles[i].trim();
 
-			int c = is.read();
+			if (tmp.length() == 0)
+				throw new IllegalArgumentException("Cannot accept empty filename.");
 
-			if (c < 0)
-				throw new IOException("Remote scp terminated unexpectedly.");
-
-			if (c == '\n')
-				break;
-
-			sb.append((char) c);
-
+			cmd += (" " + tmp);
 		}
-		return sb.toString();
+
+		try
+		{
+			sess = conn.openSession();
+			sess.execCommand(cmd);
+			receiveFiles(sess, targets);
+		}
+		catch (IOException e)
+		{
+			throw (IOException) new IOException("Error during SCP transfer.").initCause(e);
+		}
+		finally
+		{
+			if (sess != null)
+				sess.close();
+		}
+	}
+
+	/**
+	 * Download a file from the remote server to a local directory.
+	 * 
+	 * @param remoteFile
+	 *            Path and name of the remote file.
+	 * @param localTargetDirectory
+	 *            Local directory to put the downloaded file.
+	 * 
+	 * @throws IOException
+	 */
+	public void get(String remoteFile, String localTargetDirectory) throws IOException
+	{
+		get(new String[] { remoteFile }, localTargetDirectory);
+	}
+
+	/**
+	 * Download a set of files from the remote server to a local directory.
+	 * 
+	 * @param remoteFiles
+	 *            Paths and names of the remote files.
+	 * @param localTargetDirectory
+	 *            Local directory to put the downloaded files.
+	 * 
+	 * @throws IOException
+	 */
+	public void get(String remoteFiles[], String localTargetDirectory) throws IOException
+	{
+		Session sess = null;
+
+		if ((remoteFiles == null) || (localTargetDirectory == null))
+			throw new IllegalArgumentException("Null argument.");
+
+		if (remoteFiles.length == 0)
+			return;
+
+		String cmd = "scp -f";
+
+		for (int i = 0; i < remoteFiles.length; i++)
+		{
+			if (remoteFiles[i] == null)
+				throw new IllegalArgumentException("Cannot accept null filename.");
+
+			String tmp = remoteFiles[i].trim();
+
+			if (tmp.length() == 0)
+				throw new IllegalArgumentException("Cannot accept empty filename.");
+
+			cmd += (" " + tmp);
+		}
+
+		try
+		{
+			sess = conn.openSession();
+			sess.execCommand(cmd);
+			receiveFiles(sess, remoteFiles, localTargetDirectory);
+		}
+		catch (IOException e)
+		{
+			throw (IOException) new IOException("Error during SCP transfer.").initCause(e);
+		}
+		finally
+		{
+			if (sess != null)
+				sess.close();
+		}
 	}
 
 	private LenNamePair parseCLine(String line) throws IOException
@@ -132,94 +213,241 @@ public class SCPClient
 		return lnp;
 	}
 
-	private void sendBytes(Session sess, byte[] data, String fileName, String mode) throws IOException
+	/**
+	 * Create a remote file and copy the contents of the passed byte array into
+	 * it. Uses mode 0600 for creating the remote file.
+	 * 
+	 * @param data
+	 *            the data to be copied into the remote file.
+	 * @param remoteFileName
+	 *            The name of the file which will be created in the remote
+	 *            target directory.
+	 * @param remoteTargetDirectory
+	 *            Remote target directory. Use an empty string to specify the
+	 *            default directory.
+	 * @throws IOException
+	 */
+
+	public void put(byte[] data, String remoteFileName, String remoteTargetDirectory) throws IOException
 	{
-		OutputStream os = sess.getStdin();
-		InputStream is = new BufferedInputStream(sess.getStdout(), 512);
-
-		readResponse(is);
-
-		String cline = "C" + mode + " " + data.length + " " + fileName + "\n";
-
-		os.write(cline.getBytes("ISO-8859-1"));
-		os.flush();
-
-		readResponse(is);
-
-		os.write(data, 0, data.length);
-		os.write(0);
-		os.flush();
-
-		readResponse(is);
-
-		os.write("E\n".getBytes("ISO-8859-1"));
-		os.flush();
+		put(data, remoteFileName, remoteTargetDirectory, "0600");
 	}
 
-	private void sendFiles(Session sess, String[] files, String[] remoteFiles, String mode) throws IOException
+	/**
+	 * Create a remote file and copy the contents of the passed byte array into
+	 * it. The method use the specified mode when creating the file on the
+	 * remote side.
+	 * 
+	 * @param data
+	 *            the data to be copied into the remote file.
+	 * @param remoteFileName
+	 *            The name of the file which will be created in the remote
+	 *            target directory.
+	 * @param remoteTargetDirectory
+	 *            Remote target directory. Use an empty string to specify the
+	 *            default directory.
+	 * @param mode
+	 *            a four digit string (e.g., 0644, see "man chmod", "man open")
+	 * @throws IOException
+	 */
+	public void put(byte[] data, String remoteFileName, String remoteTargetDirectory, String mode) throws IOException
 	{
-		byte[] buffer = new byte[8192];
+		Session sess = null;
 
-		OutputStream os = new BufferedOutputStream(sess.getStdin(), 40000);
-		InputStream is = new BufferedInputStream(sess.getStdout(), 512);
+		if ((remoteFileName == null) || (remoteTargetDirectory == null) || (mode == null))
+			throw new IllegalArgumentException("Null argument.");
 
-		readResponse(is);
+		if (mode.length() != 4)
+			throw new IllegalArgumentException("Invalid mode.");
 
-		for (int i = 0; i < files.length; i++)
+		for (int i = 0; i < mode.length(); i++)
+			if (Character.isDigit(mode.charAt(i)) == false)
+				throw new IllegalArgumentException("Invalid mode.");
+
+		remoteTargetDirectory = remoteTargetDirectory.trim();
+		remoteTargetDirectory = (remoteTargetDirectory.length() > 0) ? remoteTargetDirectory : ".";
+
+		String cmd = "scp -t -d " + remoteTargetDirectory;
+
+		try
 		{
-			File f = new File(files[i]);
-			long remain = f.length();
+			sess = conn.openSession();
+			sess.execCommand(cmd);
+			sendBytes(sess, data, remoteFileName, mode);
+		}
+		catch (IOException e)
+		{
+			throw (IOException) new IOException("Error during SCP transfer.").initCause(e);
+		}
+		finally
+		{
+			if (sess != null)
+				sess.close();
+		}
+	}
 
-			String remoteName;
+	/**
+	 * Copy a local file to a remote directory, uses mode 0600 when creating the
+	 * file on the remote side.
+	 * 
+	 * @param localFile
+	 *            Path and name of local file.
+	 * @param remoteTargetDirectory
+	 *            Remote target directory. Use an empty string to specify the
+	 *            default directory.
+	 * 
+	 * @throws IOException
+	 */
+	public void put(String localFile, String remoteTargetDirectory) throws IOException
+	{
+		put(new String[] { localFile }, remoteTargetDirectory, "0600");
+	}
 
-			if ((remoteFiles != null) && (remoteFiles.length > i) && (remoteFiles[i] != null))
-				remoteName = remoteFiles[i];
-			else
-				remoteName = f.getName();
+	/**
+	 * Copy a local file to a remote directory, uses the specified mode when
+	 * creating the file on the remote side.
+	 * 
+	 * @param localFile
+	 *            Path and name of local file.
+	 * @param remoteTargetDirectory
+	 *            Remote target directory. Use an empty string to specify the
+	 *            default directory.
+	 * @param mode
+	 *            a four digit string (e.g., 0644, see "man chmod", "man open")
+	 * @throws IOException
+	 */
+	public void put(String localFile, String remoteTargetDirectory, String mode) throws IOException
+	{
+		put(new String[] { localFile }, remoteTargetDirectory, mode);
+	}
 
-			String cline = "C" + mode + " " + remain + " " + remoteName + "\n";
+	/**
+	 * Copy a local file to a remote directory, uses the specified mode and
+	 * remote filename when creating the file on the remote side.
+	 * 
+	 * @param localFile
+	 *            Path and name of local file.
+	 * @param remoteFileName
+	 *            The name of the file which will be created in the remote
+	 *            target directory.
+	 * @param remoteTargetDirectory
+	 *            Remote target directory. Use an empty string to specify the
+	 *            default directory.
+	 * @param mode
+	 *            a four digit string (e.g., 0644, see "man chmod", "man open")
+	 * @throws IOException
+	 */
+	public void put(String localFile, String remoteFileName, String remoteTargetDirectory, String mode)
+			throws IOException
+	{
+		put(new String[] { localFile }, new String[] { remoteFileName }, remoteTargetDirectory, mode);
+	}
 
-			os.write(cline.getBytes("ISO-8859-1"));
-			os.flush();
+	/**
+	 * Copy a set of local files to a remote directory, uses mode 0600 when
+	 * creating files on the remote side.
+	 * 
+	 * @param localFiles
+	 *            Paths and names of local file names.
+	 * @param remoteTargetDirectory
+	 *            Remote target directory. Use an empty string to specify the
+	 *            default directory.
+	 * 
+	 * @throws IOException
+	 */
 
-			readResponse(is);
+	public void put(String[] localFiles, String remoteTargetDirectory) throws IOException
+	{
+		put(localFiles, remoteTargetDirectory, "0600");
+	}
 
-			FileInputStream fis = null;
+	/**
+	 * Copy a set of local files to a remote directory, uses the specified mode
+	 * when creating the files on the remote side.
+	 * 
+	 * @param localFiles
+	 *            Paths and names of the local files.
+	 * @param remoteTargetDirectory
+	 *            Remote target directory. Use an empty string to specify the
+	 *            default directory.
+	 * @param mode
+	 *            a four digit string (e.g., 0644, see "man chmod", "man open")
+	 * @throws IOException
+	 */
+	public void put(String[] localFiles, String remoteTargetDirectory, String mode) throws IOException
+	{
+		put(localFiles, null, remoteTargetDirectory, mode);
+	}
 
-			try
-			{
-				fis = new FileInputStream(f);
+	public void put(String[] localFiles, String[] remoteFiles, String remoteTargetDirectory, String mode)
+			throws IOException
+	{
+		Session sess = null;
 
-				while (remain > 0)
-				{
-					int trans;
-					if (remain > buffer.length)
-						trans = buffer.length;
-					else
-						trans = (int) remain;
+		/*
+		 * remoteFiles may be null, indicating that the local filenames shall be
+		 * used
+		 */
 
-					if (fis.read(buffer, 0, trans) != trans)
-						throw new IOException("Cannot read enough from local file " + files[i]);
+		if ((localFiles == null) || (remoteTargetDirectory == null) || (mode == null))
+			throw new IllegalArgumentException("Null argument.");
 
-					os.write(buffer, 0, trans);
+		if (mode.length() != 4)
+			throw new IllegalArgumentException("Invalid mode.");
 
-					remain -= trans;
-				}
-			}
-			finally
-			{
-				if (fis != null)
-					fis.close();
-			}
+		for (int i = 0; i < mode.length(); i++)
+			if (Character.isDigit(mode.charAt(i)) == false)
+				throw new IllegalArgumentException("Invalid mode.");
 
-			os.write(0);
-			os.flush();
+		if (localFiles.length == 0)
+			return;
 
-			readResponse(is);
+		remoteTargetDirectory = remoteTargetDirectory.trim();
+		remoteTargetDirectory = (remoteTargetDirectory.length() > 0) ? remoteTargetDirectory : ".";
+
+		String cmd = "scp -t -d " + remoteTargetDirectory;
+
+		for (int i = 0; i < localFiles.length; i++)
+		{
+			if (localFiles[i] == null)
+				throw new IllegalArgumentException("Cannot accept null filename.");
 		}
 
-		os.write("E\n".getBytes("ISO-8859-1"));
-		os.flush();
+		try
+		{
+			sess = conn.openSession();
+			sess.execCommand(cmd);
+			sendFiles(sess, localFiles, remoteFiles, mode);
+		}
+		catch (IOException e)
+		{
+			throw (IOException) new IOException("Error during SCP transfer.").initCause(e);
+		}
+		finally
+		{
+			if (sess != null)
+				sess.close();
+		}
+	}
+
+	private void readResponse(InputStream is) throws IOException
+	{
+		int c = is.read();
+
+		if (c == 0)
+			return;
+
+		if (c == -1)
+			throw new IOException("Remote scp terminated unexpectedly.");
+
+		if ((c != 1) && (c != 2))
+			throw new IOException("Remote scp sent illegal error code.");
+
+		if (c == 2)
+			throw new IOException("Remote scp terminated with error.");
+
+		String err = receiveLine(is);
+		throw new IOException("Remote scp terminated with error (" + err + ").");
 	}
 
 	private void receiveFiles(Session sess, OutputStream[] targets) throws IOException
@@ -381,349 +609,121 @@ public class SCPClient
 		}
 	}
 
-	/**
-	 * Copy a local file to a remote directory, uses mode 0600 when creating the
-	 * file on the remote side.
-	 * 
-	 * @param localFile
-	 *            Path and name of local file.
-	 * @param remoteTargetDirectory
-	 *            Remote target directory. Use an empty string to specify the
-	 *            default directory.
-	 * 
-	 * @throws IOException
-	 */
-	public void put(String localFile, String remoteTargetDirectory) throws IOException
+	private String receiveLine(InputStream is) throws IOException
 	{
-		put(new String[] { localFile }, remoteTargetDirectory, "0600");
+		StringBuffer sb = new StringBuffer(30);
+
+		while (true)
+		{
+			/*
+			 * This is a random limit - if your path names are longer, then
+			 * adjust it
+			 */
+
+			if (sb.length() > 8192)
+				throw new IOException("Remote scp sent a too long line");
+
+			int c = is.read();
+
+			if (c < 0)
+				throw new IOException("Remote scp terminated unexpectedly.");
+
+			if (c == '\n')
+				break;
+
+			sb.append((char) c);
+
+		}
+		return sb.toString();
 	}
 
-	/**
-	 * Copy a set of local files to a remote directory, uses mode 0600 when
-	 * creating files on the remote side.
-	 * 
-	 * @param localFiles
-	 *            Paths and names of local file names.
-	 * @param remoteTargetDirectory
-	 *            Remote target directory. Use an empty string to specify the
-	 *            default directory.
-	 * 
-	 * @throws IOException
-	 */
-
-	public void put(String[] localFiles, String remoteTargetDirectory) throws IOException
+	private void sendBytes(Session sess, byte[] data, String fileName, String mode) throws IOException
 	{
-		put(localFiles, remoteTargetDirectory, "0600");
+		OutputStream os = sess.getStdin();
+		InputStream is = new BufferedInputStream(sess.getStdout(), 512);
+
+		readResponse(is);
+
+		String cline = "C" + mode + " " + data.length + " " + fileName + "\n";
+
+		os.write(cline.getBytes("ISO-8859-1"));
+		os.flush();
+
+		readResponse(is);
+
+		os.write(data, 0, data.length);
+		os.write(0);
+		os.flush();
+
+		readResponse(is);
+
+		os.write("E\n".getBytes("ISO-8859-1"));
+		os.flush();
 	}
 
-	/**
-	 * Copy a local file to a remote directory, uses the specified mode when
-	 * creating the file on the remote side.
-	 * 
-	 * @param localFile
-	 *            Path and name of local file.
-	 * @param remoteTargetDirectory
-	 *            Remote target directory. Use an empty string to specify the
-	 *            default directory.
-	 * @param mode
-	 *            a four digit string (e.g., 0644, see "man chmod", "man open")
-	 * @throws IOException
-	 */
-	public void put(String localFile, String remoteTargetDirectory, String mode) throws IOException
+	private void sendFiles(Session sess, String[] files, String[] remoteFiles, String mode) throws IOException
 	{
-		put(new String[] { localFile }, remoteTargetDirectory, mode);
-	}
+		byte[] buffer = new byte[8192];
 
-	/**
-	 * Copy a local file to a remote directory, uses the specified mode and
-	 * remote filename when creating the file on the remote side.
-	 * 
-	 * @param localFile
-	 *            Path and name of local file.
-	 * @param remoteFileName
-	 *            The name of the file which will be created in the remote
-	 *            target directory.
-	 * @param remoteTargetDirectory
-	 *            Remote target directory. Use an empty string to specify the
-	 *            default directory.
-	 * @param mode
-	 *            a four digit string (e.g., 0644, see "man chmod", "man open")
-	 * @throws IOException
-	 */
-	public void put(String localFile, String remoteFileName, String remoteTargetDirectory, String mode)
-			throws IOException
-	{
-		put(new String[] { localFile }, new String[] { remoteFileName }, remoteTargetDirectory, mode);
-	}
+		OutputStream os = new BufferedOutputStream(sess.getStdin(), 40000);
+		InputStream is = new BufferedInputStream(sess.getStdout(), 512);
 
-	/**
-	 * Create a remote file and copy the contents of the passed byte array into
-	 * it. Uses mode 0600 for creating the remote file.
-	 * 
-	 * @param data
-	 *            the data to be copied into the remote file.
-	 * @param remoteFileName
-	 *            The name of the file which will be created in the remote
-	 *            target directory.
-	 * @param remoteTargetDirectory
-	 *            Remote target directory. Use an empty string to specify the
-	 *            default directory.
-	 * @throws IOException
-	 */
+		readResponse(is);
 
-	public void put(byte[] data, String remoteFileName, String remoteTargetDirectory) throws IOException
-	{
-		put(data, remoteFileName, remoteTargetDirectory, "0600");
-	}
-
-	/**
-	 * Create a remote file and copy the contents of the passed byte array into
-	 * it. The method use the specified mode when creating the file on the
-	 * remote side.
-	 * 
-	 * @param data
-	 *            the data to be copied into the remote file.
-	 * @param remoteFileName
-	 *            The name of the file which will be created in the remote
-	 *            target directory.
-	 * @param remoteTargetDirectory
-	 *            Remote target directory. Use an empty string to specify the
-	 *            default directory.
-	 * @param mode
-	 *            a four digit string (e.g., 0644, see "man chmod", "man open")
-	 * @throws IOException
-	 */
-	public void put(byte[] data, String remoteFileName, String remoteTargetDirectory, String mode) throws IOException
-	{
-		Session sess = null;
-
-		if ((remoteFileName == null) || (remoteTargetDirectory == null) || (mode == null))
-			throw new IllegalArgumentException("Null argument.");
-
-		if (mode.length() != 4)
-			throw new IllegalArgumentException("Invalid mode.");
-
-		for (int i = 0; i < mode.length(); i++)
-			if (Character.isDigit(mode.charAt(i)) == false)
-				throw new IllegalArgumentException("Invalid mode.");
-
-		remoteTargetDirectory = remoteTargetDirectory.trim();
-		remoteTargetDirectory = (remoteTargetDirectory.length() > 0) ? remoteTargetDirectory : ".";
-
-		String cmd = "scp -t -d " + remoteTargetDirectory;
-
-		try
+		for (int i = 0; i < files.length; i++)
 		{
-			sess = conn.openSession();
-			sess.execCommand(cmd);
-			sendBytes(sess, data, remoteFileName, mode);
-		}
-		catch (IOException e)
-		{
-			throw (IOException) new IOException("Error during SCP transfer.").initCause(e);
-		}
-		finally
-		{
-			if (sess != null)
-				sess.close();
-		}
-	}
+			File f = new File(files[i]);
+			long remain = f.length();
 
-	/**
-	 * Copy a set of local files to a remote directory, uses the specified mode
-	 * when creating the files on the remote side.
-	 * 
-	 * @param localFiles
-	 *            Paths and names of the local files.
-	 * @param remoteTargetDirectory
-	 *            Remote target directory. Use an empty string to specify the
-	 *            default directory.
-	 * @param mode
-	 *            a four digit string (e.g., 0644, see "man chmod", "man open")
-	 * @throws IOException
-	 */
-	public void put(String[] localFiles, String remoteTargetDirectory, String mode) throws IOException
-	{
-		put(localFiles, null, remoteTargetDirectory, mode);
-	}
+			String remoteName;
 
-	public void put(String[] localFiles, String[] remoteFiles, String remoteTargetDirectory, String mode)
-			throws IOException
-	{
-		Session sess = null;
+			if ((remoteFiles != null) && (remoteFiles.length > i) && (remoteFiles[i] != null))
+				remoteName = remoteFiles[i];
+			else
+				remoteName = f.getName();
 
-		/*
-		 * remoteFiles may be null, indicating that the local filenames shall be
-		 * used
-		 */
+			String cline = "C" + mode + " " + remain + " " + remoteName + "\n";
 
-		if ((localFiles == null) || (remoteTargetDirectory == null) || (mode == null))
-			throw new IllegalArgumentException("Null argument.");
+			os.write(cline.getBytes("ISO-8859-1"));
+			os.flush();
 
-		if (mode.length() != 4)
-			throw new IllegalArgumentException("Invalid mode.");
+			readResponse(is);
 
-		for (int i = 0; i < mode.length(); i++)
-			if (Character.isDigit(mode.charAt(i)) == false)
-				throw new IllegalArgumentException("Invalid mode.");
+			FileInputStream fis = null;
 
-		if (localFiles.length == 0)
-			return;
+			try
+			{
+				fis = new FileInputStream(f);
 
-		remoteTargetDirectory = remoteTargetDirectory.trim();
-		remoteTargetDirectory = (remoteTargetDirectory.length() > 0) ? remoteTargetDirectory : ".";
+				while (remain > 0)
+				{
+					int trans;
+					if (remain > buffer.length)
+						trans = buffer.length;
+					else
+						trans = (int) remain;
 
-		String cmd = "scp -t -d " + remoteTargetDirectory;
+					if (fis.read(buffer, 0, trans) != trans)
+						throw new IOException("Cannot read enough from local file " + files[i]);
 
-		for (int i = 0; i < localFiles.length; i++)
-		{
-			if (localFiles[i] == null)
-				throw new IllegalArgumentException("Cannot accept null filename.");
+					os.write(buffer, 0, trans);
+
+					remain -= trans;
+				}
+			}
+			finally
+			{
+				if (fis != null)
+					fis.close();
+			}
+
+			os.write(0);
+			os.flush();
+
+			readResponse(is);
 		}
 
-		try
-		{
-			sess = conn.openSession();
-			sess.execCommand(cmd);
-			sendFiles(sess, localFiles, remoteFiles, mode);
-		}
-		catch (IOException e)
-		{
-			throw (IOException) new IOException("Error during SCP transfer.").initCause(e);
-		}
-		finally
-		{
-			if (sess != null)
-				sess.close();
-		}
-	}
-
-	/**
-	 * Download a file from the remote server to a local directory.
-	 * 
-	 * @param remoteFile
-	 *            Path and name of the remote file.
-	 * @param localTargetDirectory
-	 *            Local directory to put the downloaded file.
-	 * 
-	 * @throws IOException
-	 */
-	public void get(String remoteFile, String localTargetDirectory) throws IOException
-	{
-		get(new String[] { remoteFile }, localTargetDirectory);
-	}
-
-	/**
-	 * Download a file from the remote server and pipe its contents into an
-	 * <code>OutputStream</code>. Please note that, to enable flexible usage
-	 * of this method, the <code>OutputStream</code> will not be closed nor
-	 * flushed.
-	 * 
-	 * @param remoteFile
-	 *            Path and name of the remote file.
-	 * @param target
-	 *            OutputStream where the contents of the file will be sent to.
-	 * @throws IOException
-	 */
-	public void get(String remoteFile, OutputStream target) throws IOException
-	{
-		get(new String[] { remoteFile }, new OutputStream[] { target });
-	}
-
-	private void get(String remoteFiles[], OutputStream[] targets) throws IOException
-	{
-		Session sess = null;
-
-		if ((remoteFiles == null) || (targets == null))
-			throw new IllegalArgumentException("Null argument.");
-
-		if (remoteFiles.length != targets.length)
-			throw new IllegalArgumentException("Length of arguments does not match.");
-
-		if (remoteFiles.length == 0)
-			return;
-
-		String cmd = "scp -f";
-
-		for (int i = 0; i < remoteFiles.length; i++)
-		{
-			if (remoteFiles[i] == null)
-				throw new IllegalArgumentException("Cannot accept null filename.");
-
-			String tmp = remoteFiles[i].trim();
-
-			if (tmp.length() == 0)
-				throw new IllegalArgumentException("Cannot accept empty filename.");
-
-			cmd += (" " + tmp);
-		}
-
-		try
-		{
-			sess = conn.openSession();
-			sess.execCommand(cmd);
-			receiveFiles(sess, targets);
-		}
-		catch (IOException e)
-		{
-			throw (IOException) new IOException("Error during SCP transfer.").initCause(e);
-		}
-		finally
-		{
-			if (sess != null)
-				sess.close();
-		}
-	}
-
-	/**
-	 * Download a set of files from the remote server to a local directory.
-	 * 
-	 * @param remoteFiles
-	 *            Paths and names of the remote files.
-	 * @param localTargetDirectory
-	 *            Local directory to put the downloaded files.
-	 * 
-	 * @throws IOException
-	 */
-	public void get(String remoteFiles[], String localTargetDirectory) throws IOException
-	{
-		Session sess = null;
-
-		if ((remoteFiles == null) || (localTargetDirectory == null))
-			throw new IllegalArgumentException("Null argument.");
-
-		if (remoteFiles.length == 0)
-			return;
-
-		String cmd = "scp -f";
-
-		for (int i = 0; i < remoteFiles.length; i++)
-		{
-			if (remoteFiles[i] == null)
-				throw new IllegalArgumentException("Cannot accept null filename.");
-
-			String tmp = remoteFiles[i].trim();
-
-			if (tmp.length() == 0)
-				throw new IllegalArgumentException("Cannot accept empty filename.");
-
-			cmd += (" " + tmp);
-		}
-
-		try
-		{
-			sess = conn.openSession();
-			sess.execCommand(cmd);
-			receiveFiles(sess, remoteFiles, localTargetDirectory);
-		}
-		catch (IOException e)
-		{
-			throw (IOException) new IOException("Error during SCP transfer.").initCause(e);
-		}
-		finally
-		{
-			if (sess != null)
-				sess.close();
-		}
+		os.write("E\n".getBytes("ISO-8859-1"));
+		os.flush();
 	}
 }

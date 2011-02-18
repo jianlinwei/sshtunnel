@@ -16,14 +16,6 @@ public class PacketOpenSessionChannel
 	int initialWindowSize;
 	int maxPacketSize;
 
-	public PacketOpenSessionChannel(int channelID, int initialWindowSize,
-			int maxPacketSize)
-	{
-		this.channelID = channelID;
-		this.initialWindowSize = initialWindowSize;
-		this.maxPacketSize = maxPacketSize;
-	}
-
 	public PacketOpenSessionChannel(byte payload[], int off, int len) throws IOException
 	{
 		this.payload = new byte[len];
@@ -43,6 +35,14 @@ public class PacketOpenSessionChannel
 
 		if (tr.remain() != 0)
 			throw new IOException("Padding in SSH_MSG_CHANNEL_OPEN packet!");
+	}
+
+	public PacketOpenSessionChannel(int channelID, int initialWindowSize,
+			int maxPacketSize)
+	{
+		this.channelID = channelID;
+		this.initialWindowSize = initialWindowSize;
+		this.maxPacketSize = maxPacketSize;
 	}
 
 	public byte[] getPayload()

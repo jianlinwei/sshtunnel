@@ -44,9 +44,6 @@ import net.sourceforge.jsocks.server.ServerAuthenticatorNone;
  * @version $Id$
  */
 public class DynamicAcceptThread extends Thread implements IChannelWorkerThread {
-	private ChannelManager cm;
-	private ServerSocket ss;
-
 	class DynamicAcceptRunnable implements Runnable {
 		private static final int idleTimeout	= 180000; //3 minutes
 
@@ -63,67 +60,6 @@ public class DynamicAcceptThread extends Thread implements IChannelWorkerThread 
 			setName("DynamicAcceptRunnable");
 		}
 
-		public void run() {
-			try {
-				startSession();
-			} catch (IOException ioe) {
-				int error_code = Proxy.SOCKS_FAILURE;
-
-				if (ioe instanceof SocksException)
-					error_code = ((SocksException) ioe).errCode;
-				else if (ioe instanceof NoRouteToHostException)
-					error_code = Proxy.SOCKS_HOST_UNREACHABLE;
-				else if (ioe instanceof ConnectException)
-					error_code = Proxy.SOCKS_CONNECTION_REFUSED;
-				else if (ioe instanceof InterruptedIOException)
-					error_code = Proxy.SOCKS_TTL_EXPIRE;
-
-				if (error_code > Proxy.SOCKS_ADDR_NOT_SUPPORTED
-						|| error_code < 0) {
-					error_code = Proxy.SOCKS_FAILURE;
-				}
-
-				sendErrorMessage(error_code);
-			} finally {
-				if (auth != null)
-					auth.endSession();
-			}
-		}
-
-		private ProxyMessage readMsg(InputStream in) throws IOException {
-			PushbackInputStream push_in;
-			if (in instanceof PushbackInputStream)
-				push_in = (PushbackInputStream) in;
-			else
-				push_in = new PushbackInputStream(in);
-
-			int version = push_in.read();
-			push_in.unread(version);
-
-			ProxyMessage msg;
-
-			if (version == 5) {
-				msg = new Socks5Message(push_in, false);
-			} else if (version == 4) {
-				msg = new Socks4Message(push_in, false);
-			} else {
-				throw new SocksException(Proxy.SOCKS_FAILURE);
-			}
-			return msg;
-		}
-
-		private void sendErrorMessage(int error_code) {
-			ProxyMessage err_msg;
-			if (msg instanceof Socks4Message)
-				err_msg = new Socks4Message(Socks4Message.REPLY_REJECTED);
-			else
-				err_msg = new Socks5Message(error_code);
-			try {
-				err_msg.write(out);
-			} catch (IOException ioe) {
-			}
-		}
-
 		private void handleRequest(ProxyMessage msg) throws IOException {
 			if (!auth.checkRequest(msg))
 				throw new SocksException(Proxy.SOCKS_FAILURE);
@@ -135,30 +71,6 @@ public class DynamicAcceptThread extends Thread implements IChannelWorkerThread 
 			default:
 				throw new SocksException(Proxy.SOCKS_CMD_NOT_SUPPORTED);
 			}
-		}
-
-		private void startSession() throws IOException {
-			sock.setSoTimeout(idleTimeout);
-
-			try {
-				auth = auth.startSession(sock);
-			} catch (IOException ioe) {
-				System.out.println("Could not start SOCKS session");
-				ioe.printStackTrace();
-				auth = null;
-				return;
-			}
-
-			if (auth == null) { // Authentication failed
-				System.out.println("SOCKS auth failed");
-				return;
-			}
-
-			in = auth.getInputStream();
-			out = auth.getOutputStream();
-
-			msg = readMsg(in);
-			handleRequest(msg);
 		}
 
 		private void onConnect(ProxyMessage msg) throws IOException {
@@ -224,6 +136,103 @@ public class DynamicAcceptThread extends Thread implements IChannelWorkerThread 
 			r2l.start();
 			l2r.start();
 		}
+
+		private ProxyMessage readMsg(InputStream in) throws IOException {
+			PushbackInputStream push_in;
+			if (in instanceof PushbackInputStream)
+				push_in = (PushbackInputStream) in;
+			else
+				push_in = new PushbackInputStream(in);
+
+			int version = push_in.read();
+			push_in.unread(version);
+
+			ProxyMessage msg;
+
+			if (version == 5) {
+				msg = new Socks5Message(push_in, false);
+			} else if (version == 4) {
+				msg = new Socks4Message(push_in, false);
+			} else {
+				throw new SocksException(Proxy.SOCKS_FAILURE);
+			}
+			return msg;
+		}
+
+		@Override
+		public void run() {
+			try {
+				startSession();
+			} catch (IOException ioe) {
+				int error_code = Proxy.SOCKS_FAILURE;
+
+				if (ioe instanceof SocksException)
+					error_code = ((SocksException) ioe).errCode;
+				else if (ioe instanceof NoRouteToHostException)
+					error_code = Proxy.SOCKS_HOST_UNREACHABLE;
+				else if (ioe instanceof ConnectException)
+					error_code = Proxy.SOCKS_CONNECTION_REFUSED;
+				else if (ioe instanceof InterruptedIOException)
+					error_code = Proxy.SOCKS_TTL_EXPIRE;
+
+				if (error_code > Proxy.SOCKS_ADDR_NOT_SUPPORTED
+						|| error_code < 0) {
+					error_code = Proxy.SOCKS_FAILURE;
+				}
+
+				sendErrorMessage(error_code);
+			} finally {
+				if (auth != null)
+					auth.endSession();
+			}
+		}
+
+		private void sendErrorMessage(int error_code) {
+			ProxyMessage err_msg;
+			if (msg instanceof Socks4Message)
+				err_msg = new Socks4Message(Socks4Message.REPLY_REJECTED);
+			else
+				err_msg = new Socks5Message(error_code);
+			try {
+				err_msg.write(out);
+			} catch (IOException ioe) {
+			}
+		}
+
+		private void startSession() throws IOException {
+			sock.setSoTimeout(idleTimeout);
+
+			try {
+				auth = auth.startSession(sock);
+			} catch (IOException ioe) {
+				System.out.println("Could not start SOCKS session");
+				ioe.printStackTrace();
+				auth = null;
+				return;
+			}
+
+			if (auth == null) { // Authentication failed
+				System.out.println("SOCKS auth failed");
+				return;
+			}
+
+			in = auth.getInputStream();
+			out = auth.getOutputStream();
+
+			msg = readMsg(in);
+			handleRequest(msg);
+		}
+	}
+	private ChannelManager cm;
+
+	private ServerSocket ss;
+
+	public DynamicAcceptThread(ChannelManager cm, InetSocketAddress localAddress)
+			throws IOException {
+		this.cm = cm;
+
+		ss = new ServerSocket();
+		ss.bind(localAddress);
 	}
 
 	public DynamicAcceptThread(ChannelManager cm, int local_port)
@@ -233,14 +242,6 @@ public class DynamicAcceptThread extends Thread implements IChannelWorkerThread 
 		setName("DynamicAcceptThread");
 
 		ss = new ServerSocket(local_port);
-	}
-
-	public DynamicAcceptThread(ChannelManager cm, InetSocketAddress localAddress)
-			throws IOException {
-		this.cm = cm;
-
-		ss = new ServerSocket();
-		ss.bind(localAddress);
 	}
 
 	@Override
@@ -274,6 +275,7 @@ public class DynamicAcceptThread extends Thread implements IChannelWorkerThread 
 	 *
 	 * @see com.trilead.ssh2.channel.IChannelWorkerThread#stopWorking()
 	 */
+	@Override
 	public void stopWorking() {
 		try {
 			/* This will lead to an IOException in the ss.accept() call */

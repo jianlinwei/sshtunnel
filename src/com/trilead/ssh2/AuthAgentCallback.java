@@ -11,11 +11,6 @@ import java.util.Map;
 public interface AuthAgentCallback {
 
 	/**
-	 * @return array of blobs containing the OpenSSH-format encoded public keys
-	 */
-	Map<String,byte[]> retrieveIdentities();
-
-	/**
 	 * @param key A <code>RSAPrivateKey</code> or <code>DSAPrivateKey</code>
 	 *            containing a DSA or RSA private key of
 	 *            the user in Trilead object format.
@@ -25,17 +20,6 @@ public interface AuthAgentCallback {
 	 * @return success or failure
 	 */
 	boolean addIdentity(Object key, String comment, boolean confirmUse, int lifetime);
-
-	/**
-	 * @param publicKey byte blob containing the OpenSSH-format encoded public key
-	 * @return success or failure
-	 */
-	boolean removeIdentity(byte[] publicKey);
-
-	/**
-	 * @return success or failure
-	 */
-	boolean removeAllIdentities();
 
 	/**
 	 * @param publicKey byte blob containing the OpenSSH-format encoded public key
@@ -51,13 +35,29 @@ public interface AuthAgentCallback {
 	boolean isAgentLocked();
 
 	/**
-	 * @param lockPassphrase
+	 * @return success or failure
 	 */
-	boolean setAgentLock(String lockPassphrase);
+	boolean removeAllIdentities();
+
+	/**
+	 * @param publicKey byte blob containing the OpenSSH-format encoded public key
+	 * @return success or failure
+	 */
+	boolean removeIdentity(byte[] publicKey);
 
 	/**
 	 * @param unlockPassphrase
 	 * @return
 	 */
 	boolean requestAgentUnlock(String unlockPassphrase);
+
+	/**
+	 * @return array of blobs containing the OpenSSH-format encoded public keys
+	 */
+	Map<String,byte[]> retrieveIdentities();
+
+	/**
+	 * @param lockPassphrase
+	 */
+	boolean setAgentLock(String lockPassphrase);
 }

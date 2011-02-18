@@ -37,93 +37,6 @@ public class ServerAuthenticatorNone implements ServerAuthenticator{
 
    static final byte[] socks5response = {5,0};
 
-   InputStream in;
-   OutputStream out;
-
-   /**
-    Creates new instance of the ServerAuthenticatorNone.
-   */
-   public ServerAuthenticatorNone(){
-     this.in = null;
-     this.out = null;
-   }
-   /**
-    Constructs new ServerAuthenticatorNone object suitable for returning
-    from the startSession function.
-    @param in Input stream to return from getInputStream method.
-    @param out Output stream to return from getOutputStream method.
-   */
-   public ServerAuthenticatorNone(InputStream in, OutputStream out){
-      this.in = in;
-      this.out = out;
-   }
-   /**
-    Grants access to everyone.Removes authentication related bytes from
-    the stream, when a SOCKS5 connection is being made, selects an
-    authentication NONE.
-    */
-   public ServerAuthenticator startSession(Socket s)
-                                  throws IOException{
-
-     PushbackInputStream in =  new PushbackInputStream(s.getInputStream());
-     OutputStream out = s.getOutputStream();
-
-     int version = in.read();
-     if(version == 5){
-       if(!selectSocks5Authentication(in,out,0))
-          return null;
-     }else if(version == 4){
-       //Else it is the request message allready, version 4
-       in.unread(version);
-     }else
-       return null;
-     
-
-     return new ServerAuthenticatorNone(in,out);
-   }
-
-   /**
-     Get input stream.
-     @return Input stream speciefied in the constructor.
-   */
-   public InputStream getInputStream(){
-      return in;
-   }
-   /**
-     Get output stream.
-     @return Output stream speciefied in the constructor.
-   */
-   public OutputStream getOutputStream(){
-      return out;
-   }
-   /**
-     Allways returns null.
-     @return null
-   */
-   public UDPEncapsulation getUdpEncapsulation(){
-      return null;
-   }
-
-   /**
-    Allways returns true.
-   */
-   public boolean checkRequest(ProxyMessage msg){
-     return true;
-   }
-
-   /**
-    Allways returns true.
-   */
-   public boolean checkRequest(java.net.DatagramPacket dp, boolean out){
-     return true;
-   }
-
-   /**
-    Does nothing.
-    */
-   public void endSession(){
-   }
-
    /**
      Convinience routine for selecting SOCKSv5 authentication.
      <p>
@@ -165,5 +78,99 @@ public class ServerAuthenticatorNone implements ServerAuthenticator{
 
       out.write(response);
       return found;
+   }
+   InputStream in;
+
+   OutputStream out;
+   /**
+    Creates new instance of the ServerAuthenticatorNone.
+   */
+   public ServerAuthenticatorNone(){
+     this.in = null;
+     this.out = null;
+   }
+   /**
+    Constructs new ServerAuthenticatorNone object suitable for returning
+    from the startSession function.
+    @param in Input stream to return from getInputStream method.
+    @param out Output stream to return from getOutputStream method.
+   */
+   public ServerAuthenticatorNone(InputStream in, OutputStream out){
+      this.in = in;
+      this.out = out;
+   }
+
+   /**
+    Allways returns true.
+   */
+   @Override
+public boolean checkRequest(java.net.DatagramPacket dp, boolean out){
+     return true;
+   }
+   /**
+    Allways returns true.
+   */
+   @Override
+public boolean checkRequest(ProxyMessage msg){
+     return true;
+   }
+   /**
+    Does nothing.
+    */
+   @Override
+public void endSession(){
+   }
+
+   /**
+     Get input stream.
+     @return Input stream speciefied in the constructor.
+   */
+   @Override
+public InputStream getInputStream(){
+      return in;
+   }
+
+   /**
+     Get output stream.
+     @return Output stream speciefied in the constructor.
+   */
+   @Override
+public OutputStream getOutputStream(){
+      return out;
+   }
+
+   /**
+     Allways returns null.
+     @return null
+   */
+   @Override
+public UDPEncapsulation getUdpEncapsulation(){
+      return null;
+   }
+
+   /**
+    Grants access to everyone.Removes authentication related bytes from
+    the stream, when a SOCKS5 connection is being made, selects an
+    authentication NONE.
+    */
+   @Override
+public ServerAuthenticator startSession(Socket s)
+                                  throws IOException{
+
+     PushbackInputStream in =  new PushbackInputStream(s.getInputStream());
+     OutputStream out = s.getOutputStream();
+
+     int version = in.read();
+     if(version == 5){
+       if(!selectSocks5Authentication(in,out,0))
+          return null;
+     }else if(version == 4){
+       //Else it is the request message allready, version 4
+       in.unread(version);
+     }else
+       return null;
+     
+
+     return new ServerAuthenticatorNone(in,out);
    }
 }

@@ -187,6 +187,87 @@ public class BlowFish implements BlockCipher
 		P = new int[P_SZ];
 	}
 
+	private void Bits32ToBytes(int in, byte[] b, int offset)
+	{
+		b[offset + 3] = (byte) in;
+		b[offset + 2] = (byte) (in >> 8);
+		b[offset + 1] = (byte) (in >> 16);
+		b[offset] = (byte) (in >> 24);
+	}
+
+	private int BytesTo32bits(byte[] b, int i)
+	{
+		return ((b[i] & 0xff) << 24) | ((b[i + 1] & 0xff) << 16) | ((b[i + 2] & 0xff) << 8) | ((b[i + 3] & 0xff));
+	}
+
+	/**
+	 * Decrypt the given input starting at the given offset and place the result
+	 * in the provided buffer starting at the given offset. The input will be an
+	 * exact multiple of our blocksize.
+	 */
+	private void decryptBlock(byte[] src, int srcIndex, byte[] dst, int dstIndex)
+	{
+		int xl = BytesTo32bits(src, srcIndex);
+		int xr = BytesTo32bits(src, srcIndex + 4);
+
+		xl ^= P[ROUNDS + 1];
+
+		for (int i = ROUNDS; i > 0; i -= 2)
+		{
+			xr ^= F(xl) ^ P[i];
+			xl ^= F(xr) ^ P[i - 1];
+		}
+
+		xr ^= P[0];
+
+		Bits32ToBytes(xr, dst, dstIndex);
+		Bits32ToBytes(xl, dst, dstIndex + 4);
+	}
+
+	/**
+	 * Encrypt the given input starting at the given offset and place the result
+	 * in the provided buffer starting at the given offset. The input will be an
+	 * exact multiple of our blocksize.
+	 */
+	private void encryptBlock(byte[] src, int srcIndex, byte[] dst, int dstIndex)
+	{
+		int xl = BytesTo32bits(src, srcIndex);
+		int xr = BytesTo32bits(src, srcIndex + 4);
+
+		xl ^= P[0];
+
+		for (int i = 1; i < ROUNDS; i += 2)
+		{
+			xr ^= F(xl) ^ P[i];
+			xl ^= F(xr) ^ P[i + 1];
+		}
+
+		xr ^= P[ROUNDS + 1];
+
+		Bits32ToBytes(xr, dst, dstIndex);
+		Bits32ToBytes(xl, dst, dstIndex + 4);
+	}
+
+	private int F(int x)
+	{
+		return (((S0[(x >>> 24)] + S1[(x >>> 16) & 0xff]) ^ S2[(x >>> 8) & 0xff]) + S3[x & 0xff]);
+	}
+
+	// ==================================
+	// Private Implementation
+	// ==================================
+
+	public String getAlgorithmName()
+	{
+		return "Blowfish";
+	}
+
+	@Override
+	public int getBlockSize()
+	{
+		return BLOCK_SIZE;
+	}
+
 	/**
 	 * initialise a Blowfish cipher.
 	 * 
@@ -197,51 +278,12 @@ public class BlowFish implements BlockCipher
 	 * @exception IllegalArgumentException
 	 *                if the params argument is inappropriate.
 	 */
+	@Override
 	public void init(boolean encrypting, byte[] key)
 	{
 		this.doEncrypt = encrypting;
 		this.workingKey = key;
 		setKey(this.workingKey);
-	}
-
-	public String getAlgorithmName()
-	{
-		return "Blowfish";
-	}
-
-	public final void transformBlock(byte[] in, int inOff, byte[] out, int outOff)
-	{
-		if (workingKey == null)
-		{
-			throw new IllegalStateException("Blowfish not initialised");
-		}
-
-		if (doEncrypt)
-		{
-			encryptBlock(in, inOff, out, outOff);
-		}
-		else
-		{
-			decryptBlock(in, inOff, out, outOff);
-		}
-	}
-
-	public void reset()
-	{
-	}
-
-	public int getBlockSize()
-	{
-		return BLOCK_SIZE;
-	}
-
-	// ==================================
-	// Private Implementation
-	// ==================================
-
-	private int F(int x)
-	{
-		return (((S0[(x >>> 24)] + S1[(x >>> 16) & 0xff]) ^ S2[(x >>> 8) & 0xff]) + S3[x & 0xff]);
 	}
 
 	/**
@@ -269,6 +311,10 @@ public class BlowFish implements BlockCipher
 			xr = xl; // end of cycle swap
 			xl = table[s];
 		}
+	}
+
+	public void reset()
+	{
 	}
 
 	private void setKey(byte[] key)
@@ -339,65 +385,22 @@ public class BlowFish implements BlockCipher
 		processTable(S2[SBOX_SK - 2], S2[SBOX_SK - 1], S3);
 	}
 
-	/**
-	 * Encrypt the given input starting at the given offset and place the result
-	 * in the provided buffer starting at the given offset. The input will be an
-	 * exact multiple of our blocksize.
-	 */
-	private void encryptBlock(byte[] src, int srcIndex, byte[] dst, int dstIndex)
+	@Override
+	public final void transformBlock(byte[] in, int inOff, byte[] out, int outOff)
 	{
-		int xl = BytesTo32bits(src, srcIndex);
-		int xr = BytesTo32bits(src, srcIndex + 4);
-
-		xl ^= P[0];
-
-		for (int i = 1; i < ROUNDS; i += 2)
+		if (workingKey == null)
 		{
-			xr ^= F(xl) ^ P[i];
-			xl ^= F(xr) ^ P[i + 1];
+			throw new IllegalStateException("Blowfish not initialised");
 		}
 
-		xr ^= P[ROUNDS + 1];
-
-		Bits32ToBytes(xr, dst, dstIndex);
-		Bits32ToBytes(xl, dst, dstIndex + 4);
-	}
-
-	/**
-	 * Decrypt the given input starting at the given offset and place the result
-	 * in the provided buffer starting at the given offset. The input will be an
-	 * exact multiple of our blocksize.
-	 */
-	private void decryptBlock(byte[] src, int srcIndex, byte[] dst, int dstIndex)
-	{
-		int xl = BytesTo32bits(src, srcIndex);
-		int xr = BytesTo32bits(src, srcIndex + 4);
-
-		xl ^= P[ROUNDS + 1];
-
-		for (int i = ROUNDS; i > 0; i -= 2)
+		if (doEncrypt)
 		{
-			xr ^= F(xl) ^ P[i];
-			xl ^= F(xr) ^ P[i - 1];
+			encryptBlock(in, inOff, out, outOff);
 		}
-
-		xr ^= P[0];
-
-		Bits32ToBytes(xr, dst, dstIndex);
-		Bits32ToBytes(xl, dst, dstIndex + 4);
-	}
-
-	private int BytesTo32bits(byte[] b, int i)
-	{
-		return ((b[i] & 0xff) << 24) | ((b[i + 1] & 0xff) << 16) | ((b[i + 2] & 0xff) << 8) | ((b[i + 3] & 0xff));
-	}
-
-	private void Bits32ToBytes(int in, byte[] b, int offset)
-	{
-		b[offset + 3] = (byte) in;
-		b[offset + 2] = (byte) (in >> 8);
-		b[offset + 1] = (byte) (in >> 16);
-		b[offset] = (byte) (in >> 24);
+		else
+		{
+			decryptBlock(in, inOff, out, outOff);
+		}
 	}
 
 }

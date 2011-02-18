@@ -16,11 +16,6 @@ import com.trilead.ssh2.Connection;
  */
 public class ClientServerHello
 {
-	String server_line;
-	String client_line;
-
-	String server_versioncomment;
-
 	public final static int readLineRN(InputStream is, byte[] buffer) throws IOException
 	{
 		int pos = 0;
@@ -53,6 +48,11 @@ public class ClientServerHello
 
 		return len;
 	}
+	String server_line;
+
+	String client_line;
+
+	String server_versioncomment;
 
 	public ClientServerHello(InputStream bi, OutputStream bo) throws IOException
 	{

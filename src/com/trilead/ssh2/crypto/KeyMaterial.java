@@ -14,13 +14,6 @@ import com.trilead.ssh2.crypto.digest.HashForSSH2Types;
  */
 public class KeyMaterial
 {
-	public byte[] initial_iv_client_to_server;
-	public byte[] initial_iv_server_to_client;
-	public byte[] enc_key_client_to_server;
-	public byte[] enc_key_server_to_client;
-	public byte[] integrity_key_client_to_server;
-	public byte[] integrity_key_server_to_client;
-
 	private static byte[] calculateKey(HashForSSH2Types sh, BigInteger K, byte[] H, byte type, byte[] SessionID,
 			int keyLength)
 	{
@@ -65,7 +58,6 @@ public class KeyMaterial
 
 		return res;
 	}
-
 	public static KeyMaterial create(String hashType, byte[] H, BigInteger K, byte[] SessionID, int keyLengthCS,
 			int blockSizeCS, int macLengthCS, int keyLengthSC, int blockSizeSC, int macLengthSC)
 			throws IllegalArgumentException
@@ -88,4 +80,12 @@ public class KeyMaterial
 
 		return km;
 	}
+	public byte[] initial_iv_client_to_server;
+	public byte[] initial_iv_server_to_client;
+	public byte[] enc_key_client_to_server;
+	public byte[] enc_key_server_to_client;
+
+	public byte[] integrity_key_client_to_server;
+
+	public byte[] integrity_key_server_to_client;
 }

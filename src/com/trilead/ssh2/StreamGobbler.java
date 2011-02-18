@@ -36,6 +36,7 @@ public class StreamGobbler extends InputStream
 {
 	class GobblerThread extends Thread
 	{
+		@Override
 		public void run()
 		{
 			byte[] buff = new byte[8192];
@@ -123,6 +124,33 @@ public class StreamGobbler extends InputStream
 		t.start();
 	}
 
+	@Override
+	public int available() throws IOException
+	{
+		synchronized (synchronizer)
+		{
+			if (isClosed)
+				throw new IOException("This StreamGobbler is closed.");
+
+			return write_pos - read_pos;
+		}
+	}
+
+	@Override
+	public void close() throws IOException
+	{
+		synchronized (synchronizer)
+		{
+			if (isClosed)
+				return;
+			isClosed = true;
+			isEOF = true;
+			synchronizer.notifyAll();
+			is.close();
+		}
+	}
+
+	@Override
 	public int read() throws IOException
 	{
 		synchronized (synchronizer)
@@ -153,35 +181,13 @@ public class StreamGobbler extends InputStream
 		}
 	}
 
-	public int available() throws IOException
-	{
-		synchronized (synchronizer)
-		{
-			if (isClosed)
-				throw new IOException("This StreamGobbler is closed.");
-
-			return write_pos - read_pos;
-		}
-	}
-
+	@Override
 	public int read(byte[] b) throws IOException
 	{
 		return read(b, 0, b.length);
 	}
 
-	public void close() throws IOException
-	{
-		synchronized (synchronizer)
-		{
-			if (isClosed)
-				return;
-			isClosed = true;
-			isEOF = true;
-			synchronizer.notifyAll();
-			is.close();
-		}
-	}
-
+	@Override
 	public int read(byte[] b, int off, int len) throws IOException
 	{
 		if (b == null)

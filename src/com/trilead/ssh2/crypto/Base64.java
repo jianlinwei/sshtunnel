@@ -14,55 +14,6 @@ public class Base64
 {
 	static final char[] alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/".toCharArray();
 	
-	public static char[] encode(byte[] content)
-	{
-		CharArrayWriter cw = new CharArrayWriter((4 * content.length) / 3);
-
-		int idx = 0;
-					
-		int x = 0;
-
-		for (int i = 0; i < content.length; i++)
-		{
-			if (idx == 0)
-				x = (content[i] & 0xff) << 16;
-			else if (idx == 1)
-				x = x | ((content[i] & 0xff) << 8);
-			else
-				x = x | (content[i] & 0xff);
-
-			idx++;
-
-			if (idx == 3)
-			{
-				cw.write(alphabet[x >> 18]);
-				cw.write(alphabet[(x >> 12) & 0x3f]);
-				cw.write(alphabet[(x >> 6) & 0x3f]);
-				cw.write(alphabet[x & 0x3f]);
-
-				idx = 0;
-			}
-		}
-
-		if (idx == 1)
-		{
-			cw.write(alphabet[x >> 18]);
-			cw.write(alphabet[(x >> 12) & 0x3f]);
-			cw.write('=');
-			cw.write('=');
-		}
-
-		if (idx == 2)
-		{
-			cw.write(alphabet[x >> 18]);
-			cw.write(alphabet[(x >> 12) & 0x3f]);
-			cw.write(alphabet[(x >> 6) & 0x3f]);
-			cw.write('=');
-		}
-
-		return cw.toCharArray();
-	}
-
 	public static byte[] decode(char[] message) throws IOException
 	{
 		byte buff[] = new byte[4];
@@ -144,5 +95,54 @@ public class Base64
 		System.arraycopy(dest, 0, res, 0, destpos);
 
 		return res;
+	}
+
+	public static char[] encode(byte[] content)
+	{
+		CharArrayWriter cw = new CharArrayWriter((4 * content.length) / 3);
+
+		int idx = 0;
+					
+		int x = 0;
+
+		for (int i = 0; i < content.length; i++)
+		{
+			if (idx == 0)
+				x = (content[i] & 0xff) << 16;
+			else if (idx == 1)
+				x = x | ((content[i] & 0xff) << 8);
+			else
+				x = x | (content[i] & 0xff);
+
+			idx++;
+
+			if (idx == 3)
+			{
+				cw.write(alphabet[x >> 18]);
+				cw.write(alphabet[(x >> 12) & 0x3f]);
+				cw.write(alphabet[(x >> 6) & 0x3f]);
+				cw.write(alphabet[x & 0x3f]);
+
+				idx = 0;
+			}
+		}
+
+		if (idx == 1)
+		{
+			cw.write(alphabet[x >> 18]);
+			cw.write(alphabet[(x >> 12) & 0x3f]);
+			cw.write('=');
+			cw.write('=');
+		}
+
+		if (idx == 2)
+		{
+			cw.write(alphabet[x >> 18]);
+			cw.write(alphabet[(x >> 12) & 0x3f]);
+			cw.write(alphabet[(x >> 6) & 0x3f]);
+			cw.write('=');
+		}
+
+		return cw.toCharArray();
 	}
 }

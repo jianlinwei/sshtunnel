@@ -23,6 +23,11 @@ public class DSAPublicKey
 		this.y = y;
 	}
 
+	public BigInteger getG()
+	{
+		return g;
+	}
+
 	public BigInteger getP()
 	{
 		return p;
@@ -31,11 +36,6 @@ public class DSAPublicKey
 	public BigInteger getQ()
 	{
 		return q;
-	}
-
-	public BigInteger getG()
-	{
-		return g;
 	}
 
 	public BigInteger getY()

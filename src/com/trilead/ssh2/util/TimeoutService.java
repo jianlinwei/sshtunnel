@@ -22,32 +22,9 @@ import com.trilead.ssh2.log.Logger;
  */
 public class TimeoutService
 {
-	private static final Logger log = Logger.getLogger(TimeoutService.class);
-
-	public static class TimeoutToken implements Comparable
-	{
-		private long runTime;
-		private Runnable handler;
-
-		private TimeoutToken(long runTime, Runnable handler)
-		{
-			this.runTime = runTime;
-			this.handler = handler;
-		}
-
-		public int compareTo(Object o)
-		{
-			TimeoutToken t = (TimeoutToken) o;
-			if (runTime > t.runTime)
-				return 1;
-			if (runTime == t.runTime)
-				return 0;
-			return -1;
-		}
-	}
-
 	private static class TimeoutThread extends Thread
 	{
+		@Override
 		public void run()
 		{
 			synchronized (todolist)
@@ -100,6 +77,31 @@ public class TimeoutService
 			}
 		}
 	}
+
+	public static class TimeoutToken implements Comparable
+	{
+		private long runTime;
+		private Runnable handler;
+
+		private TimeoutToken(long runTime, Runnable handler)
+		{
+			this.runTime = runTime;
+			this.handler = handler;
+		}
+
+		@Override
+		public int compareTo(Object o)
+		{
+			TimeoutToken t = (TimeoutToken) o;
+			if (runTime > t.runTime)
+				return 1;
+			if (runTime == t.runTime)
+				return 0;
+			return -1;
+		}
+	}
+
+	private static final Logger log = Logger.getLogger(TimeoutService.class);
 
 	/* The list object is also used for locking purposes */
 	private static final LinkedList todolist = new LinkedList();

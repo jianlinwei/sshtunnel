@@ -15,17 +15,6 @@ public class PacketUserauthBanner
 	String message;
 	String language;
 
-	public PacketUserauthBanner(String message, String language)
-	{
-		this.message = message;
-		this.language = language;
-	}
-
-	public String getBanner()
-	{
-		return message;
-	}
-	
 	public PacketUserauthBanner(byte payload[], int off, int len) throws IOException
 	{
 		this.payload = new byte[len];
@@ -43,6 +32,17 @@ public class PacketUserauthBanner
 
 		if (tr.remain() != 0)
 			throw new IOException("Padding in SSH_MSG_USERAUTH_REQUEST packet!");
+	}
+
+	public PacketUserauthBanner(String message, String language)
+	{
+		this.message = message;
+		this.language = language;
+	}
+	
+	public String getBanner()
+	{
+		return message;
 	}
 
 	public byte[] getPayload()

@@ -16,12 +16,6 @@ public class PacketUserauthFailure
 	String[] authThatCanContinue;
 	boolean partialSuccess;
 
-	public PacketUserauthFailure(String[] authThatCanContinue, boolean partialSuccess)
-	{
-		this.authThatCanContinue = authThatCanContinue;
-		this.partialSuccess = partialSuccess;
-	}
-
 	public PacketUserauthFailure(byte payload[], int off, int len) throws IOException
 	{
 		this.payload = new byte[len];
@@ -39,6 +33,12 @@ public class PacketUserauthFailure
 
 		if (tr.remain() != 0)
 			throw new IOException("Padding in SSH_MSG_USERAUTH_FAILURE packet!");
+	}
+
+	public PacketUserauthFailure(String[] authThatCanContinue, boolean partialSuccess)
+	{
+		this.authThatCanContinue = authThatCanContinue;
+		this.partialSuccess = partialSuccess;
 	}
 
 	public String[] getAuthThatCanContinue()

@@ -16,13 +16,6 @@ public class PacketUserauthRequestPassword
 	String serviceName;
 	String password;
 
-	public PacketUserauthRequestPassword(String serviceName, String user, String pass)
-	{
-		this.serviceName = serviceName;
-		this.userName = user;
-		this.password = pass;
-	}
-
 	public PacketUserauthRequestPassword(byte payload[], int off, int len) throws IOException
 	{
 		this.payload = new byte[len];
@@ -47,6 +40,13 @@ public class PacketUserauthRequestPassword
 		
 		if (tr.remain() != 0)
 			throw new IOException("Padding in SSH_MSG_USERAUTH_REQUEST packet!");
+	}
+
+	public PacketUserauthRequestPassword(String serviceName, String user, String pass)
+	{
+		this.serviceName = serviceName;
+		this.userName = user;
+		this.password = pass;
 	}
 
 	public byte[] getPayload()

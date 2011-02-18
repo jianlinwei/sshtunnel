@@ -33,7 +33,8 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 package com.jcraft.jzlib;
-import java.io.*;
+import java.io.IOException;
+import java.io.OutputStream;
 
 public class ZOutputStream extends OutputStream {
 
@@ -63,12 +64,73 @@ public class ZOutputStream extends OutputStream {
     compress=true;
   }
 
-  public void write(int b) throws IOException {
-    buf1[0]=(byte)b;
-    write(buf1, 0, 1);
+  @Override
+public void close() throws IOException {
+    try{
+      try{finish();}
+      catch (IOException ignored) {}
+    }
+    finally{
+      end();
+      out.close();
+      out=null;
+    }
   }
 
-  public void write(byte b[], int off, int len) throws IOException {
+  public void end() {
+    if(z==null)
+      return;
+    if(compress){ z.deflateEnd(); }
+    else{ z.inflateEnd(); }
+    z.free();
+    z=null;
+  }
+
+  public void finish() throws IOException {
+    int err;
+    do{
+      z.next_out=buf;
+      z.next_out_index=0;
+      z.avail_out=bufsize;
+      if(compress){ err=z.deflate(JZlib.Z_FINISH);  }
+      else{ err=z.inflate(JZlib.Z_FINISH); }
+      if(err!=JZlib.Z_STREAM_END && err != JZlib.Z_OK)
+      throw new ZStreamException((compress?"de":"in")+"flating: "+z.msg);
+      if(bufsize-z.avail_out>0){
+	out.write(buf, 0, bufsize-z.avail_out);
+      }
+    }
+    while(z.avail_in>0 || z.avail_out==0);
+    flush();
+  }
+
+  @Override
+public void flush() throws IOException {
+    out.flush();
+  }
+
+  public int getFlushMode() {
+    return(flush);
+  }
+  /**
+   * Returns the total number of bytes input so far.
+   */
+  public long getTotalIn() {
+    return z.total_in;
+  }
+  /**
+   * Returns the total number of bytes output so far.
+   */
+  public long getTotalOut() {
+    return z.total_out;
+  }
+
+  public void setFlushMode(int flush) {
+    this.flush=flush;
+  }
+
+  @Override
+public void write(byte b[], int off, int len) throws IOException {
     if(len==0)
       return;
     int err;
@@ -90,67 +152,10 @@ public class ZOutputStream extends OutputStream {
     while(z.avail_in>0 || z.avail_out==0);
   }
 
-  public int getFlushMode() {
-    return(flush);
-  }
-
-  public void setFlushMode(int flush) {
-    this.flush=flush;
-  }
-
-  public void finish() throws IOException {
-    int err;
-    do{
-      z.next_out=buf;
-      z.next_out_index=0;
-      z.avail_out=bufsize;
-      if(compress){ err=z.deflate(JZlib.Z_FINISH);  }
-      else{ err=z.inflate(JZlib.Z_FINISH); }
-      if(err!=JZlib.Z_STREAM_END && err != JZlib.Z_OK)
-      throw new ZStreamException((compress?"de":"in")+"flating: "+z.msg);
-      if(bufsize-z.avail_out>0){
-	out.write(buf, 0, bufsize-z.avail_out);
-      }
-    }
-    while(z.avail_in>0 || z.avail_out==0);
-    flush();
-  }
-  public void end() {
-    if(z==null)
-      return;
-    if(compress){ z.deflateEnd(); }
-    else{ z.inflateEnd(); }
-    z.free();
-    z=null;
-  }
-  public void close() throws IOException {
-    try{
-      try{finish();}
-      catch (IOException ignored) {}
-    }
-    finally{
-      end();
-      out.close();
-      out=null;
-    }
-  }
-
-  /**
-   * Returns the total number of bytes input so far.
-   */
-  public long getTotalIn() {
-    return z.total_in;
-  }
-
-  /**
-   * Returns the total number of bytes output so far.
-   */
-  public long getTotalOut() {
-    return z.total_out;
-  }
-
-  public void flush() throws IOException {
-    out.flush();
+  @Override
+public void write(int b) throws IOException {
+    buf1[0]=(byte)b;
+    write(buf1, 0, 1);
   }
 
 }

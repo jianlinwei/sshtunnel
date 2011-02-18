@@ -22,12 +22,12 @@ public class Logger
 	public static boolean enabled = false;
 	public static DebugLogger logger = null;
 	
-	private String className;
-
 	public final static Logger getLogger(Class x)
 	{
 		return new Logger(x);
 	}
+
+	private String className;
 
 	public Logger(Class x)
 	{

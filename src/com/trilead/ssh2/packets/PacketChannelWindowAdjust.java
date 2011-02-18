@@ -15,12 +15,6 @@ public class PacketChannelWindowAdjust
 	public int recipientChannelID;
 	public int windowChange;
 
-	public PacketChannelWindowAdjust(int recipientChannelID, int windowChange)
-	{
-		this.recipientChannelID = recipientChannelID;
-		this.windowChange = windowChange;
-	}
-
 	public PacketChannelWindowAdjust(byte payload[], int off, int len) throws IOException
 	{
 		this.payload = new byte[len];
@@ -40,6 +34,12 @@ public class PacketChannelWindowAdjust
 		
 		if (tr.remain() != 0)
 			throw new IOException("Padding in SSH_MSG_CHANNEL_WINDOW_ADJUST packet!");
+	}
+
+	public PacketChannelWindowAdjust(int recipientChannelID, int windowChange)
+	{
+		this.recipientChannelID = recipientChannelID;
+		this.windowChange = windowChange;
 	}
 
 	public byte[] getPayload()

@@ -1,7 +1,14 @@
 package net.sourceforge.jsocks;
-import net.sourceforge.jsocks.server.*;
-import java.net.*;
-import java.io.*;
+import java.io.IOException;
+import java.io.InterruptedIOException;
+import java.io.PrintStream;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.Socket;
+import java.net.UnknownHostException;
+
+import net.sourceforge.jsocks.server.ServerAuthenticator;
 
 /**
  UDP Relay server, used by ProxyServer to perform udp forwarding.
@@ -29,6 +36,38 @@ class UDPRelayServer implements Runnable{
     static int datagramSize = 0xFFFF;//64K, a bit more than max udp size
     static int iddleTimeout = 180000;//3 minutes
 
+
+    static private void log(String s){
+      if(log != null){
+        log.println(s);
+        log.flush();
+      }
+    }
+
+
+//Public methods
+/////////////////
+
+
+   /**
+     Sets the size of the datagrams used in the UDPRelayServer.<br>
+     Default size is 64K, a bit more than maximum possible size of the
+     datagram.
+    */
+    static public void setDatagramSize(int size){
+      datagramSize = size;
+    }
+
+
+   /**
+    Sets the timeout for UDPRelay server.<br>
+    Zero timeout implies infinity.<br>
+    Default timeout is 3 minutes.
+    */
+
+    static public void setTimeout(int timeout){
+      iddleTimeout = timeout;
+    }
 
     /**
       Constructs UDP relay server to communicate with client
@@ -65,30 +104,32 @@ class UDPRelayServer implements Runnable{
        else
           remote_sock = new Socks5DatagramSocket(proxy,0,null);
     }
-
-
-//Public methods
+    //Private methods
 /////////////////
+    private synchronized void abort(){
+       if(pipe_thread1 == null) return;
 
+       log("Aborting UDP Relay Server");
 
-   /**
-    Sets the timeout for UDPRelay server.<br>
-    Zero timeout implies infinity.<br>
-    Default timeout is 3 minutes.
-    */
+       remote_sock.close();
+       client_sock.close();
 
-    static public void setTimeout(int timeout){
-      iddleTimeout = timeout;
+       if(controlConnection != null) 
+          try{ controlConnection.close();} catch(IOException ioe){}
+
+       if(master_thread!=null) master_thread.interrupt();
+
+       pipe_thread1.interrupt();
+       pipe_thread2.interrupt();
+
+       pipe_thread1 = null;
     }
 
-
-   /**
-     Sets the size of the datagrams used in the UDPRelayServer.<br>
-     Default size is 64K, a bit more than maximum possible size of the
-     datagram.
+    /**
+     IP address to which client should send datagrams for association.
     */
-    static public void setDatagramSize(int size){
-      datagramSize = size;
+    public InetAddress getRelayIP(){
+       return relayIP;
     }
 
     /**
@@ -97,12 +138,53 @@ class UDPRelayServer implements Runnable{
     public int getRelayPort(){
        return relayPort;
     }
-    /**
-     IP address to which client should send datagrams for association.
-    */
-    public InetAddress getRelayIP(){
-       return relayIP;
+
+private void pipe(DatagramSocket from,DatagramSocket to,boolean out)
+                             throws IOException{
+       byte[] data = new byte[datagramSize];
+       DatagramPacket dp = new DatagramPacket(data,data.length);
+
+       while(true){
+          try{
+            from.receive(dp);
+            lastReadTime = System.currentTimeMillis();
+
+            if(auth.checkRequest(dp,out))
+               to.send(dp);
+
+          }catch(UnknownHostException uhe){
+            log("Dropping datagram for unknown host");
+          }catch(InterruptedIOException iioe){
+            //log("Interrupted: "+iioe);
+            //If we were interrupted by other thread.
+            if(iddleTimeout == 0) return;
+
+            //If last datagram was received, long time ago, return.
+            long timeSinceRead = System.currentTimeMillis() - lastReadTime;
+            if(timeSinceRead >= iddleTimeout -100) //-100 for adjustment
+               return;
+          }
+          dp.setLength(data.length);
+       }
     }
+
+//Runnable interface
+////////////////////
+    @Override
+	public void run(){
+       try{
+          if(Thread.currentThread().getName().equals("pipe1"))
+             pipe(remote_sock,client_sock,false);
+          else
+             pipe(client_sock,remote_sock,true);
+       }catch(IOException ioe){
+       }finally{
+          abort();
+          log("UDP Pipe thread "+Thread.currentThread().getName()+" stopped.");
+       }
+
+    }
+
 
     /**
       Starts udp relay server.
@@ -134,79 +216,5 @@ class UDPRelayServer implements Runnable{
        master_thread = null;
        controlConnection = null;
        abort();
-    }
-
-//Runnable interface
-////////////////////
-    public void run(){
-       try{
-          if(Thread.currentThread().getName().equals("pipe1"))
-             pipe(remote_sock,client_sock,false);
-          else
-             pipe(client_sock,remote_sock,true);
-       }catch(IOException ioe){
-       }finally{
-          abort();
-          log("UDP Pipe thread "+Thread.currentThread().getName()+" stopped.");
-       }
-
-    }
-
-//Private methods
-/////////////////
-    private synchronized void abort(){
-       if(pipe_thread1 == null) return;
-
-       log("Aborting UDP Relay Server");
-
-       remote_sock.close();
-       client_sock.close();
-
-       if(controlConnection != null) 
-          try{ controlConnection.close();} catch(IOException ioe){}
-
-       if(master_thread!=null) master_thread.interrupt();
-
-       pipe_thread1.interrupt();
-       pipe_thread2.interrupt();
-
-       pipe_thread1 = null;
-    }
-
-
-    static private void log(String s){
-      if(log != null){
-        log.println(s);
-        log.flush();
-      }
-    }
-
-    private void pipe(DatagramSocket from,DatagramSocket to,boolean out)
-                             throws IOException{
-       byte[] data = new byte[datagramSize];
-       DatagramPacket dp = new DatagramPacket(data,data.length);
-
-       while(true){
-          try{
-            from.receive(dp);
-            lastReadTime = System.currentTimeMillis();
-
-            if(auth.checkRequest(dp,out))
-               to.send(dp);
-
-          }catch(UnknownHostException uhe){
-            log("Dropping datagram for unknown host");
-          }catch(InterruptedIOException iioe){
-            //log("Interrupted: "+iioe);
-            //If we were interrupted by other thread.
-            if(iddleTimeout == 0) return;
-
-            //If last datagram was received, long time ago, return.
-            long timeSinceRead = System.currentTimeMillis() - lastReadTime;
-            if(timeSinceRead >= iddleTimeout -100) //-100 for adjustment
-               return;
-          }
-          dp.setLength(data.length);
-       }
     }
 }

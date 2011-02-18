@@ -22,11 +22,11 @@ package com.trilead.ssh2.compression;
  *
  */
 public interface ICompressor {
-	int getBufferSize();
+	boolean canCompressPreauth();
 
 	int compress(byte[] buf, int start, int len, byte[] output);
 
-	byte[] uncompress(byte[] buf, int start, int[] len);
+	int getBufferSize();
 
-	boolean canCompressPreauth();
+	byte[] uncompress(byte[] buf, int start, int[] len);
 }

@@ -91,6 +91,256 @@ public class AuthAgentForwardThread extends Thread implements IChannelWorkerThre
 			log.log(20, "AuthAgentForwardThread started");
 	}
 
+	/**
+	 * @param tr
+	 */
+	private void addIdentity(TypesReader tr, boolean checkConstraints) {
+		try
+		{
+			if (failWhenLocked())
+				return;
+
+			String type = tr.readString();
+
+			Object key;
+			String comment;
+
+			if (type.equals("ssh-rsa")) {
+				BigInteger n = tr.readMPINT();
+				BigInteger e = tr.readMPINT();
+				BigInteger d = tr.readMPINT();
+				tr.readMPINT(); // iqmp
+				tr.readMPINT(); // p
+				tr.readMPINT(); // q
+				comment = tr.readString();
+
+				key = new RSAPrivateKey(d, e, n);
+			} else if (type.equals("ssh-dss")) {
+				BigInteger p = tr.readMPINT();
+				BigInteger q = tr.readMPINT();
+				BigInteger g = tr.readMPINT();
+				BigInteger y = tr.readMPINT();
+				BigInteger x = tr.readMPINT();
+				comment = tr.readString();
+
+				key = new DSAPrivateKey(p, q, g, y, x);
+			} else {
+				os.write(SSH_AGENT_FAILURE);
+				return;
+			}
+
+			boolean confirmUse = false;
+			int lifetime = 0;
+
+			if (checkConstraints) {
+				while (tr.remain() > 0) {
+					int constraint = tr.readByte();
+					if (constraint == SSH_AGENT_CONSTRAIN_CONFIRM)
+						confirmUse = true;
+					else if (constraint == SSH_AGENT_CONSTRAIN_LIFETIME)
+						lifetime = tr.readUINT32();
+					else {
+						// Unknown constraint. Bail.
+						os.write(SSH_AGENT_FAILURE);
+						return;
+					}
+				}
+			}
+
+			if (authAgent.addIdentity(key, comment, confirmUse, lifetime))
+				os.write(SSH_AGENT_SUCCESS);
+			else
+				os.write(SSH_AGENT_FAILURE);
+		}
+		catch (IOException e)
+		{
+			try
+			{
+				os.write(SSH_AGENT_FAILURE);
+			}
+			catch (IOException e1)
+			{
+			}
+		}
+	}
+
+	/**
+	 * @return whether the agent is locked
+	 */
+	private boolean failWhenLocked() throws IOException
+	{
+		if (authAgent.isAgentLocked()) {
+			os.write(SSH_AGENT_FAILURE);
+			return true;
+		} else
+			return false;
+	}
+
+	/**
+	 * @param tr
+	 */
+	private void processLockRequest(TypesReader tr) {
+		try
+		{
+			if (failWhenLocked())
+				return;
+
+			String lockPassphrase = tr.readString();
+			if (!authAgent.setAgentLock(lockPassphrase)) {
+				os.write(SSH_AGENT_FAILURE);
+				return;
+			} else
+				os.write(SSH_AGENT_SUCCESS);
+		}
+		catch (IOException e)
+		{
+			try
+			{
+				os.write(SSH_AGENT_FAILURE);
+			}
+			catch (IOException e1)
+			{
+			}
+		}
+	}
+
+	private void processSignRequest(TypesReader tr)
+	{
+		try
+		{
+			if (failWhenLocked())
+				return;
+
+			byte[] publicKey = tr.readByteString();
+			byte[] challenge = tr.readByteString();
+
+			int flags = tr.readUINT32();
+
+			if (flags != 0) {
+				// We don't understand any flags; abort!
+				os.write(SSH_AGENT_FAILURE);
+				return;
+			}
+
+			Object trileadKey = authAgent.getPrivateKey(publicKey);
+
+			if (trileadKey == null) {
+				os.write(SSH_AGENT_FAILURE);
+				return;
+			}
+
+			byte[] response;
+
+			if (trileadKey instanceof RSAPrivateKey) {
+				RSASignature signature = RSASHA1Verify.generateSignature(challenge,
+						(RSAPrivateKey) trileadKey);
+				response = RSASHA1Verify.encodeSSHRSASignature(signature);
+			} else if (trileadKey instanceof DSAPrivateKey) {
+				DSASignature signature = DSASHA1Verify.generateSignature(challenge,
+						(DSAPrivateKey) trileadKey, new SecureRandom());
+				response = DSASHA1Verify.encodeSSHDSASignature(signature);
+			} else {
+				os.write(SSH_AGENT_FAILURE);
+				return;
+			}
+
+			TypesWriter tw = new TypesWriter();
+			tw.writeByte(SSH2_AGENT_SIGN_RESPONSE);
+			tw.writeString(response, 0, response.length);
+
+			sendPacket(tw.getBytes());
+		}
+		catch (IOException e)
+		{
+			try
+			{
+				os.write(SSH_AGENT_FAILURE);
+			}
+			catch (IOException e1)
+			{
+			}
+		}
+	}
+
+	/**
+	 * @param tr
+	 */
+	private void processUnlockRequest(TypesReader tr)
+	{
+		try
+		{
+			String unlockPassphrase = tr.readString();
+
+			if (authAgent.requestAgentUnlock(unlockPassphrase))
+				os.write(SSH_AGENT_SUCCESS);
+			else
+				os.write(SSH_AGENT_FAILURE);
+		}
+		catch (IOException e)
+		{
+			try
+			{
+				os.write(SSH_AGENT_FAILURE);
+			}
+			catch (IOException e1)
+			{
+			}
+		}
+	}
+
+	/**
+	 * @param tr
+	 */
+	private void removeAllIdentities(TypesReader tr) {
+		try
+		{
+			if (failWhenLocked())
+				return;
+
+			if (authAgent.removeAllIdentities())
+				os.write(SSH_AGENT_SUCCESS);
+			else
+				os.write(SSH_AGENT_FAILURE);
+		}
+		catch (IOException e)
+		{
+			try
+			{
+				os.write(SSH_AGENT_FAILURE);
+			}
+			catch (IOException e1)
+			{
+			}
+		}
+	}
+
+	/**
+	 * @param tr
+	 */
+	private void removeIdentity(TypesReader tr) {
+		try
+		{
+			if (failWhenLocked())
+				return;
+
+			byte[] publicKey = tr.readByteString();
+			if (authAgent.removeIdentity(publicKey))
+				os.write(SSH_AGENT_SUCCESS);
+			else
+				os.write(SSH_AGENT_FAILURE);
+		}
+		catch (IOException e)
+		{
+			try
+			{
+				os.write(SSH_AGENT_FAILURE);
+			}
+			catch (IOException e1)
+			{
+			}
+		}
+	}
+
 	@Override
 	public void run()
 	{
@@ -207,29 +457,6 @@ public class AuthAgentForwardThread extends Thread implements IChannelWorkerThre
 		}
 	}
 
-	public void stopWorking() {
-		try
-		{
-			/* This will lead to an IOException in the is.read() call */
-			is.close();
-		}
-		catch (IOException e)
-		{
-		}
-	}
-
-	/**
-	 * @return whether the agent is locked
-	 */
-	private boolean failWhenLocked() throws IOException
-	{
-		if (authAgent.isAgentLocked()) {
-			os.write(SSH_AGENT_FAILURE);
-			return true;
-		} else
-			return false;
-	}
-
 	private void sendIdentities() throws IOException
 	{
 		Map<String,byte[]> keys = null;
@@ -258,244 +485,6 @@ public class AuthAgentForwardThread extends Thread implements IChannelWorkerThre
 	}
 
 	/**
-	 * @param tr
-	 */
-	private void addIdentity(TypesReader tr, boolean checkConstraints) {
-		try
-		{
-			if (failWhenLocked())
-				return;
-
-			String type = tr.readString();
-
-			Object key;
-			String comment;
-
-			if (type.equals("ssh-rsa")) {
-				BigInteger n = tr.readMPINT();
-				BigInteger e = tr.readMPINT();
-				BigInteger d = tr.readMPINT();
-				tr.readMPINT(); // iqmp
-				tr.readMPINT(); // p
-				tr.readMPINT(); // q
-				comment = tr.readString();
-
-				key = new RSAPrivateKey(d, e, n);
-			} else if (type.equals("ssh-dss")) {
-				BigInteger p = tr.readMPINT();
-				BigInteger q = tr.readMPINT();
-				BigInteger g = tr.readMPINT();
-				BigInteger y = tr.readMPINT();
-				BigInteger x = tr.readMPINT();
-				comment = tr.readString();
-
-				key = new DSAPrivateKey(p, q, g, y, x);
-			} else {
-				os.write(SSH_AGENT_FAILURE);
-				return;
-			}
-
-			boolean confirmUse = false;
-			int lifetime = 0;
-
-			if (checkConstraints) {
-				while (tr.remain() > 0) {
-					int constraint = tr.readByte();
-					if (constraint == SSH_AGENT_CONSTRAIN_CONFIRM)
-						confirmUse = true;
-					else if (constraint == SSH_AGENT_CONSTRAIN_LIFETIME)
-						lifetime = tr.readUINT32();
-					else {
-						// Unknown constraint. Bail.
-						os.write(SSH_AGENT_FAILURE);
-						return;
-					}
-				}
-			}
-
-			if (authAgent.addIdentity(key, comment, confirmUse, lifetime))
-				os.write(SSH_AGENT_SUCCESS);
-			else
-				os.write(SSH_AGENT_FAILURE);
-		}
-		catch (IOException e)
-		{
-			try
-			{
-				os.write(SSH_AGENT_FAILURE);
-			}
-			catch (IOException e1)
-			{
-			}
-		}
-	}
-
-	/**
-	 * @param tr
-	 */
-	private void removeIdentity(TypesReader tr) {
-		try
-		{
-			if (failWhenLocked())
-				return;
-
-			byte[] publicKey = tr.readByteString();
-			if (authAgent.removeIdentity(publicKey))
-				os.write(SSH_AGENT_SUCCESS);
-			else
-				os.write(SSH_AGENT_FAILURE);
-		}
-		catch (IOException e)
-		{
-			try
-			{
-				os.write(SSH_AGENT_FAILURE);
-			}
-			catch (IOException e1)
-			{
-			}
-		}
-	}
-
-	/**
-	 * @param tr
-	 */
-	private void removeAllIdentities(TypesReader tr) {
-		try
-		{
-			if (failWhenLocked())
-				return;
-
-			if (authAgent.removeAllIdentities())
-				os.write(SSH_AGENT_SUCCESS);
-			else
-				os.write(SSH_AGENT_FAILURE);
-		}
-		catch (IOException e)
-		{
-			try
-			{
-				os.write(SSH_AGENT_FAILURE);
-			}
-			catch (IOException e1)
-			{
-			}
-		}
-	}
-
-	private void processSignRequest(TypesReader tr)
-	{
-		try
-		{
-			if (failWhenLocked())
-				return;
-
-			byte[] publicKey = tr.readByteString();
-			byte[] challenge = tr.readByteString();
-
-			int flags = tr.readUINT32();
-
-			if (flags != 0) {
-				// We don't understand any flags; abort!
-				os.write(SSH_AGENT_FAILURE);
-				return;
-			}
-
-			Object trileadKey = authAgent.getPrivateKey(publicKey);
-
-			if (trileadKey == null) {
-				os.write(SSH_AGENT_FAILURE);
-				return;
-			}
-
-			byte[] response;
-
-			if (trileadKey instanceof RSAPrivateKey) {
-				RSASignature signature = RSASHA1Verify.generateSignature(challenge,
-						(RSAPrivateKey) trileadKey);
-				response = RSASHA1Verify.encodeSSHRSASignature(signature);
-			} else if (trileadKey instanceof DSAPrivateKey) {
-				DSASignature signature = DSASHA1Verify.generateSignature(challenge,
-						(DSAPrivateKey) trileadKey, new SecureRandom());
-				response = DSASHA1Verify.encodeSSHDSASignature(signature);
-			} else {
-				os.write(SSH_AGENT_FAILURE);
-				return;
-			}
-
-			TypesWriter tw = new TypesWriter();
-			tw.writeByte(SSH2_AGENT_SIGN_RESPONSE);
-			tw.writeString(response, 0, response.length);
-
-			sendPacket(tw.getBytes());
-		}
-		catch (IOException e)
-		{
-			try
-			{
-				os.write(SSH_AGENT_FAILURE);
-			}
-			catch (IOException e1)
-			{
-			}
-		}
-	}
-
-	/**
-	 * @param tr
-	 */
-	private void processLockRequest(TypesReader tr) {
-		try
-		{
-			if (failWhenLocked())
-				return;
-
-			String lockPassphrase = tr.readString();
-			if (!authAgent.setAgentLock(lockPassphrase)) {
-				os.write(SSH_AGENT_FAILURE);
-				return;
-			} else
-				os.write(SSH_AGENT_SUCCESS);
-		}
-		catch (IOException e)
-		{
-			try
-			{
-				os.write(SSH_AGENT_FAILURE);
-			}
-			catch (IOException e1)
-			{
-			}
-		}
-	}
-
-	/**
-	 * @param tr
-	 */
-	private void processUnlockRequest(TypesReader tr)
-	{
-		try
-		{
-			String unlockPassphrase = tr.readString();
-
-			if (authAgent.requestAgentUnlock(unlockPassphrase))
-				os.write(SSH_AGENT_SUCCESS);
-			else
-				os.write(SSH_AGENT_FAILURE);
-		}
-		catch (IOException e)
-		{
-			try
-			{
-				os.write(SSH_AGENT_FAILURE);
-			}
-			catch (IOException e1)
-			{
-			}
-		}
-	}
-
-	/**
 	 * @param tw
 	 * @throws IOException
 	 */
@@ -505,5 +494,17 @@ public class AuthAgentForwardThread extends Thread implements IChannelWorkerThre
 		packet.writeUINT32(message.length);
 		packet.writeBytes(message);
 		os.write(packet.getBytes());
+	}
+
+	@Override
+	public void stopWorking() {
+		try
+		{
+			/* This will lead to an IOException in the is.read() call */
+			is.close();
+		}
+		catch (IOException e)
+		{
+		}
 	}
 }

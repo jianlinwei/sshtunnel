@@ -39,52 +39,6 @@ public class DES implements BlockCipher
 	private int[] workingKey = null;
 
 	/**
-	 * standard constructor.
-	 */
-	public DES()
-	{
-	}
-
-	/**
-	 * initialise a DES cipher.
-	 * 
-	 * @param encrypting
-	 *            whether or not we are for encryption.
-	 * @param key
-	 *            the parameters required to set up the cipher.
-	 * @exception IllegalArgumentException
-	 *                if the params argument is inappropriate.
-	 */
-	public void init(boolean encrypting, byte[] key)
-	{
-		this.workingKey = generateWorkingKey(encrypting, key, 0);
-	}
-
-	public String getAlgorithmName()
-	{
-		return "DES";
-	}
-
-	public int getBlockSize()
-	{
-		return 8;
-	}
-
-	public void transformBlock(byte[] in, int inOff, byte[] out, int outOff)
-	{
-		if (workingKey == null)
-		{
-			throw new IllegalStateException("DES engine not initialised!");
-		}
-
-		desFunc(workingKey, in, inOff, out, outOff);
-	}
-
-	public void reset()
-	{
-	}
-
-	/**
 	 * what follows is mainly taken from "Applied Cryptography", by Bruce
 	 * Schneier, however it also bears great resemblance to Richard
 	 * Outerbridge's D3DES...
@@ -97,10 +51,6 @@ public class DES implements BlockCipher
 
 	static int[] bigbyte = { 0x800000, 0x400000, 0x200000, 0x100000, 0x80000, 0x40000, 0x20000, 0x10000, 0x8000,
 			0x4000, 0x2000, 0x1000, 0x800, 0x400, 0x200, 0x100, 0x80, 0x40, 0x20, 0x10, 0x8, 0x4, 0x2, 0x1 };
-
-	/*
-	 * Use the key schedule specified in the Standard (ANSI X3.92-1981).
-	 */
 
 	static byte[] pc1 = { 56, 48, 40, 32, 24, 16, 8, 0, 57, 49, 41, 33, 25, 17, 9, 1, 58, 50, 42, 34, 26, 18, 10, 2,
 			59, 51, 43, 35, 62, 54, 46, 38, 30, 22, 14, 6, 61, 53, 45, 37, 29, 21, 13, 5, 60, 52, 44, 36, 28, 20, 12,
@@ -137,6 +87,10 @@ public class DES implements BlockCipher
 			0x08000200, 0x08000008, 0x00000200, 0x00000000, 0x08020008, 0x08000208, 0x00020000, 0x08000000, 0x08020208,
 			0x00000008, 0x00020208, 0x00020200, 0x08000008, 0x08020000, 0x08000208, 0x00000208, 0x08020000, 0x00020208,
 			0x00000008, 0x08020008, 0x00020200 };
+
+	/*
+	 * Use the key schedule specified in the Standard (ANSI X3.92-1981).
+	 */
 
 	static int[] SP4 = { 0x00802001, 0x00002081, 0x00002081, 0x00000080, 0x00802080, 0x00800081, 0x00800001,
 			0x00002001, 0x00000000, 0x00802000, 0x00802000, 0x00802081, 0x00000081, 0x00000000, 0x00800080, 0x00800001,
@@ -182,6 +136,106 @@ public class DES implements BlockCipher
 			0x10040000, 0x10040040, 0x10000000, 0x00040000, 0x10001040, 0x00000000, 0x10041040, 0x00040040, 0x10000040,
 			0x10040000, 0x10001000, 0x10001040, 0x00000000, 0x10041040, 0x00041000, 0x00041000, 0x00001040, 0x00001040,
 			0x00040040, 0x10000000, 0x10041000 };
+
+	/**
+	 * standard constructor.
+	 */
+	public DES()
+	{
+	}
+
+	/**
+	 * the DES engine.
+	 */
+	protected void desFunc(int[] wKey, byte[] in, int inOff, byte[] out, int outOff)
+	{
+		int work, right, left;
+
+		left = (in[inOff + 0] & 0xff) << 24;
+		left |= (in[inOff + 1] & 0xff) << 16;
+		left |= (in[inOff + 2] & 0xff) << 8;
+		left |= (in[inOff + 3] & 0xff);
+
+		right = (in[inOff + 4] & 0xff) << 24;
+		right |= (in[inOff + 5] & 0xff) << 16;
+		right |= (in[inOff + 6] & 0xff) << 8;
+		right |= (in[inOff + 7] & 0xff);
+
+		work = ((left >>> 4) ^ right) & 0x0f0f0f0f;
+		right ^= work;
+		left ^= (work << 4);
+		work = ((left >>> 16) ^ right) & 0x0000ffff;
+		right ^= work;
+		left ^= (work << 16);
+		work = ((right >>> 2) ^ left) & 0x33333333;
+		left ^= work;
+		right ^= (work << 2);
+		work = ((right >>> 8) ^ left) & 0x00ff00ff;
+		left ^= work;
+		right ^= (work << 8);
+		right = ((right << 1) | ((right >>> 31) & 1)) & 0xffffffff;
+		work = (left ^ right) & 0xaaaaaaaa;
+		left ^= work;
+		right ^= work;
+		left = ((left << 1) | ((left >>> 31) & 1)) & 0xffffffff;
+
+		for (int round = 0; round < 8; round++)
+		{
+			int fval;
+
+			work = (right << 28) | (right >>> 4);
+			work ^= wKey[round * 4 + 0];
+			fval = SP7[work & 0x3f];
+			fval |= SP5[(work >>> 8) & 0x3f];
+			fval |= SP3[(work >>> 16) & 0x3f];
+			fval |= SP1[(work >>> 24) & 0x3f];
+			work = right ^ wKey[round * 4 + 1];
+			fval |= SP8[work & 0x3f];
+			fval |= SP6[(work >>> 8) & 0x3f];
+			fval |= SP4[(work >>> 16) & 0x3f];
+			fval |= SP2[(work >>> 24) & 0x3f];
+			left ^= fval;
+			work = (left << 28) | (left >>> 4);
+			work ^= wKey[round * 4 + 2];
+			fval = SP7[work & 0x3f];
+			fval |= SP5[(work >>> 8) & 0x3f];
+			fval |= SP3[(work >>> 16) & 0x3f];
+			fval |= SP1[(work >>> 24) & 0x3f];
+			work = left ^ wKey[round * 4 + 3];
+			fval |= SP8[work & 0x3f];
+			fval |= SP6[(work >>> 8) & 0x3f];
+			fval |= SP4[(work >>> 16) & 0x3f];
+			fval |= SP2[(work >>> 24) & 0x3f];
+			right ^= fval;
+		}
+
+		right = (right << 31) | (right >>> 1);
+		work = (left ^ right) & 0xaaaaaaaa;
+		left ^= work;
+		right ^= work;
+		left = (left << 31) | (left >>> 1);
+		work = ((left >>> 8) ^ right) & 0x00ff00ff;
+		right ^= work;
+		left ^= (work << 8);
+		work = ((left >>> 2) ^ right) & 0x33333333;
+		right ^= work;
+		left ^= (work << 2);
+		work = ((right >>> 16) ^ left) & 0x0000ffff;
+		left ^= work;
+		right ^= (work << 16);
+		work = ((right >>> 4) ^ left) & 0x0f0f0f0f;
+		left ^= work;
+		right ^= (work << 4);
+
+		out[outOff + 0] = (byte) ((right >>> 24) & 0xff);
+		out[outOff + 1] = (byte) ((right >>> 16) & 0xff);
+		out[outOff + 2] = (byte) ((right >>> 8) & 0xff);
+		out[outOff + 3] = (byte) (right & 0xff);
+		out[outOff + 4] = (byte) ((left >>> 24) & 0xff);
+		out[outOff + 5] = (byte) ((left >>> 16) & 0xff);
+		out[outOff + 6] = (byte) ((left >>> 8) & 0xff);
+		out[outOff + 7] = (byte) (left & 0xff);
+	}
 
 	/**
 	 * generate an integer based working key based on our secret key and what we
@@ -278,96 +332,45 @@ public class DES implements BlockCipher
 		return newKey;
 	}
 
-	/**
-	 * the DES engine.
-	 */
-	protected void desFunc(int[] wKey, byte[] in, int inOff, byte[] out, int outOff)
+	public String getAlgorithmName()
 	{
-		int work, right, left;
+		return "DES";
+	}
 
-		left = (in[inOff + 0] & 0xff) << 24;
-		left |= (in[inOff + 1] & 0xff) << 16;
-		left |= (in[inOff + 2] & 0xff) << 8;
-		left |= (in[inOff + 3] & 0xff);
+	@Override
+	public int getBlockSize()
+	{
+		return 8;
+	}
 
-		right = (in[inOff + 4] & 0xff) << 24;
-		right |= (in[inOff + 5] & 0xff) << 16;
-		right |= (in[inOff + 6] & 0xff) << 8;
-		right |= (in[inOff + 7] & 0xff);
+	/**
+	 * initialise a DES cipher.
+	 * 
+	 * @param encrypting
+	 *            whether or not we are for encryption.
+	 * @param key
+	 *            the parameters required to set up the cipher.
+	 * @exception IllegalArgumentException
+	 *                if the params argument is inappropriate.
+	 */
+	@Override
+	public void init(boolean encrypting, byte[] key)
+	{
+		this.workingKey = generateWorkingKey(encrypting, key, 0);
+	}
 
-		work = ((left >>> 4) ^ right) & 0x0f0f0f0f;
-		right ^= work;
-		left ^= (work << 4);
-		work = ((left >>> 16) ^ right) & 0x0000ffff;
-		right ^= work;
-		left ^= (work << 16);
-		work = ((right >>> 2) ^ left) & 0x33333333;
-		left ^= work;
-		right ^= (work << 2);
-		work = ((right >>> 8) ^ left) & 0x00ff00ff;
-		left ^= work;
-		right ^= (work << 8);
-		right = ((right << 1) | ((right >>> 31) & 1)) & 0xffffffff;
-		work = (left ^ right) & 0xaaaaaaaa;
-		left ^= work;
-		right ^= work;
-		left = ((left << 1) | ((left >>> 31) & 1)) & 0xffffffff;
+	public void reset()
+	{
+	}
 
-		for (int round = 0; round < 8; round++)
+	@Override
+	public void transformBlock(byte[] in, int inOff, byte[] out, int outOff)
+	{
+		if (workingKey == null)
 		{
-			int fval;
-
-			work = (right << 28) | (right >>> 4);
-			work ^= wKey[round * 4 + 0];
-			fval = SP7[work & 0x3f];
-			fval |= SP5[(work >>> 8) & 0x3f];
-			fval |= SP3[(work >>> 16) & 0x3f];
-			fval |= SP1[(work >>> 24) & 0x3f];
-			work = right ^ wKey[round * 4 + 1];
-			fval |= SP8[work & 0x3f];
-			fval |= SP6[(work >>> 8) & 0x3f];
-			fval |= SP4[(work >>> 16) & 0x3f];
-			fval |= SP2[(work >>> 24) & 0x3f];
-			left ^= fval;
-			work = (left << 28) | (left >>> 4);
-			work ^= wKey[round * 4 + 2];
-			fval = SP7[work & 0x3f];
-			fval |= SP5[(work >>> 8) & 0x3f];
-			fval |= SP3[(work >>> 16) & 0x3f];
-			fval |= SP1[(work >>> 24) & 0x3f];
-			work = left ^ wKey[round * 4 + 3];
-			fval |= SP8[work & 0x3f];
-			fval |= SP6[(work >>> 8) & 0x3f];
-			fval |= SP4[(work >>> 16) & 0x3f];
-			fval |= SP2[(work >>> 24) & 0x3f];
-			right ^= fval;
+			throw new IllegalStateException("DES engine not initialised!");
 		}
 
-		right = (right << 31) | (right >>> 1);
-		work = (left ^ right) & 0xaaaaaaaa;
-		left ^= work;
-		right ^= work;
-		left = (left << 31) | (left >>> 1);
-		work = ((left >>> 8) ^ right) & 0x00ff00ff;
-		right ^= work;
-		left ^= (work << 8);
-		work = ((left >>> 2) ^ right) & 0x33333333;
-		right ^= work;
-		left ^= (work << 2);
-		work = ((right >>> 16) ^ left) & 0x0000ffff;
-		left ^= work;
-		right ^= (work << 16);
-		work = ((right >>> 4) ^ left) & 0x0f0f0f0f;
-		left ^= work;
-		right ^= (work << 4);
-
-		out[outOff + 0] = (byte) ((right >>> 24) & 0xff);
-		out[outOff + 1] = (byte) ((right >>> 16) & 0xff);
-		out[outOff + 2] = (byte) ((right >>> 8) & 0xff);
-		out[outOff + 3] = (byte) (right & 0xff);
-		out[outOff + 4] = (byte) ((left >>> 24) & 0xff);
-		out[outOff + 5] = (byte) ((left >>> 16) & 0xff);
-		out[outOff + 6] = (byte) ((left >>> 8) & 0xff);
-		out[outOff + 7] = (byte) (left & 0xff);
+		desFunc(workingKey, in, inOff, out, outOff);
 	}
 }

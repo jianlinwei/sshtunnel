@@ -37,20 +37,20 @@ public class DynamicPortForwarder {
 
 	DynamicAcceptThread dat;
 
+	DynamicPortForwarder(ChannelManager cm, InetSocketAddress addr) throws IOException {
+		this.cm = cm;
+
+		dat = new DynamicAcceptThread(cm, addr);
+		dat.setDaemon(true);
+		dat.start();
+	}
+
 	DynamicPortForwarder(ChannelManager cm, int local_port)
 			throws IOException
 	{
 		this.cm = cm;
 
 		dat = new DynamicAcceptThread(cm, local_port);
-		dat.setDaemon(true);
-		dat.start();
-	}
-
-	DynamicPortForwarder(ChannelManager cm, InetSocketAddress addr) throws IOException {
-		this.cm = cm;
-
-		dat = new DynamicAcceptThread(cm, addr);
 		dat.setDaemon(true);
 		dat.start();
 	}

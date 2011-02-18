@@ -8,9 +8,9 @@ package com.trilead.ssh2.crypto.cipher;
  */
 public interface BlockCipher
 {
-	public void init(boolean forEncryption, byte[] key);
-
 	public int getBlockSize();
+
+	public void init(boolean forEncryption, byte[] key);
 
 	public void transformBlock(byte[] src, int srcoff, byte[] dst, int dstoff);
 }

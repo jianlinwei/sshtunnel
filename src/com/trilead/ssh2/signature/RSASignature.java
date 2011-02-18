@@ -15,13 +15,13 @@ public class RSASignature
 {
 	BigInteger s;
 
-	public BigInteger getS()
-	{
-		return s;
-	}
-
 	public RSASignature(BigInteger s)
 	{
 		this.s = s;
+	}
+
+	public BigInteger getS()
+	{
+		return s;
 	}
 }

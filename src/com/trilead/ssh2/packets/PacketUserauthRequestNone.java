@@ -15,12 +15,6 @@ public class PacketUserauthRequestNone
 	String userName;
 	String serviceName;
 
-	public PacketUserauthRequestNone(String serviceName, String user)
-	{
-		this.serviceName = serviceName;
-		this.userName = user;
-	}
-
 	public PacketUserauthRequestNone(byte payload[], int off, int len) throws IOException
 	{
 		this.payload = new byte[len];
@@ -43,6 +37,12 @@ public class PacketUserauthRequestNone
 
 		if (tr.remain() != 0)
 			throw new IOException("Padding in SSH_MSG_USERAUTH_REQUEST packet!");
+	}
+
+	public PacketUserauthRequestNone(String serviceName, String user)
+	{
+		this.serviceName = serviceName;
+		this.userName = user;
 	}
 
 	public byte[] getPayload()

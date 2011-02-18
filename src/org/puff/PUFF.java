@@ -25,11 +25,11 @@ import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.TextView;
 
-public class SSHTunnel extends Activity {
+public class PUFF extends Activity {
 
-	private static final String TAG = "SSHTunnel";
-	public static final String PREFS_NAME = "SSHTunnel";
-	private static final String SERVICE_NAME = "org.sshtunnel.SSHTunnelService";
+	private static final String TAG = "PUFF";
+	public static final String PREFS_NAME = "PUFF";
+	private static final String SERVICE_NAME = "org.puff.PUFFService";
 
 	private String host;
 	private int port;
@@ -43,19 +43,6 @@ public class SSHTunnel extends Activity {
 	public static boolean isAutoSetProxy = false;
 	public static boolean isRoot = false;
 
-	public boolean isWorked(String service) {
-		ActivityManager myManager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
-		ArrayList<RunningServiceInfo> runningService = (ArrayList<RunningServiceInfo>) myManager
-				.getRunningServices(30);
-		for (int i = 0; i < runningService.size(); i++) {
-			if (runningService.get(i).service.getClassName().toString()
-					.equals(service)) {
-				return true;
-			}
-		}
-		return false;
-	}
-	
 	public static boolean runRootCommand(String command) {
 		Process process = null;
 		DataOutputStream os = null;
@@ -81,7 +68,7 @@ public class SSHTunnel extends Activity {
 		}
 		return true;
 	}
-
+	
 	private void CopyAssets() {
 		AssetManager assetManager = getAssets();
 		String[] files = null;
@@ -94,10 +81,10 @@ public class SSHTunnel extends Activity {
 			InputStream in = null;
 			OutputStream out = null;
 			try {
-				// if (!(new File("/data/data/org.sshtunnel/" +
+				// if (!(new File("/data/data/org.puff/" +
 				// files[i])).exists()) {
 				in = assetManager.open(files[i]);
-				out = new FileOutputStream("/data/data/org.sshtunnel/"
+				out = new FileOutputStream("/data/data/org.puff/"
 						+ files[i]);
 				copyFile(in, out);
 				in.close();
@@ -120,16 +107,25 @@ public class SSHTunnel extends Activity {
 		}
 	}
 
-	/** Called when the activity is closed. */
-	@Override
-	public void onDestroy() {
-		SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
+	private boolean isTextEmpty(String s, String msg) {
+		if (s == null || s.length() <= 0) {
+			showAToast(msg);
+			return true;
+		}
+		return false;
+	}
 
-		SharedPreferences.Editor editor = settings.edit();
-		editor.putBoolean("IsConnected", isWorked(SERVICE_NAME));
-
-		editor.commit();
-		super.onDestroy();
+	public boolean isWorked(String service) {
+		ActivityManager myManager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+		ArrayList<RunningServiceInfo> runningService = (ArrayList<RunningServiceInfo>) myManager
+				.getRunningServices(30);
+		for (int i = 0; i < runningService.size(); i++) {
+			if (runningService.get(i).service.getClassName().toString()
+					.equals(service)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/** Called when the activity is first created. */
@@ -191,47 +187,23 @@ public class SSHTunnel extends Activity {
 
 		if (!isWorked(SERVICE_NAME)) {
 			CopyAssets();
-			runRootCommand("chmod 777 /data/data/org.sshtunnel/iptables_g1");
-			runRootCommand("chmod 777 /data/data/org.sshtunnel/iptables_n1");
-			runRootCommand("chmod 777 /data/data/org.sshtunnel/redsocks");
-			runRootCommand("chmod 777 /data/data/org.sshtunnel/proxy.sh");
+			runRootCommand("chmod 777 /data/data/org.puff/iptables_g1");
+			runRootCommand("chmod 777 /data/data/org.puff/iptables_n1");
+			runRootCommand("chmod 777 /data/data/org.puff/redsocks");
+			runRootCommand("chmod 777 /data/data/org.puff/proxy.sh");
 		}
 	}
 
-	/** Called when disconnect button is clicked. */
-	public void serviceStop(View view) {
-		if (!isWorked(SERVICE_NAME)) {
-			showAToast(getString(R.string.already_stopped));
-			return;
-		}
-		try {
-			stopService(new Intent(this, SSHTunnelService.class));
-		} catch (Exception e) {
-			// Nothing
-		}
+	/** Called when the activity is closed. */
+	@Override
+	public void onDestroy() {
+		SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
 
-	}
+		SharedPreferences.Editor editor = settings.edit();
+		editor.putBoolean("IsConnected", isWorked(SERVICE_NAME));
 
-	private void showAToast(String msg) {
-		AlertDialog.Builder builder = new AlertDialog.Builder(this);
-		builder.setMessage(msg)
-				.setCancelable(false)
-				.setNegativeButton(getString(R.string.ok_iknow),
-						new DialogInterface.OnClickListener() {
-							public void onClick(DialogInterface dialog, int id) {
-								dialog.cancel();
-							}
-						});
-		AlertDialog alert = builder.create();
-		alert.show();
-	}
-
-	private boolean isTextEmpty(String s, String msg) {
-		if (s == null || s.length() <= 0) {
-			showAToast(msg);
-			return true;
-		}
-		return false;
+		editor.commit();
+		super.onDestroy();
 	}
 
 	/** Called when connect button is clicked. */
@@ -271,7 +243,7 @@ public class SSHTunnel extends Activity {
 
 		try {
 
-			Intent it = new Intent(this, SSHTunnelService.class);
+			Intent it = new Intent(this, PUFFService.class);
 			Bundle bundle = new Bundle();
 			bundle.putString("host", host);
 			bundle.putString("user", user);
@@ -305,6 +277,35 @@ public class SSHTunnel extends Activity {
 		editor.commit();
 
 		return;
+	}
+
+	/** Called when disconnect button is clicked. */
+	public void serviceStop(View view) {
+		if (!isWorked(SERVICE_NAME)) {
+			showAToast(getString(R.string.already_stopped));
+			return;
+		}
+		try {
+			stopService(new Intent(this, PUFFService.class));
+		} catch (Exception e) {
+			// Nothing
+		}
+
+	}
+
+	private void showAToast(String msg) {
+		AlertDialog.Builder builder = new AlertDialog.Builder(this);
+		builder.setMessage(msg)
+				.setCancelable(false)
+				.setNegativeButton(getString(R.string.ok_iknow),
+						new DialogInterface.OnClickListener() {
+							@Override
+							public void onClick(DialogInterface dialog, int id) {
+								dialog.cancel();
+							}
+						});
+		AlertDialog alert = builder.create();
+		alert.show();
 	}
 
 }

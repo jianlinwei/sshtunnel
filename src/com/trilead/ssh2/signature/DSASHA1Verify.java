@@ -41,43 +41,6 @@ public class DSASHA1Verify
 		return new DSAPublicKey(p, q, g, y);
 	}
 
-	public static byte[] encodeSSHDSAPublicKey(DSAPublicKey pk) throws IOException
-	{
-		TypesWriter tw = new TypesWriter();
-
-		tw.writeString("ssh-dss");
-		tw.writeMPInt(pk.getP());
-		tw.writeMPInt(pk.getQ());
-		tw.writeMPInt(pk.getG());
-		tw.writeMPInt(pk.getY());
-
-		return tw.getBytes();
-	}
-
-	public static byte[] encodeSSHDSASignature(DSASignature ds)
-	{
-		TypesWriter tw = new TypesWriter();
-
-		tw.writeString("ssh-dss");
-
-		byte[] r = ds.getR().toByteArray();
-		byte[] s = ds.getS().toByteArray();
-
-		byte[] a40 = new byte[40];
-
-		/* Patch (unsigned) r and s into the target array. */
-
-		int r_copylen = (r.length < 20) ? r.length : 20;
-		int s_copylen = (s.length < 20) ? s.length : 20;
-
-		System.arraycopy(r, r.length - r_copylen, a40, 20 - r_copylen, r_copylen);
-		System.arraycopy(s, s.length - s_copylen, a40, 40 - s_copylen, s_copylen);
-
-		tw.writeString(a40, 0, 40);
-
-		return tw.getBytes();
-	}
-
 	public static DSASignature decodeSSHDSASignature(byte[] sig) throws IOException
 	{
 		byte[] rsArray = null;
@@ -121,6 +84,69 @@ public class DSASHA1Verify
 			log.log(30, "decoded ssh-dss signature: first bytes r(" + ((rsArray[0]) & 0xff) + "), s("
 					+ ((rsArray[20]) & 0xff) + ")");
 		}
+
+		return new DSASignature(r, s);
+	}
+
+	public static byte[] encodeSSHDSAPublicKey(DSAPublicKey pk) throws IOException
+	{
+		TypesWriter tw = new TypesWriter();
+
+		tw.writeString("ssh-dss");
+		tw.writeMPInt(pk.getP());
+		tw.writeMPInt(pk.getQ());
+		tw.writeMPInt(pk.getG());
+		tw.writeMPInt(pk.getY());
+
+		return tw.getBytes();
+	}
+
+	public static byte[] encodeSSHDSASignature(DSASignature ds)
+	{
+		TypesWriter tw = new TypesWriter();
+
+		tw.writeString("ssh-dss");
+
+		byte[] r = ds.getR().toByteArray();
+		byte[] s = ds.getS().toByteArray();
+
+		byte[] a40 = new byte[40];
+
+		/* Patch (unsigned) r and s into the target array. */
+
+		int r_copylen = (r.length < 20) ? r.length : 20;
+		int s_copylen = (s.length < 20) ? s.length : 20;
+
+		System.arraycopy(r, r.length - r_copylen, a40, 20 - r_copylen, r_copylen);
+		System.arraycopy(s, s.length - s_copylen, a40, 40 - s_copylen, s_copylen);
+
+		tw.writeString(a40, 0, 40);
+
+		return tw.getBytes();
+	}
+
+	public static DSASignature generateSignature(byte[] message, DSAPrivateKey pk, SecureRandom rnd)
+	{
+		SHA1 md = new SHA1();
+		md.update(message);
+		byte[] sha_message = new byte[md.getDigestLength()];
+		md.digest(sha_message);
+
+		BigInteger m = new BigInteger(1, sha_message);
+		BigInteger k;
+		int qBitLength = pk.getQ().bitLength();
+
+		do
+		{
+			k = new BigInteger(qBitLength, rnd);
+		}
+		while (k.compareTo(pk.getQ()) >= 0);
+
+		BigInteger r = pk.getG().modPow(k, pk.getP()).mod(pk.getQ());
+
+		k = k.modInverse(pk.getQ()).multiply(m.add((pk).getX().multiply(r)));
+
+		BigInteger s = k.mod(pk.getQ());
 
 		return new DSASignature(r, s);
 	}
@@ -180,31 +206,5 @@ public class DSASHA1Verify
 		BigInteger v = u1.multiply(u2).mod(p).mod(q);
 
 		return v.equals(r);
-	}
-
-	public static DSASignature generateSignature(byte[] message, DSAPrivateKey pk, SecureRandom rnd)
-	{
-		SHA1 md = new SHA1();
-		md.update(message);
-		byte[] sha_message = new byte[md.getDigestLength()];
-		md.digest(sha_message);
-
-		BigInteger m = new BigInteger(1, sha_message);
-		BigInteger k;
-		int qBitLength = pk.getQ().bitLength();
-
-		do
-		{
-			k = new BigInteger(qBitLength, rnd);
-		}
-		while (k.compareTo(pk.getQ()) >= 0);
-
-		BigInteger r = pk.getG().modPow(k, pk.getP()).mod(pk.getQ());
-
-		k = k.modInverse(pk.getQ()).multiply(m.add((pk).getX().multiply(r)));
-
-		BigInteger s = k.mod(pk.getQ());
-
-		return new DSASignature(r, s);
 	}
 }

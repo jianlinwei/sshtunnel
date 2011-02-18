@@ -38,6 +38,21 @@ public class LocalStreamForwarder
 	}
 
 	/**
+	 * Close the underlying SSH forwarding channel and free up resources.
+	 * You can also use this method to force the shutdown of the underlying
+	 * forwarding channel. Pending output (OutputStream not flushed) will NOT
+	 * be sent. Pending input (InputStream) can still be read. If the shutdown
+	 * operation is already in progress (initiated from either side), then this
+	 * call is a no-op.
+	 * 
+	 * @throws IOException
+	 */
+	public void close() throws IOException
+	{
+		cm.closeChannel(cn, "Closed due to user request.", true);
+	}
+
+	/**
 	 * @return An <code>InputStream</code> object.
 	 * @throws IOException
 	 */
@@ -59,20 +74,5 @@ public class LocalStreamForwarder
 	public OutputStream getOutputStream() throws IOException
 	{
 		return cn.getStdinStream();
-	}
-
-	/**
-	 * Close the underlying SSH forwarding channel and free up resources.
-	 * You can also use this method to force the shutdown of the underlying
-	 * forwarding channel. Pending output (OutputStream not flushed) will NOT
-	 * be sent. Pending input (InputStream) can still be read. If the shutdown
-	 * operation is already in progress (initiated from either side), then this
-	 * call is a no-op.
-	 * 
-	 * @throws IOException
-	 */
-	public void close() throws IOException
-	{
-		cm.closeChannel(cn, "Closed due to user request.", true);
 	}
 }

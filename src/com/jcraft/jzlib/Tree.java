@@ -142,89 +142,67 @@ final class Tree{
     1024, 1536,  2048,  3072,  4096,  6144,  8192, 12288, 16384, 24576
   };
 
+  // Reverse the first len bits of a code, using straightforward code (a faster
+  // method would use a table)
+  // IN assertion: 1 <= len <= 15
+  static int bi_reverse(int code, // the value to invert
+			int len   // its bit length
+			){
+    int res = 0;
+    do{
+      res|=code&1;
+      code>>>=1;
+      res<<=1;
+    } 
+    while(--len>0);
+    return res>>>1;
+  }
+
   // Mapping from a distance to a distance code. dist is the distance - 1 and
   // must not have side effects. _dist_code[256] and _dist_code[257] are never
   // used.
   static int d_code(int dist){
     return ((dist) < 256 ? _dist_code[dist] : _dist_code[256+((dist)>>>7)]);
   }
+  // Generate the codes for a given tree and bit counts (which need not be
+  // optimal).
+  // IN assertion: the array bl_count contains the bit length statistics for
+  // the given tree and the field len is set for all tree elements.
+  // OUT assertion: the field code is set for all tree elements of non
+  //     zero code length.
+  static void gen_codes(short[] tree, // the tree to decorate
+			int max_code, // largest code with non zero frequency
+			short[] bl_count // number of codes at each bit length
+			){
+    short[] next_code=new short[MAX_BITS+1]; // next code value for each bit length
+    short code = 0;            // running code value
+    int bits;                  // bit index
+    int n;                     // code index
 
-  short[] dyn_tree;      // the dynamic tree
-  int     max_code;      // largest code with non zero frequency
-  StaticTree stat_desc;  // the corresponding static tree
-
-  // Compute the optimal bit lengths for a tree and update the total bit length
-  // for the current block.
-  // IN assertion: the fields freq and dad are set, heap[heap_max] and
-  //    above are the tree nodes sorted by increasing frequency.
-  // OUT assertions: the field len is set to the optimal bit length, the
-  //     array bl_count contains the frequencies for each bit length.
-  //     The length opt_len is updated; static_len is also updated if stree is
-  //     not null.
-  void gen_bitlen(Deflate s){
-    short[] tree = dyn_tree;
-    short[] stree = stat_desc.static_tree;
-    int[] extra = stat_desc.extra_bits;
-    int base = stat_desc.extra_base;
-    int max_length = stat_desc.max_length;
-    int h;              // heap index
-    int n, m;           // iterate over the tree elements
-    int bits;           // bit length
-    int xbits;          // extra bits
-    short f;            // frequency
-    int overflow = 0;   // number of elements with bit length too large
-
-    for (bits = 0; bits <= MAX_BITS; bits++) s.bl_count[bits] = 0;
-
-    // In a first pass, compute the optimal bit lengths (which may
-    // overflow in the case of the bit length tree).
-    tree[s.heap[s.heap_max]*2+1] = 0; // root of the heap
-
-    for(h=s.heap_max+1; h<HEAP_SIZE; h++){
-      n = s.heap[h];
-      bits = tree[tree[n*2+1]*2+1] + 1;
-      if (bits > max_length){ bits = max_length; overflow++; }
-      tree[n*2+1] = (short)bits;
-      // We overwrite tree[n*2+1] which is no longer needed
-
-      if (n > max_code) continue;  // not a leaf node
-
-      s.bl_count[bits]++;
-      xbits = 0;
-      if (n >= base) xbits = extra[n-base];
-      f = tree[n*2];
-      s.opt_len += f * (bits + xbits);
-      if (stree!=null) s.static_len += f * (stree[n*2+1] + xbits);
+    // The distribution counts are first used to generate the code values
+    // without bit reversal.
+    for (bits = 1; bits <= MAX_BITS; bits++) {
+      next_code[bits] = code = (short)((code + bl_count[bits-1]) << 1);
     }
-    if (overflow == 0) return;
 
-    // This happens for example on obj2 and pic of the Calgary corpus
-    // Find the first bit length which could increase:
-    do {
-      bits = max_length-1;
-      while(s.bl_count[bits]==0) bits--;
-      s.bl_count[bits]--;      // move one leaf down the tree
-      s.bl_count[bits+1]+=2;   // move one overflow item as its brother
-      s.bl_count[max_length]--;
-      // The brother of the overflow item also moves one step up,
-      // but this does not affect bl_count[max_length]
-      overflow -= 2;
-    }
-    while (overflow > 0);
+    // Check that the bit counts in bl_count are consistent. The last code
+    // must be all ones.
+    //Assert (code + bl_count[MAX_BITS]-1 == (1<<MAX_BITS)-1,
+    //        "inconsistent bit counts");
+    //Tracev((stderr,"\ngen_codes: max_code %d ", max_code));
 
-    for (bits = max_length; bits != 0; bits--) {
-      n = s.bl_count[bits];
-      while (n != 0) {
-	m = s.heap[--h];
-	if (m > max_code) continue;
-	if (tree[m*2+1] != bits) {
-	  s.opt_len += ((long)bits - (long)tree[m*2+1])*(long)tree[m*2];
-	  tree[m*2+1] = (short)bits;
-	}
-	n--;
-      }
+    for (n = 0;  n <= max_code; n++) {
+      int len = tree[n*2+1];
+      if (len == 0) continue;
+      // Now reverse the bits
+      tree[n*2] = (short)(bi_reverse(next_code[len]++, len));
     }
   }
+  short[] dyn_tree;      // the dynamic tree
+
+  int     max_code;      // largest code with non zero frequency
+
+  StaticTree stat_desc;  // the corresponding static tree
 
   // Construct one Huffman tree and assigns the code bit strings and lengths.
   // Update the total bit length for the current block.
@@ -311,55 +289,77 @@ final class Tree{
     gen_codes(tree, max_code, s.bl_count);
   }
 
-  // Generate the codes for a given tree and bit counts (which need not be
-  // optimal).
-  // IN assertion: the array bl_count contains the bit length statistics for
-  // the given tree and the field len is set for all tree elements.
-  // OUT assertion: the field code is set for all tree elements of non
-  //     zero code length.
-  static void gen_codes(short[] tree, // the tree to decorate
-			int max_code, // largest code with non zero frequency
-			short[] bl_count // number of codes at each bit length
-			){
-    short[] next_code=new short[MAX_BITS+1]; // next code value for each bit length
-    short code = 0;            // running code value
-    int bits;                  // bit index
-    int n;                     // code index
+  // Compute the optimal bit lengths for a tree and update the total bit length
+  // for the current block.
+  // IN assertion: the fields freq and dad are set, heap[heap_max] and
+  //    above are the tree nodes sorted by increasing frequency.
+  // OUT assertions: the field len is set to the optimal bit length, the
+  //     array bl_count contains the frequencies for each bit length.
+  //     The length opt_len is updated; static_len is also updated if stree is
+  //     not null.
+  void gen_bitlen(Deflate s){
+    short[] tree = dyn_tree;
+    short[] stree = stat_desc.static_tree;
+    int[] extra = stat_desc.extra_bits;
+    int base = stat_desc.extra_base;
+    int max_length = stat_desc.max_length;
+    int h;              // heap index
+    int n, m;           // iterate over the tree elements
+    int bits;           // bit length
+    int xbits;          // extra bits
+    short f;            // frequency
+    int overflow = 0;   // number of elements with bit length too large
 
-    // The distribution counts are first used to generate the code values
-    // without bit reversal.
-    for (bits = 1; bits <= MAX_BITS; bits++) {
-      next_code[bits] = code = (short)((code + bl_count[bits-1]) << 1);
+    for (bits = 0; bits <= MAX_BITS; bits++) s.bl_count[bits] = 0;
+
+    // In a first pass, compute the optimal bit lengths (which may
+    // overflow in the case of the bit length tree).
+    tree[s.heap[s.heap_max]*2+1] = 0; // root of the heap
+
+    for(h=s.heap_max+1; h<HEAP_SIZE; h++){
+      n = s.heap[h];
+      bits = tree[tree[n*2+1]*2+1] + 1;
+      if (bits > max_length){ bits = max_length; overflow++; }
+      tree[n*2+1] = (short)bits;
+      // We overwrite tree[n*2+1] which is no longer needed
+
+      if (n > max_code) continue;  // not a leaf node
+
+      s.bl_count[bits]++;
+      xbits = 0;
+      if (n >= base) xbits = extra[n-base];
+      f = tree[n*2];
+      s.opt_len += f * (bits + xbits);
+      if (stree!=null) s.static_len += f * (stree[n*2+1] + xbits);
     }
+    if (overflow == 0) return;
 
-    // Check that the bit counts in bl_count are consistent. The last code
-    // must be all ones.
-    //Assert (code + bl_count[MAX_BITS]-1 == (1<<MAX_BITS)-1,
-    //        "inconsistent bit counts");
-    //Tracev((stderr,"\ngen_codes: max_code %d ", max_code));
-
-    for (n = 0;  n <= max_code; n++) {
-      int len = tree[n*2+1];
-      if (len == 0) continue;
-      // Now reverse the bits
-      tree[n*2] = (short)(bi_reverse(next_code[len]++, len));
+    // This happens for example on obj2 and pic of the Calgary corpus
+    // Find the first bit length which could increase:
+    do {
+      bits = max_length-1;
+      while(s.bl_count[bits]==0) bits--;
+      s.bl_count[bits]--;      // move one leaf down the tree
+      s.bl_count[bits+1]+=2;   // move one overflow item as its brother
+      s.bl_count[max_length]--;
+      // The brother of the overflow item also moves one step up,
+      // but this does not affect bl_count[max_length]
+      overflow -= 2;
     }
-  }
+    while (overflow > 0);
 
-  // Reverse the first len bits of a code, using straightforward code (a faster
-  // method would use a table)
-  // IN assertion: 1 <= len <= 15
-  static int bi_reverse(int code, // the value to invert
-			int len   // its bit length
-			){
-    int res = 0;
-    do{
-      res|=code&1;
-      code>>>=1;
-      res<<=1;
-    } 
-    while(--len>0);
-    return res>>>1;
+    for (bits = max_length; bits != 0; bits--) {
+      n = s.bl_count[bits];
+      while (n != 0) {
+	m = s.heap[--h];
+	if (m > max_code) continue;
+	if (tree[m*2+1] != bits) {
+	  s.opt_len += ((long)bits - (long)tree[m*2+1])*tree[m*2];
+	  tree[m*2+1] = (short)bits;
+	}
+	n--;
+      }
+    }
   }
 }
 

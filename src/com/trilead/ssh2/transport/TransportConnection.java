@@ -98,6 +98,16 @@ public class TransportConnection
 			recv_padd_blocksize = 8;
 	}
 
+	public void changeRecvCompression(ICompressor comp)
+	{
+		recv_comp = comp;
+		
+		if (comp != null) {
+			recv_comp_buffer = new byte[comp.getBufferSize()];
+			can_recv_compress |= recv_comp.canCompressPreauth();
+		}
+	}
+	
 	public void changeSendCipher(BlockCipher bc, MAC mac)
 	{
 		if ((bc instanceof NullCipher) == false)
@@ -114,16 +124,6 @@ public class TransportConnection
 		if (send_padd_blocksize < 8)
 			send_padd_blocksize = 8;
 	}
-	
-	public void changeRecvCompression(ICompressor comp)
-	{
-		recv_comp = comp;
-		
-		if (comp != null) {
-			recv_comp_buffer = new byte[comp.getBufferSize()];
-			can_recv_compress |= recv_comp.canCompressPreauth();
-		}
-	}
 
 	public void changeSendCompression(ICompressor comp)
 	{
@@ -135,109 +135,10 @@ public class TransportConnection
 		}
 	}
 	
-	public void sendMessage(byte[] message) throws IOException
-	{
-		sendMessage(message, 0, message.length, 0);
-	}
-
-	public void sendMessage(byte[] message, int off, int len) throws IOException
-	{
-		sendMessage(message, off, len, 0);
-	}
-
 	public int getPacketOverheadEstimate()
 	{
 		// return an estimate for the paket overhead (for send operations)
 		return 5 + 4 + (send_padd_blocksize - 1) + send_mac_buffer.length;
-	}
-
-	public void sendMessage(byte[] message, int off, int len, int padd) throws IOException
-	{
-		if (padd < 4)
-			padd = 4;
-		else if (padd > 64)
-			padd = 64;
-		
-		if (send_comp != null && can_send_compress) {
-			if (send_comp_buffer.length < message.length + 1024)
-				send_comp_buffer = new byte[message.length + 1024];
-			len = send_comp.compress(message, off, len, send_comp_buffer);
-			message = send_comp_buffer;
-		}
-
-		int packet_len = 5 + len + padd; /* Minimum allowed padding is 4 */
-
-		int slack = packet_len % send_padd_blocksize;
-
-		if (slack != 0)
-		{
-			packet_len += (send_padd_blocksize - slack);
-		}
-
-		if (packet_len < 16)
-			packet_len = 16;
-
-		int padd_len = packet_len - (5 + len);
-
-		if (useRandomPadding)
-		{
-			for (int i = 0; i < padd_len; i = i + 4)
-			{
-				/*
-				 * don't waste calls to rnd.nextInt() (by using only 8bit of the
-				 * output). just believe me: even though we may write here up to 3
-				 * bytes which won't be used, there is no "buffer overflow" (i.e.,
-				 * arrayindexoutofbounds). the padding buffer is big enough =) (256
-				 * bytes, and that is bigger than any current cipher block size + 64).
-				 */
-
-				int r = rnd.nextInt();
-				send_padding_buffer[i] = (byte) r;
-				send_padding_buffer[i + 1] = (byte) (r >> 8);
-				send_padding_buffer[i + 2] = (byte) (r >> 16);
-				send_padding_buffer[i + 3] = (byte) (r >> 24);
-			}
-		}
-		else
-		{
-			/* use zero padding for unencrypted traffic */
-			for (int i = 0; i < padd_len; i++)
-				send_padding_buffer[i] = 0;
-			/* Actually this code is paranoid: we never filled any
-			 * bytes into the padding buffer so far, therefore it should
-			 * consist of zeros only.
-			 */
-		}
-
-		send_packet_header_buffer[0] = (byte) ((packet_len - 4) >> 24);
-		send_packet_header_buffer[1] = (byte) ((packet_len - 4) >> 16);
-		send_packet_header_buffer[2] = (byte) ((packet_len - 4) >> 8);
-		send_packet_header_buffer[3] = (byte) ((packet_len - 4));
-		send_packet_header_buffer[4] = (byte) padd_len;
-
-		cos.write(send_packet_header_buffer, 0, 5);
-		cos.write(message, off, len);
-		cos.write(send_padding_buffer, 0, padd_len);
-
-		if (send_mac != null)
-		{
-			send_mac.initMac(send_seq_number);
-			send_mac.update(send_packet_header_buffer, 0, 5);
-			send_mac.update(message, off, len);
-			send_mac.update(send_padding_buffer, 0, padd_len);
-
-			send_mac.getMac(send_mac_buffer, 0);
-			cos.writePlain(send_mac_buffer, 0, send_mac_buffer.length);
-		}
-
-		cos.flush();
-
-		if (log.isEnabled())
-		{
-			log.log(90, "Sent " + Packets.getMessageName(message[off] & 0xff) + " " + len + " bytes payload");
-		}
-
-		send_seq_number++;
 	}
 
 	public int peekNextMessageLength() throws IOException
@@ -331,6 +232,105 @@ public class TransportConnection
 		} else {
 			return payload_length;
 		}
+	}
+
+	public void sendMessage(byte[] message) throws IOException
+	{
+		sendMessage(message, 0, message.length, 0);
+	}
+
+	public void sendMessage(byte[] message, int off, int len) throws IOException
+	{
+		sendMessage(message, off, len, 0);
+	}
+
+	public void sendMessage(byte[] message, int off, int len, int padd) throws IOException
+	{
+		if (padd < 4)
+			padd = 4;
+		else if (padd > 64)
+			padd = 64;
+		
+		if (send_comp != null && can_send_compress) {
+			if (send_comp_buffer.length < message.length + 1024)
+				send_comp_buffer = new byte[message.length + 1024];
+			len = send_comp.compress(message, off, len, send_comp_buffer);
+			message = send_comp_buffer;
+		}
+
+		int packet_len = 5 + len + padd; /* Minimum allowed padding is 4 */
+
+		int slack = packet_len % send_padd_blocksize;
+
+		if (slack != 0)
+		{
+			packet_len += (send_padd_blocksize - slack);
+		}
+
+		if (packet_len < 16)
+			packet_len = 16;
+
+		int padd_len = packet_len - (5 + len);
+
+		if (useRandomPadding)
+		{
+			for (int i = 0; i < padd_len; i = i + 4)
+			{
+				/*
+				 * don't waste calls to rnd.nextInt() (by using only 8bit of the
+				 * output). just believe me: even though we may write here up to 3
+				 * bytes which won't be used, there is no "buffer overflow" (i.e.,
+				 * arrayindexoutofbounds). the padding buffer is big enough =) (256
+				 * bytes, and that is bigger than any current cipher block size + 64).
+				 */
+
+				int r = rnd.nextInt();
+				send_padding_buffer[i] = (byte) r;
+				send_padding_buffer[i + 1] = (byte) (r >> 8);
+				send_padding_buffer[i + 2] = (byte) (r >> 16);
+				send_padding_buffer[i + 3] = (byte) (r >> 24);
+			}
+		}
+		else
+		{
+			/* use zero padding for unencrypted traffic */
+			for (int i = 0; i < padd_len; i++)
+				send_padding_buffer[i] = 0;
+			/* Actually this code is paranoid: we never filled any
+			 * bytes into the padding buffer so far, therefore it should
+			 * consist of zeros only.
+			 */
+		}
+
+		send_packet_header_buffer[0] = (byte) ((packet_len - 4) >> 24);
+		send_packet_header_buffer[1] = (byte) ((packet_len - 4) >> 16);
+		send_packet_header_buffer[2] = (byte) ((packet_len - 4) >> 8);
+		send_packet_header_buffer[3] = (byte) ((packet_len - 4));
+		send_packet_header_buffer[4] = (byte) padd_len;
+
+		cos.write(send_packet_header_buffer, 0, 5);
+		cos.write(message, off, len);
+		cos.write(send_padding_buffer, 0, padd_len);
+
+		if (send_mac != null)
+		{
+			send_mac.initMac(send_seq_number);
+			send_mac.update(send_packet_header_buffer, 0, 5);
+			send_mac.update(message, off, len);
+			send_mac.update(send_padding_buffer, 0, padd_len);
+
+			send_mac.getMac(send_mac_buffer, 0);
+			cos.writePlain(send_mac_buffer, 0, send_mac_buffer.length);
+		}
+
+		cos.flush();
+
+		if (log.isEnabled())
+		{
+			log.log(90, "Sent " + Packets.getMessageName(message[off] & 0xff) + " " + len + " bytes payload");
+		}
+
+		send_seq_number++;
 	}
 
 	/**

@@ -27,18 +27,6 @@ public class LocalPortForwarder
 
 	LocalAcceptThread lat;
 
-	LocalPortForwarder(ChannelManager cm, int local_port, String host_to_connect, int port_to_connect)
-			throws IOException
-	{
-		this.cm = cm;
-		this.host_to_connect = host_to_connect;
-		this.port_to_connect = port_to_connect;
-
-		lat = new LocalAcceptThread(cm, local_port, host_to_connect, port_to_connect);
-		lat.setDaemon(true);
-		lat.start();
-	}
-
 	LocalPortForwarder(ChannelManager cm, InetSocketAddress addr, String host_to_connect, int port_to_connect)
 			throws IOException
 	{
@@ -47,6 +35,18 @@ public class LocalPortForwarder
 		this.port_to_connect = port_to_connect;
 
 		lat = new LocalAcceptThread(cm, addr, host_to_connect, port_to_connect);
+		lat.setDaemon(true);
+		lat.start();
+	}
+
+	LocalPortForwarder(ChannelManager cm, int local_port, String host_to_connect, int port_to_connect)
+			throws IOException
+	{
+		this.cm = cm;
+		this.host_to_connect = host_to_connect;
+		this.port_to_connect = port_to_connect;
+
+		lat = new LocalAcceptThread(cm, local_port, host_to_connect, port_to_connect);
 		lat.setDaemon(true);
 		lat.start();
 	}

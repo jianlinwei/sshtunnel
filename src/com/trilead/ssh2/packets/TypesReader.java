@@ -49,12 +49,29 @@ public class TypesReader
 			throw new IllegalArgumentException("Illegal length.");
 	}
 
+	public boolean readBoolean() throws IOException
+	{
+		if (pos >= max)
+			throw new IOException("Packet too short.");
+
+		return (arr[pos++] != 0);
+	}
+
 	public int readByte() throws IOException
 	{
 		if (pos >= max)
 			throw new IOException("Packet too short.");
 
 		return (arr[pos++] & 0xff);
+	}
+
+	public void readBytes(byte[] dst, int off, int len) throws IOException
+	{
+		if ((pos + len) > max)
+			throw new IOException("Packet too short.");
+
+		System.arraycopy(arr, pos, dst, off, len);
+		pos += len;
 	}
 
 	public byte[] readBytes(int len) throws IOException
@@ -70,21 +87,63 @@ public class TypesReader
 		return res;
 	}
 
-	public void readBytes(byte[] dst, int off, int len) throws IOException
+	public byte[] readByteString() throws IOException
 	{
-		if ((pos + len) > max)
-			throw new IOException("Packet too short.");
+		int len = readUINT32();
 
-		System.arraycopy(arr, pos, dst, off, len);
+		if ((len + pos) > max)
+			throw new IOException("Malformed SSH byte string.");
+
+		byte[] res = new byte[len];
+		System.arraycopy(arr, pos, res, 0, len);
 		pos += len;
+		return res;
 	}
 
-	public boolean readBoolean() throws IOException
+	public BigInteger readMPINT() throws IOException
 	{
-		if (pos >= max)
-			throw new IOException("Packet too short.");
+		BigInteger b;
 
-		return (arr[pos++] != 0);
+		byte raw[] = readByteString();
+
+		if (raw.length == 0)
+			b = BigInteger.ZERO;
+		else
+			b = new BigInteger(raw);
+
+		return b;
+	}
+
+	public String[] readNameList() throws IOException
+	{
+		return Tokenizer.parseTokens(readString(), ',');
+	}
+
+	public String readString() throws IOException
+	{
+		int len = readUINT32();
+
+		if ((len + pos) > max)
+			throw new IOException("Malformed SSH string.");
+
+		String res = new String(arr, pos, len, "ISO-8859-1");
+		
+		pos += len;
+
+		return res;
+	}
+
+	public String readString(String charsetName) throws IOException
+	{
+		int len = readUINT32();
+
+		if ((len + pos) > max)
+			throw new IOException("Malformed SSH string.");
+
+		String res = (charsetName == null) ? new String(arr, pos, len) : new String(arr, pos, len, charsetName);
+		pos += len;
+
+		return res;
 	}
 
 	public int readUINT32() throws IOException
@@ -108,65 +167,6 @@ public class TypesReader
 				| (arr[pos++] & 0xff); /* sign extension may take place - handle below */
 
 		return (high << 32) | (low & 0xffffffffl); /* see Java language spec (15.22.1, 5.6.2) */
-	}
-
-	public BigInteger readMPINT() throws IOException
-	{
-		BigInteger b;
-
-		byte raw[] = readByteString();
-
-		if (raw.length == 0)
-			b = BigInteger.ZERO;
-		else
-			b = new BigInteger(raw);
-
-		return b;
-	}
-
-	public byte[] readByteString() throws IOException
-	{
-		int len = readUINT32();
-
-		if ((len + pos) > max)
-			throw new IOException("Malformed SSH byte string.");
-
-		byte[] res = new byte[len];
-		System.arraycopy(arr, pos, res, 0, len);
-		pos += len;
-		return res;
-	}
-
-	public String readString(String charsetName) throws IOException
-	{
-		int len = readUINT32();
-
-		if ((len + pos) > max)
-			throw new IOException("Malformed SSH string.");
-
-		String res = (charsetName == null) ? new String(arr, pos, len) : new String(arr, pos, len, charsetName);
-		pos += len;
-
-		return res;
-	}
-
-	public String readString() throws IOException
-	{
-		int len = readUINT32();
-
-		if ((len + pos) > max)
-			throw new IOException("Malformed SSH string.");
-
-		String res = new String(arr, pos, len, "ISO-8859-1");
-		
-		pos += len;
-
-		return res;
-	}
-
-	public String[] readNameList() throws IOException
-	{
-		return Tokenizer.parseTokens(readString(), ',');
 	}
 
 	public int remain()
