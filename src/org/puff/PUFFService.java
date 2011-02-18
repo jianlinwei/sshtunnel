@@ -327,6 +327,7 @@ public class PUFFService extends Service implements ConnectionMonitor {
 	private void notifyAlert(String title, String info) {
 		notification.icon = R.drawable.icon;
 		notification.tickerText = title;
+		notification.defaults = Notification.DEFAULT_SOUND;
 		notification.setLatestEventInfo(this, getString(R.string.app_name), info, pendIntent);
 		notificationManager.notify(0, notification);
 	}
@@ -342,7 +343,6 @@ public class PUFFService extends Service implements ConnectionMonitor {
 		super.onCreate();
 		notificationManager = (NotificationManager) this
 				.getSystemService(NOTIFICATION_SERVICE);
-
 		intent = new Intent(this, PUFF.class);
 		pendIntent = PendingIntent.getActivity(this, 0, intent, 0);
 		notification = new Notification();
