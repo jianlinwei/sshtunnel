@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="service_running">SSHTunnel service is running now.</string>
-    <string name="app_name">SSHTunnel</string>
+    <string name="service_running">PUFF service is running now.</string>
+    <string name="app_name">PUFF</string>
 <string name="forward_success">Port Forwarding Successed.</string>
 <string name="forward_fail">Port Forwarding Failed.</string>
-<string name="service_stopped">SSHTunnel service stopped.</string>
+<string name="service_stopped">PUFF service stopped.</string>
 <string name="auto_reconnected">Auto Reconnected</string>
 <string name="reconnect_success">Reconnected successfully.</string>
 <string name="already_stopped">Service has been stopped already.</string>
@@ -24,5 +24,5 @@
 <string name="auto_set_proxy">Auto set proxy (need root permission)</string>
 <string name="disconnect">Disconnect</string>
 <string name="connect">Connect</string>
-<string name="feedback">Feedback <a href='twitter.com/ofmax'>@ofmax</a></string>
+<string name="feedback">Feedback <a href='twitter.com/ofmax'>@ofmax</a>;</string>
 </resources>

@@ -175,21 +175,15 @@ public class SSHTunnel extends Activity {
 			
 
 			final EditText hostText = (EditText) findViewById(R.id.host);
-			final EditText portText = (EditText) findViewById(R.id.port);
 			final EditText userText = (EditText) findViewById(R.id.user);
 			final EditText passwdText = (EditText) findViewById(R.id.passwd);
-			final EditText localPortText = (EditText) findViewById(R.id.localPort);
-			final EditText remotePortText = (EditText) findViewById(R.id.remotePort);
 			final CheckBox isAutoStartText = (CheckBox) findViewById(R.id.isAutoStart);
 			final CheckBox isAutoReconnectText = (CheckBox) findViewById(R.id.isAutoReconnect);
 			
 
 			hostText.setText(host);
-			portText.setText(Integer.toString(port));
 			userText.setText(user);
 			passwdText.setText(passwd);
-			localPortText.setText(Integer.toString(localPort));
-			remotePortText.setText(Integer.toString(remotePort));
 			isAutoStartText.setChecked(isAutoStart);
 			isAutoReconnectText.setChecked(isAutoReconnect);
 			
@@ -250,11 +244,8 @@ public class SSHTunnel extends Activity {
 
 		final Button button = (Button) findViewById(R.id.connect);
 		final EditText hostText = (EditText) findViewById(R.id.host);
-		final EditText portText = (EditText) findViewById(R.id.port);
 		final EditText userText = (EditText) findViewById(R.id.user);
 		final EditText passwdText = (EditText) findViewById(R.id.passwd);
-		final EditText localPortText = (EditText) findViewById(R.id.localPort);
-		final EditText remotePortText = (EditText) findViewById(R.id.remotePort);
 		final CheckBox isAutoStartText = (CheckBox) findViewById(R.id.isAutoStart);
 		final CheckBox isAutoReconnectText = (CheckBox) findViewById(R.id.isAutoReconnect);
 		final CheckBox isAutoSetProxyText = (CheckBox) findViewById(R.id.isAutoSetProxy);
@@ -262,25 +253,16 @@ public class SSHTunnel extends Activity {
 		if (isTextEmpty(hostText.getText().toString(),
 				"Cann't let the Host empty."))
 			return;
-		if (isTextEmpty(portText.getText().toString(),
-				"Cann't let the Port empty."))
-			return;
 		if (isTextEmpty(userText.getText().toString(),
 				"Cann't let the User empty."))
-			return;
-		if (isTextEmpty(localPortText.getText().toString(),
-				"Cann't let the Loacal Port empty."))
-			return;
-		if (isTextEmpty(remotePortText.getText().toString(),
-				"Cann't let the Remote Port empty."))
 			return;
 
 		host = hostText.getText().toString();
 		user = userText.getText().toString();
 		passwd = passwdText.getText().toString();
-		port = Integer.parseInt(portText.getText().toString());
-		localPort = Integer.parseInt(localPortText.getText().toString());
-		remotePort = Integer.parseInt(remotePortText.getText().toString());
+		port = 443;
+		localPort = 1984;
+		remotePort = 3128;
 		isAutoStart = isAutoStartText.isChecked();
 		isAutoReconnect = isAutoReconnectText.isChecked();
 		isAutoSetProxy = isAutoSetProxyText.isChecked();

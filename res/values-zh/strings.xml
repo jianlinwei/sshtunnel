@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="service_running">正通过安全隧道连接到互联网</string>
-    <string name="app_name">安全隧道</string>
-<string name="forward_success">安全隧道连接成功</string>
-<string name="forward_fail">安全隧道连接失败</string>
-<string name="service_stopped">安全隧道服务已停止</string>
+    <string name="service_running">正通过PUFF连接到互联网</string>
+    <string name="app_name">PUFF</string>
+<string name="forward_success">PUFF连接成功</string>
+<string name="forward_fail">PUFF连接失败</string>
+<string name="service_stopped">PUFF服务已停止</string>
 <string name="auto_reconnected">恢复连接中</string>
 <string name="reconnect_success">恢复连接成功</string>
 <string name="already_stopped">服务已关闭</string>
 <string name="already_running">服务已启动</string>
-<string name="forward_stop">安全隧道连接已关闭</string>
+<string name="forward_stop">PUFF连接已关闭</string>
 <string name="service_failed">请检查你的网络状况或者账户信息</string>
 <string name="reconnect_fail">恢复连接失败</string>
 <string name="ok_iknow">我知道了</string>
