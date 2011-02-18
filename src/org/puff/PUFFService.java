@@ -352,14 +352,14 @@ public class PUFFService extends Service implements ConnectionMonitor {
 	@Override
 	public void onDestroy() {
 		
-		// Make sure the connection is closed, important here
-		onDisconnect();
-		
 		if (connected) {
 
 			notifyAlert(getString(R.string.forward_stop),
 					getString(R.string.service_stopped));
 		}
+		
+		// Make sure the connection is closed, important here
+		onDisconnect();
 		
 		if (isAutoSetProxy) {
 			if (isARMv6()) {
