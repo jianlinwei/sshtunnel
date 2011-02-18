@@ -17,11 +17,13 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.AssetManager;
 import android.os.Bundle;
+import android.text.method.LinkMovementMethod;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.TextView;
 
 public class SSHTunnel extends Activity {
 
@@ -136,6 +138,9 @@ public class SSHTunnel extends Activity {
 		super.onCreate(savedInstanceState);
 
 		setContentView(R.layout.main);
+		
+		final TextView feedback = (TextView) findViewById(R.id.Feedback);
+		feedback.setMovementMethod(LinkMovementMethod.getInstance());
 
 		SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
 

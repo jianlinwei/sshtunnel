@@ -198,9 +198,11 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	/** Called when the activity is closed. */
 	@Override
 	public void onDestroy() {
+		
+		// Make sure the connection is closed, important here
+		onDisconnect();
+		
 		if (connected) {
-
-			onDisconnect();
 
 			notifyAlert(getString(R.string.forward_stop),
 					getString(R.string.service_stopped));

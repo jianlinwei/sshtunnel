@@ -48,10 +48,7 @@
 			android:id="@+id/disconnect" android:layout_width="fill_parent"
 			android:layout_height="wrap_content" android:onClick="serviceStop"></Button>
 	</LinearLayout>
-
-	<TextView android:gravity="center" android:text="@string/feedback"
+	<TextView android:gravity="center" android:linksClickable="true" android:autoLink="all" android:text="@string/feedback"
 		android:layout_marginTop="10dip" android:id="@+id/Feedback"
 		android:layout_width="fill_parent" android:layout_height="wrap_content"></TextView>
-
-
 </LinearLayout>

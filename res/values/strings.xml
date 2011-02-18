@@ -24,5 +24,5 @@
 <string name="auto_set_proxy">Auto set proxy (need root permission)</string>
 <string name="disconnect">Disconnect</string>
 <string name="connect">Connect</string>
-<string name="feedback">Feedback @ofmax</string>
+<string name="feedback">Feedback <a href='twitter.com/ofmax'>@ofmax</a></string>
 </resources>
