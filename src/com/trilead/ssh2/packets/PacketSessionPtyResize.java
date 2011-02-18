@@ -9,7 +9,8 @@ public class PacketSessionPtyResize {
 	public int pixelWidth;
 	public int pixelHeight;
 
-	public PacketSessionPtyResize(int recipientChannelID, int width, int height, int pixelWidth, int pixelHeight) {
+	public PacketSessionPtyResize(int recipientChannelID, int width,
+			int height, int pixelWidth, int pixelHeight) {
 		this.recipientChannelID = recipientChannelID;
 		this.width = width;
 		this.height = height;
@@ -17,10 +18,8 @@ public class PacketSessionPtyResize {
 		this.pixelHeight = pixelHeight;
 	}
 
-	public byte[] getPayload()
-	{
-		if (payload == null)
-		{
+	public byte[] getPayload() {
+		if (payload == null) {
 			TypesWriter tw = new TypesWriter();
 			tw.writeByte(Packets.SSH_MSG_CHANNEL_REQUEST);
 			tw.writeUINT32(recipientChannelID);
@@ -36,5 +35,3 @@ public class PacketSessionPtyResize {
 		return payload;
 	}
 }
-
-

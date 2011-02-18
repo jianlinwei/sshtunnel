@@ -7,9 +7,9 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 
 public class SSHTunnelReceiver extends BroadcastReceiver {
-	
+
 	public static final String PREFS_NAME = "SSHTunnel";
-	
+
 	private String host;
 	private int port;
 	private int localPort;
@@ -23,8 +23,9 @@ public class SSHTunnelReceiver extends BroadcastReceiver {
 
 	@Override
 	public void onReceive(Context context, Intent intent) {
-		
-		SharedPreferences settings = context.getSharedPreferences(PREFS_NAME, 0);
+
+		SharedPreferences settings = context
+				.getSharedPreferences(PREFS_NAME, 0);
 
 		isSaved = settings.getBoolean("IsSaved", false);
 		isAutoStart = settings.getBoolean("IsAutoStart", false);
@@ -38,8 +39,7 @@ public class SSHTunnelReceiver extends BroadcastReceiver {
 			remotePort = settings.getInt("RemotePort", 0);
 			isAutoReconnect = settings.getBoolean("IsAutoReconnect", false);
 			isAutoSetProxy = settings.getBoolean("IsAutoSetProxy", false);
-			
-			
+
 			Intent it = new Intent(context, SSHTunnelService.class);
 			Bundle bundle = new Bundle();
 			bundle.putString("host", host);

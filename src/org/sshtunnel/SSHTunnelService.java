@@ -2,23 +2,21 @@ package org.sshtunnel;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
-
 import java.io.FileReader;
 import java.io.IOException;
-
-import com.trilead.ssh2.Connection;
-import com.trilead.ssh2.ConnectionMonitor;
-import com.trilead.ssh2.LocalPortForwarder;
 
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
-
 import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
+
+import com.trilead.ssh2.Connection;
+import com.trilead.ssh2.ConnectionMonitor;
+import com.trilead.ssh2.LocalPortForwarder;
 
 public class SSHTunnelService extends Service implements ConnectionMonitor {
 
@@ -39,7 +37,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	private boolean isAutoReconnect = false;
 	private boolean isAutoSetProxy = false;
 	private LocalPortForwarder lpf1 = null;
-//	private LocalPortForwarder lpf2 = null;
+	// private LocalPortForwarder lpf2 = null;
 	private DNSServer dnsServer = null;
 
 	private final static int AUTH_TRIES = 2;
@@ -87,43 +85,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		return (isARMv6 == 1);
 	}
 
-	public void connectionLost(Throwable reason) {
-
-		if (isAutoReconnect && connected) {
-			for (int reconNum = 1; reconNum <= RECONNECT_TRIES; reconNum++) {
-
-				onDisconnect();
-
-				try {
-
-					// Reconnect now.
-					connect();
-
-				} catch (Exception e) {
-					Log.e(TAG, "Forward Failed" + e.getMessage());
-					try {
-						Thread.sleep(5000 * reconNum);
-					} catch (Exception ignore) {
-
-					}
-					continue;
-				}
-
-				notifyAlert(getString(R.string.auto_reconnected),
-						getString(R.string.reconnect_success));
-				return;
-			}
-
-			connected = false;
-			notifyAlert(getString(R.string.auto_reconnected),
-					getString(R.string.reconnect_fail));
-			stopSelf();
-
-		} else
-
-			stopSelf();
-	}
-
 	public static boolean runRootCommand(String command) {
 		Process process = null;
 		DataOutputStream os = null;
@@ -150,136 +111,29 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		return true;
 	}
 
-	private void onDisconnect() {
-
-		connected = false;
-
+	private void authenticate() {
 		try {
-			if (lpf1 != null) {
-				lpf1.close();
-				lpf1 = null;
+			if (connection.authenticateWithNone(user)) {
+				finishConnection();
+				return;
 			}
-//			if (lpf2 != null) {
-//				lpf2.close();
-//				lpf2 = null;
-//			}
-		} catch (Exception ignore) {
-			// Nothing
-		}
-
-		if (connection != null) {
-			connection.close();
-			connection = null;
-		}
-
-		if (isAutoSetProxy) {
-			if (isARMv6()) {
-				runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -F OUTPUT");
-			} else {
-				runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -F OUTPUT");
-			}
-
-			runRootCommand("/data/data/org.sshtunnel/proxy.sh stop");
-		}
-
-	}
-
-	@Override
-	public void onCreate() {
-		super.onCreate();
-		notificationManager = (NotificationManager) this
-				.getSystemService(NOTIFICATION_SERVICE);
-
-		intent = new Intent(this, SSHTunnel.class);
-		pendIntent = PendingIntent.getActivity(this, 0, intent, 0);
-		notification = new Notification();
-	}
-
-	/** Called when the activity is closed. */
-	@Override
-	public void onDestroy() {
-		
-		// Make sure the connection is closed, important here
-		onDisconnect();
-		
-		if (connected) {
-
-			notifyAlert(getString(R.string.forward_stop),
-					getString(R.string.service_stopped));
-		}
-		
-		if (isAutoSetProxy) {
-			if (isARMv6()) {
-				runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -F OUTPUT");
-			} else {
-				runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -F OUTPUT");
-			}
-
-			runRootCommand("/data/data/org.sshtunnel/proxy.sh stop");
-		}
-
-		try {
-			if (dnsServer != null)
-				dnsServer.close();
 		} catch (Exception e) {
-			Log.e(TAG, "DNS Server close unexpected");
+			Log.d(TAG, "Host does not support 'none' authentication.");
 		}
-		super.onDestroy();
-	}
 
-	private void notifyAlert(String title, String info) {
-		notification.icon = R.drawable.icon;
-		notification.tickerText = title;
-		notification.setLatestEventInfo(this, getString(R.string.app_name), info, pendIntent);
-		notificationManager.notify(0, notification);
-	}
-
-	// This is the old onStart method that will be called on the pre-2.0
-	// platform. On 2.0 or later we override onStartCommand() so this
-	// method will not be called.
-	@Override
-	public void onStart(Intent intent, int startId) {
-		if (handleCommand(intent)) {
-			// Connection and forward successful
-			notifyAlert(getString(R.string.forward_success),
-					getString(R.string.service_running));
-
-			super.onStart(intent, startId);
-
-		} else {
-			// Connection or forward unsuccessful
-			notifyAlert(getString(R.string.forward_fail),
-					getString(R.string.service_failed));
-			stopSelf();
-		}
-	}
-
-	/** Called when the activity is first created. */
-	public boolean handleCommand(Intent it) {
-
-		Log.e(TAG, "Service Start");
-
-		Bundle bundle = it.getExtras();
-		host = bundle.getString("host");
-		user = bundle.getString("user");
-		passwd = bundle.getString("passwd");
-		port = bundle.getInt("port");
-		localPort = bundle.getInt("localPort");
-		remotePort = bundle.getInt("remotePort");
-		isAutoReconnect = bundle.getBoolean("isAutoReconnect");
-		isAutoSetProxy = bundle.getBoolean("isAutoSetProxy");
-
-		dnsServer = new DNSServer("DNS Server", 8153, "127.0.0.1", 1053);
-		dnsServer.setBasePath("/data/data/org.sshtunnel");
-		new Thread(dnsServer).start();
-		
 		try {
-			connect();
+
+			if (connection.authenticateWithPassword(user, passwd))
+				finishConnection();
+
+		} catch (IllegalStateException e) {
+			Log.e(TAG,
+					"Connection went away while we were trying to authenticate",
+					e);
+			return;
 		} catch (Exception e) {
-			Log.e(TAG, "Forward Failed" + e.getMessage());
-			return false;
+			Log.e(TAG, "Problem during handleAuthentication()", e);
 		}
-		return true;
 	}
 
 	public void connect() throws Exception {
@@ -339,29 +193,68 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 	}
 
-	private void authenticate() {
-		try {
-			if (connection.authenticateWithNone(user)) {
-				finishConnection();
+	public void connectionLost(Throwable reason) {
+
+		if (isAutoReconnect && connected) {
+			for (int reconNum = 1; reconNum <= RECONNECT_TRIES; reconNum++) {
+
+				onDisconnect();
+
+				try {
+
+					// Reconnect now.
+					connect();
+
+				} catch (Exception e) {
+					Log.e(TAG, "Forward Failed" + e.getMessage());
+					try {
+						Thread.sleep(5000 * reconNum);
+					} catch (Exception ignore) {
+
+					}
+					continue;
+				}
+
+				notifyAlert(getString(R.string.auto_reconnected),
+						getString(R.string.reconnect_success));
 				return;
 			}
-		} catch (Exception e) {
-			Log.d(TAG, "Host does not support 'none' authentication.");
-		}
 
+			connected = false;
+			notifyAlert(getString(R.string.auto_reconnected),
+					getString(R.string.reconnect_fail));
+			stopSelf();
+
+		} else
+
+			stopSelf();
+	}
+
+	public boolean enablePortForward() {
+
+		if (!authenticated)
+			return false;
+
+		/*
+		 * DynamicPortForwarder dpf = null;
+		 * 
+		 * try { dpf = connection.createDynamicPortForwarder(new
+		 * InetSocketAddress( InetAddress.getLocalHost(), 1984)); } catch
+		 * (Exception e) { Log.e(TAG, "Could not create dynamic port forward",
+		 * e); return false; }
+		 */
+
+		// LocalPortForwarder lpf1 = null;
 		try {
-
-			if (connection.authenticateWithPassword(user, passwd))
-				finishConnection();
-
-		} catch (IllegalStateException e) {
-			Log.e(TAG,
-					"Connection went away while we were trying to authenticate",
-					e);
-			return;
+			lpf1 = connection.createLocalPortForwarder(localPort, "127.0.0.1",
+					remotePort);
+			// lpf2 = connection.createLocalPortForwarder(1053, "8.8.4.4", 53);
 		} catch (Exception e) {
-			Log.e(TAG, "Problem during handleAuthentication()", e);
+			Log.e(TAG, "Could not create local port forward", e);
+			return false;
 		}
+
+		return true;
 	}
 
 	/**
@@ -402,37 +295,139 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 	}
 
-	public boolean enablePortForward() {
+	/** Called when the activity is first created. */
+	public boolean handleCommand(Intent it) {
 
-		if (!authenticated)
-			return false;
+		Log.e(TAG, "Service Start");
 
-		/*
-		 * DynamicPortForwarder dpf = null;
-		 * 
-		 * try { dpf = connection.createDynamicPortForwarder(new
-		 * InetSocketAddress( InetAddress.getLocalHost(), 1984)); } catch
-		 * (Exception e) { Log.e(TAG, "Could not create dynamic port forward",
-		 * e); return false; }
-		 */
+		Bundle bundle = it.getExtras();
+		host = bundle.getString("host");
+		user = bundle.getString("user");
+		passwd = bundle.getString("passwd");
+		port = bundle.getInt("port");
+		localPort = bundle.getInt("localPort");
+		remotePort = bundle.getInt("remotePort");
+		isAutoReconnect = bundle.getBoolean("isAutoReconnect");
+		isAutoSetProxy = bundle.getBoolean("isAutoSetProxy");
 
-		// LocalPortForwarder lpf1 = null;
+		dnsServer = new DNSServer("DNS Server", 8153, "127.0.0.1", 1053);
+		dnsServer.setBasePath("/data/data/org.sshtunnel");
+		new Thread(dnsServer).start();
+
 		try {
-			lpf1 = connection.createLocalPortForwarder(localPort, "127.0.0.1",
-					remotePort);
-//			lpf2 = connection.createLocalPortForwarder(1053, "8.8.4.4", 53);
+			connect();
 		} catch (Exception e) {
-			Log.e(TAG, "Could not create local port forward", e);
+			Log.e(TAG, "Forward Failed" + e.getMessage());
 			return false;
 		}
-
 		return true;
+	}
+
+	private void notifyAlert(String title, String info) {
+		notification.icon = R.drawable.icon;
+		notification.tickerText = title;
+		notification.setLatestEventInfo(this, getString(R.string.app_name),
+				info, pendIntent);
+		notificationManager.notify(0, notification);
 	}
 
 	@Override
 	public IBinder onBind(Intent intent) {
 		// TODO Auto-generated method stub
 		return null;
+	}
+
+	@Override
+	public void onCreate() {
+		super.onCreate();
+		notificationManager = (NotificationManager) this
+				.getSystemService(NOTIFICATION_SERVICE);
+
+		intent = new Intent(this, SSHTunnel.class);
+		pendIntent = PendingIntent.getActivity(this, 0, intent, 0);
+		notification = new Notification();
+	}
+
+	/** Called when the activity is closed. */
+	@Override
+	public void onDestroy() {
+
+		if (connected) {
+
+			notifyAlert(getString(R.string.forward_stop),
+					getString(R.string.service_stopped));
+		}
+		
+		// Make sure the connection is closed, important here
+		onDisconnect();
+
+		if (isAutoSetProxy) {
+			if (isARMv6()) {
+				runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -F OUTPUT");
+			} else {
+				runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -F OUTPUT");
+			}
+
+			runRootCommand("/data/data/org.sshtunnel/proxy.sh stop");
+		}
+
+		try {
+			if (dnsServer != null)
+				dnsServer.close();
+		} catch (Exception e) {
+			Log.e(TAG, "DNS Server close unexpected");
+		}
+		super.onDestroy();
+	}
+
+	private void onDisconnect() {
+
+		connected = false;
+
+		try {
+			if (lpf1 != null) {
+				lpf1.close();
+				lpf1 = null;
+			}
+		} catch (Exception ignore) {
+			// Nothing
+		}
+
+		if (connection != null) {
+			connection.close();
+			connection = null;
+		}
+
+		if (isAutoSetProxy) {
+			if (isARMv6()) {
+				runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -F OUTPUT");
+			} else {
+				runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -F OUTPUT");
+			}
+
+			runRootCommand("/data/data/org.sshtunnel/proxy.sh stop");
+		}
+
+	}
+
+	// This is the old onStart method that will be called on the pre-2.0
+	// platform. On 2.0 or later we override onStartCommand() so this
+	// method will not be called.
+	@Override
+	public void onStart(Intent intent, int startId) {
+		if (handleCommand(intent)) {
+			// Connection and forward successful
+			notifyAlert(getString(R.string.forward_success),
+					getString(R.string.service_running));
+
+			super.onStart(intent, startId);
+
+		} else {
+			// Connection or forward unsuccessful
+			notifyAlert(getString(R.string.forward_fail),
+					getString(R.string.service_failed));
+			stopSelf();
+		}
 	}
 
 }

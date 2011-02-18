@@ -1,4 +1,3 @@
-
 package com.trilead.ssh2.packets;
 
 /**
@@ -8,21 +7,17 @@ package com.trilead.ssh2.packets;
  * @version $Id: PacketChannelTrileadPing.java,v 1.1 2008/03/03 07:01:36
  *          cplattne Exp $
  */
-public class PacketChannelTrileadPing
-{
+public class PacketChannelTrileadPing {
 	byte[] payload;
 
 	public int recipientChannelID;
 
-	public PacketChannelTrileadPing(int recipientChannelID)
-	{
+	public PacketChannelTrileadPing(int recipientChannelID) {
 		this.recipientChannelID = recipientChannelID;
 	}
 
-	public byte[] getPayload()
-	{
-		if (payload == null)
-		{
+	public byte[] getPayload() {
+		if (payload == null) {
 			TypesWriter tw = new TypesWriter();
 			tw.writeByte(Packets.SSH_MSG_CHANNEL_REQUEST);
 			tw.writeUINT32(recipientChannelID);

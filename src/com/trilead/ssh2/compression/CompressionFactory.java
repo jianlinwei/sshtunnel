@@ -21,16 +21,14 @@ import java.util.Vector;
 
 /**
  * @author Kenny Root
- *
+ * 
  */
 public class CompressionFactory {
-	static class CompressorEntry
-	{
+	static class CompressorEntry {
 		String type;
 		String compressorClass;
 
-		public CompressorEntry(String type, String compressorClass)
-		{
+		public CompressorEntry(String type, String compressorClass) {
 			this.type = type;
 			this.compressorClass = compressorClass;
 		}
@@ -38,36 +36,23 @@ public class CompressionFactory {
 
 	static Vector<CompressorEntry> compressors = new Vector<CompressorEntry>();
 
-	static
-	{
+	static {
 		/* Higher Priority First */
 
-		compressors.addElement(new CompressorEntry("zlib", "com.trilead.ssh2.compression.Zlib"));
-		compressors.addElement(new CompressorEntry("zlib@openssh.com", "com.trilead.ssh2.compression.ZlibOpenSSH"));
+		compressors.addElement(new CompressorEntry("zlib",
+				"com.trilead.ssh2.compression.Zlib"));
+		compressors.addElement(new CompressorEntry("zlib@openssh.com",
+				"com.trilead.ssh2.compression.ZlibOpenSSH"));
 		compressors.addElement(new CompressorEntry("none", ""));
 	}
 
-	public static String[] getDefaultCompressorList()
-	{
-		String list[] = new String[compressors.size()];
-		for (int i = 0; i < compressors.size(); i++)
-		{
-			CompressorEntry ce = compressors.elementAt(i);
-			list[i] = new String(ce.type);
-		}
-		return list;
-	}
-
-	public static void checkCompressorList(String[] compressorCandidates)
-	{
+	public static void checkCompressorList(String[] compressorCandidates) {
 		for (int i = 0; i < compressorCandidates.length; i++)
 			getEntry(compressorCandidates[i]);
 	}
 
-	public static ICompressor createCompressor(String type)
-	{
-		try
-		{
+	public static ICompressor createCompressor(String type) {
+		try {
 			CompressorEntry ce = getEntry(type);
 			if ("".equals(ce.compressorClass))
 				return null;
@@ -76,17 +61,22 @@ public class CompressionFactory {
 			ICompressor cmp = (ICompressor) cc.newInstance();
 
 			return cmp;
-		}
-		catch (Exception e)
-		{
+		} catch (Exception e) {
 			throw new IllegalArgumentException("Cannot instantiate " + type);
 		}
 	}
 
-	private static CompressorEntry getEntry(String type)
-	{
-		for (int i = 0; i < compressors.size(); i++)
-		{
+	public static String[] getDefaultCompressorList() {
+		String list[] = new String[compressors.size()];
+		for (int i = 0; i < compressors.size(); i++) {
+			CompressorEntry ce = compressors.elementAt(i);
+			list[i] = new String(ce.type);
+		}
+		return list;
+	}
+
+	private static CompressorEntry getEntry(String type) {
+		for (int i = 0; i < compressors.size(); i++) {
 			CompressorEntry ce = compressors.elementAt(i);
 			if (ce.type.equals(type))
 				return ce;

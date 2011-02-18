@@ -1,4 +1,3 @@
-
 package com.trilead.ssh2.crypto.cipher;
 
 /**
@@ -7,8 +6,7 @@ package com.trilead.ssh2.crypto.cipher;
  * @author Christian Plattner, plattner@trilead.com
  * @version $Id: CTRMode.java,v 1.1 2007/10/15 12:49:55 cplattne Exp $
  */
-public class CTRMode implements BlockCipher
-{
+public class CTRMode implements BlockCipher {
 	byte[] X;
 	byte[] Xenc;
 
@@ -18,18 +16,15 @@ public class CTRMode implements BlockCipher
 
 	int count = 0;
 
-	public void init(boolean forEncryption, byte[] key)
-	{
-	}
-
-	public CTRMode(BlockCipher tc, byte[] iv, boolean doEnc) throws IllegalArgumentException
-	{
+	public CTRMode(BlockCipher tc, byte[] iv, boolean doEnc)
+			throws IllegalArgumentException {
 		bc = tc;
 		blockSize = bc.getBlockSize();
 		doEncrypt = doEnc;
 
 		if (blockSize != iv.length)
-			throw new IllegalArgumentException("IV must be " + blockSize + " bytes long! (currently " + iv.length + ")");
+			throw new IllegalArgumentException("IV must be " + blockSize
+					+ " bytes long! (currently " + iv.length + ")");
 
 		X = new byte[blockSize];
 		Xenc = new byte[blockSize];
@@ -37,22 +32,22 @@ public class CTRMode implements BlockCipher
 		System.arraycopy(iv, 0, X, 0, blockSize);
 	}
 
-	public final int getBlockSize()
-	{
+	public final int getBlockSize() {
 		return blockSize;
 	}
 
-	public final void transformBlock(byte[] src, int srcoff, byte[] dst, int dstoff)
-	{
+	public void init(boolean forEncryption, byte[] key) {
+	}
+
+	public final void transformBlock(byte[] src, int srcoff, byte[] dst,
+			int dstoff) {
 		bc.transformBlock(X, 0, Xenc, 0);
 
-		for (int i = 0; i < blockSize; i++)
-		{
+		for (int i = 0; i < blockSize; i++) {
 			dst[dstoff + i] = (byte) (src[srcoff + i] ^ Xenc[i]);
 		}
 
-		for (int i = (blockSize - 1); i >= 0; i--)
-		{
+		for (int i = (blockSize - 1); i >= 0; i--) {
 			X[i]++;
 			if (X[i] != 0)
 				break;

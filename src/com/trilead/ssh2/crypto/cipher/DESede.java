@@ -1,4 +1,3 @@
-
 package com.trilead.ssh2.crypto.cipher;
 
 /*
@@ -34,8 +33,7 @@ package com.trilead.ssh2.crypto.cipher;
  * @version $Id: DESede.java,v 1.1 2007/10/15 12:49:55 cplattne Exp $
  * 
  */
-public class DESede extends DES
-{
+public class DESede extends DES {
 	private int[] key1 = null;
 	private int[] key2 = null;
 	private int[] key3 = null;
@@ -45,8 +43,15 @@ public class DESede extends DES
 	/**
 	 * standard constructor.
 	 */
-	public DESede()
-	{
+	public DESede() {
+	}
+
+	public String getAlgorithmName() {
+		return "DESede";
+	}
+
+	public int getBlockSize() {
+		return 8;
 	}
 
 	/**
@@ -59,8 +64,7 @@ public class DESede extends DES
 	 * @exception IllegalArgumentException
 	 *                if the params argument is inappropriate.
 	 */
-	public void init(boolean encrypting, byte[] key)
-	{
+	public void init(boolean encrypting, byte[] key) {
 		key1 = generateWorkingKey(encrypting, key, 0);
 		key2 = generateWorkingKey(!encrypting, key, 8);
 		key3 = generateWorkingKey(encrypting, key, 16);
@@ -68,38 +72,22 @@ public class DESede extends DES
 		encrypt = encrypting;
 	}
 
-	public String getAlgorithmName()
-	{
-		return "DESede";
+	public void reset() {
 	}
 
-	public int getBlockSize()
-	{
-		return 8;
-	}
-
-	public void transformBlock(byte[] in, int inOff, byte[] out, int outOff)
-	{
-		if (key1 == null)
-		{
+	public void transformBlock(byte[] in, int inOff, byte[] out, int outOff) {
+		if (key1 == null) {
 			throw new IllegalStateException("DESede engine not initialised!");
 		}
 
-		if (encrypt)
-		{
+		if (encrypt) {
 			desFunc(key1, in, inOff, out, outOff);
 			desFunc(key2, out, outOff, out, outOff);
 			desFunc(key3, out, outOff, out, outOff);
-		}
-		else
-		{
+		} else {
 			desFunc(key3, in, inOff, out, outOff);
 			desFunc(key2, out, outOff, out, outOff);
 			desFunc(key1, out, outOff, out, outOff);
 		}
-	}
-
-	public void reset()
-	{
 	}
 }

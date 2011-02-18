@@ -43,19 +43,6 @@ public class SSHTunnel extends Activity {
 	public static boolean isAutoSetProxy = false;
 	public static boolean isRoot = false;
 
-	public boolean isWorked(String service) {
-		ActivityManager myManager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
-		ArrayList<RunningServiceInfo> runningService = (ArrayList<RunningServiceInfo>) myManager
-				.getRunningServices(30);
-		for (int i = 0; i < runningService.size(); i++) {
-			if (runningService.get(i).service.getClassName().toString()
-					.equals(service)) {
-				return true;
-			}
-		}
-		return false;
-	}
-	
 	public static boolean runRootCommand(String command) {
 		Process process = null;
 		DataOutputStream os = null;
@@ -120,16 +107,25 @@ public class SSHTunnel extends Activity {
 		}
 	}
 
-	/** Called when the activity is closed. */
-	@Override
-	public void onDestroy() {
-		SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
+	private boolean isTextEmpty(String s, String msg) {
+		if (s == null || s.length() <= 0) {
+			showAToast(msg);
+			return true;
+		}
+		return false;
+	}
 
-		SharedPreferences.Editor editor = settings.edit();
-		editor.putBoolean("IsConnected", isWorked(SERVICE_NAME));
-
-		editor.commit();
-		super.onDestroy();
+	public boolean isWorked(String service) {
+		ActivityManager myManager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+		ArrayList<RunningServiceInfo> runningService = (ArrayList<RunningServiceInfo>) myManager
+				.getRunningServices(30);
+		for (int i = 0; i < runningService.size(); i++) {
+			if (runningService.get(i).service.getClassName().toString()
+					.equals(service)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/** Called when the activity is first created. */
@@ -138,26 +134,26 @@ public class SSHTunnel extends Activity {
 		super.onCreate(savedInstanceState);
 
 		setContentView(R.layout.main);
-		
+
 		final TextView feedback = (TextView) findViewById(R.id.Feedback);
 		feedback.setMovementMethod(LinkMovementMethod.getInstance());
 
 		SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
 
 		isSaved = settings.getBoolean("IsSaved", false);
-		
+
 		if (!runRootCommand("ls")) {
 			isRoot = false;
 		} else {
 			isRoot = true;
 		}
-		
+
 		if (isRoot) {
 			isAutoSetProxy = settings.getBoolean("IsAutoSetProxy", false);
 			final CheckBox isAutoSetProxyText = (CheckBox) findViewById(R.id.isAutoSetProxy);
 			isAutoSetProxyText.setChecked(isAutoSetProxy);
 			isAutoSetProxyText.setEnabled(true);
-		} else { 
+		} else {
 			final CheckBox isAutoSetProxyText = (CheckBox) findViewById(R.id.isAutoSetProxy);
 			isAutoSetProxyText.setChecked(false);
 			isAutoSetProxyText.setEnabled(false);
@@ -172,7 +168,6 @@ public class SSHTunnel extends Activity {
 			remotePort = settings.getInt("RemotePort", 0);
 			isAutoStart = settings.getBoolean("IsAutoStart", false);
 			isAutoReconnect = settings.getBoolean("IsAutoReconnect", false);
-			
 
 			final EditText hostText = (EditText) findViewById(R.id.host);
 			final EditText portText = (EditText) findViewById(R.id.port);
@@ -182,7 +177,6 @@ public class SSHTunnel extends Activity {
 			final EditText remotePortText = (EditText) findViewById(R.id.remotePort);
 			final CheckBox isAutoStartText = (CheckBox) findViewById(R.id.isAutoStart);
 			final CheckBox isAutoReconnectText = (CheckBox) findViewById(R.id.isAutoReconnect);
-			
 
 			hostText.setText(host);
 			portText.setText(Integer.toString(port));
@@ -192,7 +186,7 @@ public class SSHTunnel extends Activity {
 			remotePortText.setText(Integer.toString(remotePort));
 			isAutoStartText.setChecked(isAutoStart);
 			isAutoReconnectText.setChecked(isAutoReconnect);
-			
+
 		}
 
 		if (!isWorked(SERVICE_NAME)) {
@@ -204,40 +198,16 @@ public class SSHTunnel extends Activity {
 		}
 	}
 
-	/** Called when disconnect button is clicked. */
-	public void serviceStop(View view) {
-		if (!isWorked(SERVICE_NAME)) {
-			showAToast(getString(R.string.already_stopped));
-			return;
-		}
-		try {
-			stopService(new Intent(this, SSHTunnelService.class));
-		} catch (Exception e) {
-			// Nothing
-		}
+	/** Called when the activity is closed. */
+	@Override
+	public void onDestroy() {
+		SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
 
-	}
+		SharedPreferences.Editor editor = settings.edit();
+		editor.putBoolean("IsConnected", isWorked(SERVICE_NAME));
 
-	private void showAToast(String msg) {
-		AlertDialog.Builder builder = new AlertDialog.Builder(this);
-		builder.setMessage(msg)
-				.setCancelable(false)
-				.setNegativeButton(getString(R.string.ok_iknow),
-						new DialogInterface.OnClickListener() {
-							public void onClick(DialogInterface dialog, int id) {
-								dialog.cancel();
-							}
-						});
-		AlertDialog alert = builder.create();
-		alert.show();
-	}
-
-	private boolean isTextEmpty(String s, String msg) {
-		if (s == null || s.length() <= 0) {
-			showAToast(msg);
-			return true;
-		}
-		return false;
+		editor.commit();
+		super.onDestroy();
 	}
 
 	/** Called when connect button is clicked. */
@@ -323,6 +293,34 @@ public class SSHTunnel extends Activity {
 		editor.commit();
 
 		return;
+	}
+
+	/** Called when disconnect button is clicked. */
+	public void serviceStop(View view) {
+		if (!isWorked(SERVICE_NAME)) {
+			showAToast(getString(R.string.already_stopped));
+			return;
+		}
+		try {
+			stopService(new Intent(this, SSHTunnelService.class));
+		} catch (Exception e) {
+			// Nothing
+		}
+
+	}
+
+	private void showAToast(String msg) {
+		AlertDialog.Builder builder = new AlertDialog.Builder(this);
+		builder.setMessage(msg)
+				.setCancelable(false)
+				.setNegativeButton(getString(R.string.ok_iknow),
+						new DialogInterface.OnClickListener() {
+							public void onClick(DialogInterface dialog, int id) {
+								dialog.cancel();
+							}
+						});
+		AlertDialog alert = builder.create();
+		alert.show();
 	}
 
 }

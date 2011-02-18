@@ -24,5 +24,5 @@
 <string name="auto_set_proxy">自动配置代理（需要ROOT权限）</string>
 <string name="disconnect">关闭服务</string>
 <string name="connect">启动服务</string>
-<string name="feedback">反馈 <a href='twitter.com/ofmax'>@ofmax</a></string>
+<string name="feedback">反馈 @ofmax</string>
 </resources>

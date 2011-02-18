@@ -22,7 +22,7 @@ import com.jcraft.jzlib.ZStream;
 
 /**
  * @author Kenny Root
- *
+ * 
  */
 public class Zlib implements ICompressor {
 	static private final int DEFAULT_BUF_SIZE = 4096;
@@ -51,10 +51,6 @@ public class Zlib implements ICompressor {
 		return true;
 	}
 
-	public int getBufferSize() {
-		return DEFAULT_BUF_SIZE;
-	}
-
 	public int compress(byte[] buf, int start, int len, byte[] output) {
 		deflate.next_in = buf;
 		deflate.next_in_index = start;
@@ -81,6 +77,10 @@ public class Zlib implements ICompressor {
 		System.arraycopy(deflate_tmpbuf, 0, output, 0, outputlen);
 
 		return outputlen;
+	}
+
+	public int getBufferSize() {
+		return DEFAULT_BUF_SIZE;
 	}
 
 	public byte[] uncompress(byte[] buffer, int start, int[] length) {

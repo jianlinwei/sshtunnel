@@ -39,16 +39,13 @@ import net.sourceforge.jsocks.server.ServerAuthenticatorNone;
 
 /**
  * DynamicAcceptThread.
- *
+ * 
  * @author Kenny Root
  * @version $Id$
  */
 public class DynamicAcceptThread extends Thread implements IChannelWorkerThread {
-	private ChannelManager cm;
-	private ServerSocket ss;
-
 	class DynamicAcceptRunnable implements Runnable {
-		private static final int idleTimeout	= 180000; //3 minutes
+		private static final int idleTimeout = 180000; // 3 minutes
 
 		private ServerAuthenticator auth;
 		private Socket sock;
@@ -61,6 +58,109 @@ public class DynamicAcceptThread extends Thread implements IChannelWorkerThread 
 			this.sock = sock;
 
 			setName("DynamicAcceptRunnable");
+		}
+
+		private void handleRequest(ProxyMessage msg) throws IOException {
+			if (!auth.checkRequest(msg))
+				throw new SocksException(Proxy.SOCKS_FAILURE);
+
+			switch (msg.command) {
+			case Proxy.SOCKS_CMD_CONNECT:
+				onConnect(msg);
+				break;
+			default:
+				throw new SocksException(Proxy.SOCKS_CMD_NOT_SUPPORTED);
+			}
+		}
+
+		private void onConnect(ProxyMessage msg) throws IOException {
+			ProxyMessage response = null;
+			Channel cn = null;
+			StreamForwarder r2l = null;
+			StreamForwarder l2r = null;
+
+			if (msg instanceof Socks5Message) {
+				response = new Socks5Message(Proxy.SOCKS_SUCCESS,
+						(InetAddress) null, 0);
+			} else {
+				response = new Socks4Message(Socks4Message.REPLY_OK,
+						(InetAddress) null, 0);
+			}
+			response.write(out);
+
+			String destHost = msg.host;
+			if (msg.ip != null)
+				destHost = msg.ip.getHostAddress();
+
+			try {
+				/*
+				 * This may fail, e.g., if the remote port is closed (in
+				 * optimistic terms: not open yet)
+				 */
+
+				cn = cm.openDirectTCPIPChannel(destHost, msg.port, "127.0.0.1",
+						0);
+
+			} catch (IOException e) {
+				/*
+				 * Simply close the local socket and wait for the next incoming
+				 * connection
+				 */
+
+				try {
+					sock.close();
+				} catch (IOException ignore) {
+				}
+
+				return;
+			}
+
+			try {
+				r2l = new StreamForwarder(cn, null, null, cn.stdoutStream, out,
+						"RemoteToLocal");
+				l2r = new StreamForwarder(cn, r2l, sock, in, cn.stdinStream,
+						"LocalToRemote");
+			} catch (IOException e) {
+				try {
+					/*
+					 * This message is only visible during debugging, since we
+					 * discard the channel immediatelly
+					 */
+					cn.cm.closeChannel(cn,
+							"Weird error during creation of StreamForwarder ("
+									+ e.getMessage() + ")", true);
+				} catch (IOException ignore) {
+				}
+
+				return;
+			}
+
+			r2l.setDaemon(true);
+			l2r.setDaemon(true);
+			r2l.start();
+			l2r.start();
+		}
+
+		private ProxyMessage readMsg(InputStream in) throws IOException {
+			PushbackInputStream push_in;
+			if (in instanceof PushbackInputStream)
+				push_in = (PushbackInputStream) in;
+			else
+				push_in = new PushbackInputStream(in);
+
+			int version = push_in.read();
+			push_in.unread(version);
+
+			ProxyMessage msg;
+
+			if (version == 5) {
+				msg = new Socks5Message(push_in, false);
+			} else if (version == 4) {
+				msg = new Socks4Message(push_in, false);
+			} else {
+				throw new SocksException(Proxy.SOCKS_FAILURE);
+			}
+			return msg;
 		}
 
 		public void run() {
@@ -90,28 +190,6 @@ public class DynamicAcceptThread extends Thread implements IChannelWorkerThread 
 			}
 		}
 
-		private ProxyMessage readMsg(InputStream in) throws IOException {
-			PushbackInputStream push_in;
-			if (in instanceof PushbackInputStream)
-				push_in = (PushbackInputStream) in;
-			else
-				push_in = new PushbackInputStream(in);
-
-			int version = push_in.read();
-			push_in.unread(version);
-
-			ProxyMessage msg;
-
-			if (version == 5) {
-				msg = new Socks5Message(push_in, false);
-			} else if (version == 4) {
-				msg = new Socks4Message(push_in, false);
-			} else {
-				throw new SocksException(Proxy.SOCKS_FAILURE);
-			}
-			return msg;
-		}
-
 		private void sendErrorMessage(int error_code) {
 			ProxyMessage err_msg;
 			if (msg instanceof Socks4Message)
@@ -121,19 +199,6 @@ public class DynamicAcceptThread extends Thread implements IChannelWorkerThread 
 			try {
 				err_msg.write(out);
 			} catch (IOException ioe) {
-			}
-		}
-
-		private void handleRequest(ProxyMessage msg) throws IOException {
-			if (!auth.checkRequest(msg))
-				throw new SocksException(Proxy.SOCKS_FAILURE);
-
-			switch (msg.command) {
-			case Proxy.SOCKS_CMD_CONNECT:
-				onConnect(msg);
-				break;
-			default:
-				throw new SocksException(Proxy.SOCKS_CMD_NOT_SUPPORTED);
 			}
 		}
 
@@ -160,70 +225,17 @@ public class DynamicAcceptThread extends Thread implements IChannelWorkerThread 
 			msg = readMsg(in);
 			handleRequest(msg);
 		}
+	}
+	private ChannelManager cm;
 
-		private void onConnect(ProxyMessage msg) throws IOException {
-			ProxyMessage response = null;
-			Channel cn = null;
-			StreamForwarder r2l = null;
-			StreamForwarder l2r = null;
+	private ServerSocket ss;
 
-			if (msg instanceof Socks5Message) {
-				response = new Socks5Message(Proxy.SOCKS_SUCCESS, (InetAddress)null, 0);
-			} else {
-				response = new Socks4Message(Socks4Message.REPLY_OK, (InetAddress)null, 0);
-			}
-			response.write(out);
+	public DynamicAcceptThread(ChannelManager cm, InetSocketAddress localAddress)
+			throws IOException {
+		this.cm = cm;
 
-			String destHost = msg.host;
-			if (msg.ip != null)
-				destHost = msg.ip.getHostAddress();
-
-			try {
-				/*
-				 * This may fail, e.g., if the remote port is closed (in
-				 * optimistic terms: not open yet)
-				 */
-
-				cn = cm.openDirectTCPIPChannel(destHost, msg.port,
-						"127.0.0.1", 0);
-
-			} catch (IOException e) {
-				/*
-				 * Simply close the local socket and wait for the next incoming
-				 * connection
-				 */
-
-				try {
-					sock.close();
-				} catch (IOException ignore) {
-				}
-
-				return;
-			}
-
-			try {
-				r2l = new StreamForwarder(cn, null, null, cn.stdoutStream, out, "RemoteToLocal");
-				l2r = new StreamForwarder(cn, r2l, sock, in, cn.stdinStream, "LocalToRemote");
-			} catch (IOException e) {
-				try {
-					/*
-					 * This message is only visible during debugging, since we
-					 * discard the channel immediatelly
-					 */
-					cn.cm.closeChannel(cn,
-							"Weird error during creation of StreamForwarder ("
-									+ e.getMessage() + ")", true);
-				} catch (IOException ignore) {
-				}
-
-				return;
-			}
-
-			r2l.setDaemon(true);
-			l2r.setDaemon(true);
-			r2l.start();
-			l2r.start();
-		}
+		ss = new ServerSocket();
+		ss.bind(localAddress);
 	}
 
 	public DynamicAcceptThread(ChannelManager cm, int local_port)
@@ -233,14 +245,6 @@ public class DynamicAcceptThread extends Thread implements IChannelWorkerThread 
 		setName("DynamicAcceptThread");
 
 		ss = new ServerSocket(local_port);
-	}
-
-	public DynamicAcceptThread(ChannelManager cm, InetSocketAddress localAddress)
-			throws IOException {
-		this.cm = cm;
-
-		ss = new ServerSocket();
-		ss.bind(localAddress);
 	}
 
 	@Override
@@ -262,7 +266,8 @@ public class DynamicAcceptThread extends Thread implements IChannelWorkerThread 
 				return;
 			}
 
-			DynamicAcceptRunnable dar = new DynamicAcceptRunnable(new ServerAuthenticatorNone(), sock);
+			DynamicAcceptRunnable dar = new DynamicAcceptRunnable(
+					new ServerAuthenticatorNone(), sock);
 			Thread t = new Thread(dar);
 			t.setDaemon(true);
 			t.start();
@@ -271,7 +276,7 @@ public class DynamicAcceptThread extends Thread implements IChannelWorkerThread 
 
 	/*
 	 * (non-Javadoc)
-	 *
+	 * 
 	 * @see com.trilead.ssh2.channel.IChannelWorkerThread#stopWorking()
 	 */
 	public void stopWorking() {
