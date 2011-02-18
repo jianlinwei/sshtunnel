@@ -419,6 +419,9 @@ public class PUFFService extends Service implements ConnectionMonitor {
 	// method will not be called.
 	@Override
 	public void onStart(Intent intent, int startId) {
+		
+		onDisconnect();
+		
 		if (handleCommand(intent)) {
 			// Connection and forward successful
 			notifyAlert(getString(R.string.forward_success),
