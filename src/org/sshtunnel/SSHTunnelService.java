@@ -326,6 +326,16 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	private void notifyAlert(String title, String info) {
 		notification.icon = R.drawable.icon;
 		notification.tickerText = title;
+		notification.flags = Notification.FLAG_ONGOING_EVENT;
+		notification.setLatestEventInfo(this, getString(R.string.app_name),
+				info, pendIntent);
+		notificationManager.notify(0, notification);
+	}
+	
+	private void notifyAlert(String title, String info, int flags) {
+		notification.icon = R.drawable.icon;
+		notification.tickerText = title;
+		notification.flags = flags;
 		notification.setLatestEventInfo(this, getString(R.string.app_name),
 				info, pendIntent);
 		notificationManager.notify(0, notification);
@@ -355,21 +365,11 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		if (connected) {
 
 			notifyAlert(getString(R.string.forward_stop),
-					getString(R.string.service_stopped));
+					getString(R.string.service_stopped), Notification.FLAG_AUTO_CANCEL);
 		}
 		
 		// Make sure the connection is closed, important here
 		onDisconnect();
-
-		if (isAutoSetProxy) {
-			if (isARMv6()) {
-				runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -F OUTPUT");
-			} else {
-				runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -F OUTPUT");
-			}
-
-			runRootCommand("/data/data/org.sshtunnel/proxy.sh stop");
-		}
 
 		try {
 			if (dnsServer != null)
@@ -425,7 +425,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		} else {
 			// Connection or forward unsuccessful
 			notifyAlert(getString(R.string.forward_fail),
-					getString(R.string.service_failed));
+					getString(R.string.service_failed), Notification.FLAG_AUTO_CANCEL);
 			stopSelf();
 		}
 	}
