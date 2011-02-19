@@ -26,7 +26,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	private PendingIntent pendIntent;
 
 	private static final String TAG = "SSHTunnel";
-	public static final String PREFS_NAME = "SSHTunnel";
 
 	private String host;
 	private int port;

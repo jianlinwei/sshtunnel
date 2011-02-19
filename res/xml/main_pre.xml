@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+	<PreferenceCategory android:title="@string/function_cat">
+		<CheckBoxPreference android:key="isRunning"
+			android:title="@string/service_controller" android:summary="@string/service_summary"></CheckBoxPreference>
+	</PreferenceCategory>
+	<PreferenceCategory android:title="@string/proxy_cat">
+		<EditTextPreference android:key="host"
+			android:summary="@string/host_summary" android:title="@string/host"></EditTextPreference>
+		<EditTextPreference android:title="@string/port"
+			android:summary="@string/port_summary" android:key="port"></EditTextPreference>
+	</PreferenceCategory>
+
+	<PreferenceCategory android:title="@string/user_cat">
+		<EditTextPreference android:title="@string/user"
+			android:key="user" android:summary="@string/user_summary"></EditTextPreference>
+		<EditTextPreference android:title="@string/password" android:password="true"
+			android:key="password" android:summary="@string/password_summary"></EditTextPreference>
+	</PreferenceCategory>
+	<PreferenceCategory android:title="@string/port_cat">
+		<EditTextPreference android:title="@string/local_port"
+			android:key="localPort" android:summary="@string/local_port_summary"></EditTextPreference>
+		<EditTextPreference android:title="@string/remote_port"
+			android:key="remotePort" android:summary="@string/remote_port_summary"></EditTextPreference>
+	</PreferenceCategory>
+	<PreferenceCategory android:title="@string/fearute_cat">
+		<CheckBoxPreference android:key="isAutoConnect"
+			android:title="@string/auto_connect" android:summary="@string/auto_connect_summary"></CheckBoxPreference>
+		<CheckBoxPreference android:key="isAutoReconnect"
+			android:title="@string/auto_reconnect" android:summary="@string/auto_reconnect_summary"></CheckBoxPreference>
+		<CheckBoxPreference android:key="isAutoSetProxy"
+			android:title="@string/auto_set_proxy" android:summary="@string/auto_set_proxy_summary"></CheckBoxPreference>
+
+	</PreferenceCategory>
+
+
+
+
+</PreferenceScreen>

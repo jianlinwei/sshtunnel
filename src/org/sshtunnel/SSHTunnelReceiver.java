@@ -15,9 +15,9 @@ public class SSHTunnelReceiver extends BroadcastReceiver {
 	private int localPort;
 	private int remotePort;
 	private String user;
-	private String passwd;
+	private String password;
 	private boolean isSaved = false;
-	private boolean isAutoStart = false;
+	private boolean isAutoConnect = false;
 	private boolean isAutoReconnect = false;
 	private boolean isAutoSetProxy = false;
 
@@ -27,24 +27,24 @@ public class SSHTunnelReceiver extends BroadcastReceiver {
 		SharedPreferences settings = context
 				.getSharedPreferences(PREFS_NAME, 0);
 
-		isSaved = settings.getBoolean("IsSaved", false);
-		isAutoStart = settings.getBoolean("IsAutoStart", false);
+		isSaved = settings.getBoolean("isSaved", false);
+		isAutoConnect = settings.getBoolean("isAutoConnect", false);
 
-		if (isSaved && isAutoStart) {
-			host = settings.getString("Host", "");
-			user = settings.getString("User", "");
-			passwd = settings.getString("Password", "");
-			port = settings.getInt("Port", 0);
-			localPort = settings.getInt("LocalPort", 0);
-			remotePort = settings.getInt("RemotePort", 0);
-			isAutoReconnect = settings.getBoolean("IsAutoReconnect", false);
-			isAutoSetProxy = settings.getBoolean("IsAutoSetProxy", false);
+		if (isSaved && isAutoConnect) {
+			host = settings.getString("host", "");
+			user = settings.getString("user", "");
+			password = settings.getString("password", "");
+			port = settings.getInt("port", 0);
+			localPort = settings.getInt("localPort", 0);
+			remotePort = settings.getInt("remotePort", 0);
+			isAutoReconnect = settings.getBoolean("isAutoReconnect", false);
+			isAutoSetProxy = settings.getBoolean("isAutoSetProxy", false);
 
 			Intent it = new Intent(context, SSHTunnelService.class);
 			Bundle bundle = new Bundle();
 			bundle.putString("host", host);
 			bundle.putString("user", user);
-			bundle.putString("passwd", passwd);
+			bundle.putString("password", password);
 			bundle.putInt("port", port);
 			bundle.putInt("localPort", localPort);
 			bundle.putInt("remotePort", remotePort);
@@ -55,5 +55,6 @@ public class SSHTunnelReceiver extends BroadcastReceiver {
 			context.startService(it);
 		}
 	}
+	
 
 }

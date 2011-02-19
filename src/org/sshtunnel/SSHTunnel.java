@@ -7,7 +7,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 
-import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.ActivityManager.RunningServiceInfo;
 import android.app.AlertDialog;
@@ -15,20 +14,21 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.content.res.AssetManager;
 import android.os.Bundle;
-import android.text.method.LinkMovementMethod;
+import android.preference.CheckBoxPreference;
+import android.preference.EditTextPreference;
+import android.preference.Preference;
+import android.preference.PreferenceActivity;
+import android.preference.PreferenceManager;
+import android.preference.PreferenceScreen;
 import android.util.Log;
-import android.view.View;
-import android.widget.Button;
-import android.widget.CheckBox;
-import android.widget.EditText;
-import android.widget.TextView;
 
-public class SSHTunnel extends Activity {
+public class SSHTunnel extends PreferenceActivity implements
+		OnSharedPreferenceChangeListener {
 
 	private static final String TAG = "SSHTunnel";
-	public static final String PREFS_NAME = "SSHTunnel";
 	private static final String SERVICE_NAME = "org.sshtunnel.SSHTunnelService";
 
 	private String host;
@@ -36,12 +36,22 @@ public class SSHTunnel extends Activity {
 	private int localPort;
 	private int remotePort;
 	private String user;
-	private String passwd;
-	private boolean isSaved = false;
-	public static boolean isAutoStart = false;
+	private String password;
+	public static boolean isAutoConnect = false;
 	public static boolean isAutoReconnect = false;
 	public static boolean isAutoSetProxy = false;
 	public static boolean isRoot = false;
+
+	private CheckBoxPreference isAutoConnectCheck;
+	private CheckBoxPreference isAutoReconnectCheck;
+	private CheckBoxPreference isAutoSetProxyCheck;
+	private EditTextPreference hostText;
+	private EditTextPreference portText;
+	private EditTextPreference userText;
+	private EditTextPreference passwordText;
+	private EditTextPreference localPortText;
+	private EditTextPreference remotePortText;
+	private CheckBoxPreference isRunningCheck;
 
 	public static boolean runRootCommand(String command) {
 		Process process = null;
@@ -133,14 +143,25 @@ public class SSHTunnel extends Activity {
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
-		setContentView(R.layout.main);
+		addPreferencesFromResource(R.xml.main_pre);
 
-		final TextView feedback = (TextView) findViewById(R.id.Feedback);
-		feedback.setMovementMethod(LinkMovementMethod.getInstance());
+		hostText = (EditTextPreference) findPreference("host");
+		portText = (EditTextPreference) findPreference("port");
+		userText = (EditTextPreference) findPreference("user");
+		passwordText = (EditTextPreference) findPreference("password");
+		localPortText = (EditTextPreference) findPreference("localPort");
+		remotePortText = (EditTextPreference) findPreference("remotePort");
 
-		SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
+		isRunningCheck = (CheckBoxPreference) findPreference("isRunning");
+		isAutoSetProxyCheck = (CheckBoxPreference) findPreference("isAutoSetProxy");
+		isAutoConnectCheck = (CheckBoxPreference) findPreference("isAutoConnect");
+		isAutoReconnectCheck = (CheckBoxPreference) findPreference("isAutoReconnect");
 
-		isSaved = settings.getBoolean("IsSaved", false);
+		if (this.isWorked(SERVICE_NAME)) {
+			isRunningCheck.setChecked(true);
+		} else {
+			isRunningCheck.setChecked(false);
+		}
 
 		if (!runRootCommand("ls")) {
 			isRoot = false;
@@ -148,45 +169,10 @@ public class SSHTunnel extends Activity {
 			isRoot = true;
 		}
 
-		if (isRoot) {
-			isAutoSetProxy = settings.getBoolean("IsAutoSetProxy", false);
-			final CheckBox isAutoSetProxyText = (CheckBox) findViewById(R.id.isAutoSetProxy);
-			isAutoSetProxyText.setChecked(isAutoSetProxy);
-			isAutoSetProxyText.setEnabled(true);
-		} else {
-			final CheckBox isAutoSetProxyText = (CheckBox) findViewById(R.id.isAutoSetProxy);
-			isAutoSetProxyText.setChecked(false);
-			isAutoSetProxyText.setEnabled(false);
-		}
+		if (!isRoot) {
 
-		if (isSaved) {
-			host = settings.getString("Host", "");
-			user = settings.getString("User", "");
-			passwd = settings.getString("Password", "");
-			port = settings.getInt("Port", 0);
-			localPort = settings.getInt("LocalPort", 0);
-			remotePort = settings.getInt("RemotePort", 0);
-			isAutoStart = settings.getBoolean("IsAutoStart", false);
-			isAutoReconnect = settings.getBoolean("IsAutoReconnect", false);
-
-			final EditText hostText = (EditText) findViewById(R.id.host);
-			final EditText portText = (EditText) findViewById(R.id.port);
-			final EditText userText = (EditText) findViewById(R.id.user);
-			final EditText passwdText = (EditText) findViewById(R.id.passwd);
-			final EditText localPortText = (EditText) findViewById(R.id.localPort);
-			final EditText remotePortText = (EditText) findViewById(R.id.remotePort);
-			final CheckBox isAutoStartText = (CheckBox) findViewById(R.id.isAutoStart);
-			final CheckBox isAutoReconnectText = (CheckBox) findViewById(R.id.isAutoReconnect);
-
-			hostText.setText(host);
-			portText.setText(Integer.toString(port));
-			userText.setText(user);
-			passwdText.setText(passwd);
-			localPortText.setText(Integer.toString(localPort));
-			remotePortText.setText(Integer.toString(remotePort));
-			isAutoStartText.setChecked(isAutoStart);
-			isAutoReconnectText.setChecked(isAutoReconnect);
-
+			isAutoSetProxyCheck.setChecked(false);
+			isAutoSetProxyCheck.setEnabled(false);
 		}
 
 		if (!isWorked(SERVICE_NAME)) {
@@ -201,61 +187,55 @@ public class SSHTunnel extends Activity {
 	/** Called when the activity is closed. */
 	@Override
 	public void onDestroy() {
-		SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
 
-		SharedPreferences.Editor editor = settings.edit();
-		editor.putBoolean("IsConnected", isWorked(SERVICE_NAME));
-
-		editor.commit();
 		super.onDestroy();
 	}
 
 	/** Called when connect button is clicked. */
-	public void serviceStart(View view) {
+	public void serviceStart() {
 
 		if (isWorked(SERVICE_NAME)) {
-			showAToast(getString(R.string.already_running));
+			try {
+				stopService(new Intent(this, SSHTunnelService.class));
+			} catch (Exception e) {
+				// Nothing
+			}
 			return;
 		}
 
-		final Button button = (Button) findViewById(R.id.connect);
-		final EditText hostText = (EditText) findViewById(R.id.host);
-		final EditText portText = (EditText) findViewById(R.id.port);
-		final EditText userText = (EditText) findViewById(R.id.user);
-		final EditText passwdText = (EditText) findViewById(R.id.passwd);
-		final EditText localPortText = (EditText) findViewById(R.id.localPort);
-		final EditText remotePortText = (EditText) findViewById(R.id.remotePort);
-		final CheckBox isAutoStartText = (CheckBox) findViewById(R.id.isAutoStart);
-		final CheckBox isAutoReconnectText = (CheckBox) findViewById(R.id.isAutoReconnect);
-		final CheckBox isAutoSetProxyText = (CheckBox) findViewById(R.id.isAutoSetProxy);
+		SharedPreferences settings = PreferenceManager
+				.getDefaultSharedPreferences(this);
 
-		if (isTextEmpty(hostText.getText().toString(),
-				"Cann't let the Host empty."))
-			return;
-		if (isTextEmpty(portText.getText().toString(),
-				"Cann't let the Port empty."))
-			return;
-		if (isTextEmpty(userText.getText().toString(),
-				"Cann't let the User empty."))
-			return;
-		if (isTextEmpty(localPortText.getText().toString(),
-				"Cann't let the Loacal Port empty."))
-			return;
-		if (isTextEmpty(remotePortText.getText().toString(),
-				"Cann't let the Remote Port empty."))
+		host = settings.getString("host", "");
+		if (isTextEmpty(host, getString(R.string.host_empty)))
 			return;
 
-		host = hostText.getText().toString();
-		user = userText.getText().toString();
-		passwd = passwdText.getText().toString();
-		port = Integer.parseInt(portText.getText().toString());
-		localPort = Integer.parseInt(localPortText.getText().toString());
-		remotePort = Integer.parseInt(remotePortText.getText().toString());
-		isAutoStart = isAutoStartText.isChecked();
-		isAutoReconnect = isAutoReconnectText.isChecked();
-		isAutoSetProxy = isAutoSetProxyText.isChecked();
+		user = settings.getString("user", "");
+		if (isTextEmpty(user, getString(R.string.user_empty)))
+			return;
 
-		button.setClickable(false);
+		password = settings.getString("password", "");
+
+		String portText = settings.getString("port", "");
+		if (isTextEmpty(portText, getString(R.string.port_empty)))
+			return;
+		port = Integer.valueOf(portText);
+
+		String localPortText = settings.getString("localPort", "");
+		if (isTextEmpty(localPortText, getString(R.string.local_port_empty)))
+			return;
+		localPort = Integer.valueOf(localPortText);
+		if (localPort <= 1024)
+			this.showAToast(getString(R.string.port_alert));
+
+		String remotePortText = settings.getString("remotePort", "");
+		if (isTextEmpty(remotePortText, getString(R.string.remote_port_empty)))
+			return;
+		remotePort = Integer.valueOf(remotePortText);
+
+		isAutoConnect = settings.getBoolean("isAutoConnect", false);
+		isAutoSetProxy = settings.getBoolean("isAutoSetProxy", false);
+		isAutoReconnect = settings.getBoolean("isAutoReconnect", false);
 
 		try {
 
@@ -263,7 +243,7 @@ public class SSHTunnel extends Activity {
 			Bundle bundle = new Bundle();
 			bundle.putString("host", host);
 			bundle.putString("user", user);
-			bundle.putString("passwd", passwd);
+			bundle.putString("password", password);
 			bundle.putInt("port", port);
 			bundle.putInt("localPort", localPort);
 			bundle.putInt("remotePort", remotePort);
@@ -276,37 +256,7 @@ public class SSHTunnel extends Activity {
 			// Nothing
 		}
 
-		button.setClickable(true);
-		isSaved = true;
-		SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
-		SharedPreferences.Editor editor = settings.edit();
-		editor.putBoolean("IsSaved", isSaved);
-		editor.putBoolean("IsAutoStart", isAutoStart);
-		editor.putBoolean("IsAutoReconnect", isAutoReconnect);
-		editor.putBoolean("IsAutoSetProxy", isAutoSetProxy);
-		editor.putString("Host", host);
-		editor.putString("User", user);
-		editor.putString("Password", passwd);
-		editor.putInt("Port", port);
-		editor.putInt("LocalPort", localPort);
-		editor.putInt("RemotePort", remotePort);
-		editor.commit();
-
 		return;
-	}
-
-	/** Called when disconnect button is clicked. */
-	public void serviceStop(View view) {
-		if (!isWorked(SERVICE_NAME)) {
-			showAToast(getString(R.string.already_stopped));
-			return;
-		}
-		try {
-			stopService(new Intent(this, SSHTunnelService.class));
-		} catch (Exception e) {
-			// Nothing
-		}
-
 	}
 
 	private void showAToast(String msg) {
@@ -321,6 +271,101 @@ public class SSHTunnel extends Activity {
 						});
 		AlertDialog alert = builder.create();
 		alert.show();
+	}
+
+	@Override
+	public boolean onPreferenceTreeClick(PreferenceScreen preferenceScreen,
+			Preference preference) {
+
+		if (preference.getKey() != null
+				&& preference.getKey().equals("isRunning")) {
+			final CheckBoxPreference isRunningCheck = (CheckBoxPreference) findPreference("isRunning");
+			serviceStart();
+			if (this.isWorked(SERVICE_NAME)) {
+				isRunningCheck.setChecked(true);
+			} else {
+				isRunningCheck.setChecked(false);
+			}
+			return false;
+
+		}
+		return super.onPreferenceTreeClick(preferenceScreen, preference);
+	}
+
+	@Override
+	protected void onResume() {
+		super.onResume();
+		SharedPreferences settings = PreferenceManager
+				.getDefaultSharedPreferences(this);
+
+		// Setup the initial values
+		if (!settings.getString("user", "").equals(""))
+			userText.setSummary(settings.getString("user",
+					getString(R.string.user_summary)));
+		if (!settings.getString("port", "").equals(""))
+			portText.setSummary(settings.getString("port",
+					getString(R.string.port_summary)));
+		if (!settings.getString("host", "").equals(""))
+			hostText.setSummary(settings.getString("host",
+					getString(R.string.host_summary)));
+		if (!settings.getString("password", "").equals(""))
+			passwordText.setSummary("*********");
+		if (!settings.getString("localPort", "").equals(""))
+			localPortText.setSummary(settings.getString("localPort",
+					getString(R.string.local_port_summary)));
+		if (!settings.getString("remotePort", "").equals(""))
+			remotePortText.setSummary(settings.getString("remotePort",
+					getString(R.string.remote_port_summary)));
+
+		// Set up a listener whenever a key changes
+		getPreferenceScreen().getSharedPreferences()
+				.registerOnSharedPreferenceChangeListener(this);
+	}
+
+	@Override
+	protected void onPause() {
+		super.onPause();
+
+		// Unregister the listener whenever a key changes
+		getPreferenceScreen().getSharedPreferences()
+				.unregisterOnSharedPreferenceChangeListener(this);
+	}
+
+	public void onSharedPreferenceChanged(SharedPreferences sharedPreferences,
+			String key) {
+		// Let's do something a preference value changes
+		SharedPreferences settings = PreferenceManager
+				.getDefaultSharedPreferences(this);
+		if (key.equals("user")) 
+			if (settings.getString("user", "").equals(""))
+				userText.setSummary(getString(R.string.user_summary));
+			else
+				userText.setSummary(settings.getString("user",""));		
+		else if (key.equals("port"))
+			if (settings.getString("port", "").equals(""))
+				portText.setSummary(getString(R.string.port_summary));
+			else
+				portText.setSummary(settings.getString("port",""));	
+		else if (key.equals("host"))
+			if (settings.getString("host", "").equals(""))
+				hostText.setSummary(getString(R.string.host_summary));
+			else
+				hostText.setSummary(settings.getString("host",""));	
+		else if (key.equals("localPort"))
+			if (settings.getString("localPort", "").equals(""))
+				localPortText.setSummary(getString(R.string.local_port_summary));
+			else
+				localPortText.setSummary(settings.getString("localPort",""));	
+		else if (key.equals("remotePort"))
+			if (settings.getString("remotePort", "").equals(""))
+				remotePortText.setSummary(getString(R.string.remote_port_summary));
+			else
+				remotePortText.setSummary(settings.getString("remotePort",""));	
+		else if (key.equals("password"))
+			if (!settings.getString("password", "").equals(""))
+				passwordText.setSummary("*********");
+			else 
+				passwordText.setSummary(getString(R.string.password_summary));
 	}
 
 }
