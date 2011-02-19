@@ -441,7 +441,7 @@ public class PUFFService extends Service implements ConnectionMonitor {
 		} else {
 			// Connection or forward unsuccessful
 			notifyAlert(getString(R.string.forward_fail),
-					getString(R.string.service_failed));
+					getString(R.string.service_failed), Notification.FLAG_AUTO_CANCEL);
 			stopSelf();
 		}
 	}
