@@ -425,6 +425,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			// Connection or forward unsuccessful
 			notifyAlert(getString(R.string.forward_fail),
 					getString(R.string.service_failed), Notification.FLAG_AUTO_CANCEL);
+			connected = false;
 			stopSelf();
 		}
 	}
