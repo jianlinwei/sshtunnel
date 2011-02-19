@@ -14,6 +14,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.content.res.AssetManager;
 import android.os.Bundle;
@@ -273,20 +274,52 @@ public class SSHTunnel extends PreferenceActivity implements
 		alert.show();
 	}
 
+	private void disableAll() {
+		hostText.setEnabled(false);
+		portText.setEnabled(false);
+		userText.setEnabled(false);
+		passwordText.setEnabled(false);
+		localPortText.setEnabled(false);
+		remotePortText.setEnabled(false);
+
+		isAutoSetProxyCheck.setEnabled(false);
+		isAutoConnectCheck.setEnabled(false);
+		isAutoReconnectCheck.setEnabled(false);
+	}
+	
+	private void enableAll() {
+		hostText.setEnabled(true);
+		portText.setEnabled(true);
+		userText.setEnabled(true);
+		passwordText.setEnabled(true);
+		localPortText.setEnabled(true);
+		remotePortText.setEnabled(true);
+
+		isAutoSetProxyCheck.setEnabled(true);
+		isAutoConnectCheck.setEnabled(true);
+		isAutoReconnectCheck.setEnabled(true);
+	}
+	
 	@Override
 	public boolean onPreferenceTreeClick(PreferenceScreen preferenceScreen,
 			Preference preference) {
 
 		if (preference.getKey() != null
 				&& preference.getKey().equals("isRunning")) {
-			final CheckBoxPreference isRunningCheck = (CheckBoxPreference) findPreference("isRunning");
+			SharedPreferences settings = PreferenceManager
+			.getDefaultSharedPreferences(this);
+			Editor edit = settings.edit();
+			
 			serviceStart();
+			
 			if (this.isWorked(SERVICE_NAME)) {
-				isRunningCheck.setChecked(true);
+				edit.putBoolean("isRunning", true);
+				disableAll();
 			} else {
-				isRunningCheck.setChecked(false);
+				edit.putBoolean("isRunning", false);
+				enableAll();
 			}
-			return false;
+			edit.commit();
 
 		}
 		return super.onPreferenceTreeClick(preferenceScreen, preference);
@@ -297,6 +330,12 @@ public class SSHTunnel extends PreferenceActivity implements
 		super.onResume();
 		SharedPreferences settings = PreferenceManager
 				.getDefaultSharedPreferences(this);
+
+		if (this.isWorked(SERVICE_NAME)) {
+			isRunningCheck.setChecked(true);
+		} else {
+			isRunningCheck.setChecked(false);
+		}
 
 		// Setup the initial values
 		if (!settings.getString("user", "").equals(""))
@@ -336,35 +375,37 @@ public class SSHTunnel extends PreferenceActivity implements
 		// Let's do something a preference value changes
 		SharedPreferences settings = PreferenceManager
 				.getDefaultSharedPreferences(this);
-		if (key.equals("user")) 
+		if (key.equals("user"))
 			if (settings.getString("user", "").equals(""))
 				userText.setSummary(getString(R.string.user_summary));
 			else
-				userText.setSummary(settings.getString("user",""));		
+				userText.setSummary(settings.getString("user", ""));
 		else if (key.equals("port"))
 			if (settings.getString("port", "").equals(""))
 				portText.setSummary(getString(R.string.port_summary));
 			else
-				portText.setSummary(settings.getString("port",""));	
+				portText.setSummary(settings.getString("port", ""));
 		else if (key.equals("host"))
 			if (settings.getString("host", "").equals(""))
 				hostText.setSummary(getString(R.string.host_summary));
 			else
-				hostText.setSummary(settings.getString("host",""));	
+				hostText.setSummary(settings.getString("host", ""));
 		else if (key.equals("localPort"))
 			if (settings.getString("localPort", "").equals(""))
-				localPortText.setSummary(getString(R.string.local_port_summary));
+				localPortText
+						.setSummary(getString(R.string.local_port_summary));
 			else
-				localPortText.setSummary(settings.getString("localPort",""));	
+				localPortText.setSummary(settings.getString("localPort", ""));
 		else if (key.equals("remotePort"))
 			if (settings.getString("remotePort", "").equals(""))
-				remotePortText.setSummary(getString(R.string.remote_port_summary));
+				remotePortText
+						.setSummary(getString(R.string.remote_port_summary));
 			else
-				remotePortText.setSummary(settings.getString("remotePort",""));	
+				remotePortText.setSummary(settings.getString("remotePort", ""));
 		else if (key.equals("password"))
 			if (!settings.getString("password", "").equals(""))
 				passwordText.setSummary("*********");
-			else 
+			else
 				passwordText.setSummary(getString(R.string.password_summary));
 	}
 
