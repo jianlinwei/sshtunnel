@@ -32,7 +32,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	private int localPort;
 	private int remotePort;
 	private String user;
-	private String passwd;
+	private String password;
 	private boolean isAutoReconnect = false;
 	private boolean isAutoSetProxy = false;
 	private LocalPortForwarder lpf1 = null;
@@ -122,7 +122,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 		try {
 
-			if (connection.authenticateWithPassword(user, passwd))
+			if (connection.authenticateWithPassword(user, password))
 				finishConnection();
 
 		} catch (IllegalStateException e) {
@@ -302,7 +302,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		Bundle bundle = it.getExtras();
 		host = bundle.getString("host");
 		user = bundle.getString("user");
-		passwd = bundle.getString("passwd");
+		password = bundle.getString("password");
 		port = bundle.getInt("port");
 		localPort = bundle.getInt("localPort");
 		remotePort = bundle.getInt("remotePort");
