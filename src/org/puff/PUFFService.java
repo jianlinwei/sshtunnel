@@ -324,9 +324,19 @@ public class PUFFService extends Service implements ConnectionMonitor {
 		return true;
 	}
 
+	private void notifyAlert(String title, String info, int flags) {
+		notification.icon = R.drawable.icon;
+		notification.tickerText = title;
+		notification.flags = flags;
+		notification.defaults = Notification.DEFAULT_SOUND;
+		notification.setLatestEventInfo(this, getString(R.string.app_name), info, pendIntent);
+		notificationManager.notify(0, notification);
+	}
+	
 	private void notifyAlert(String title, String info) {
 		notification.icon = R.drawable.icon;
 		notification.tickerText = title;
+		notification.flags = Notification.FLAG_ONGOING_EVENT;
 		notification.defaults = Notification.DEFAULT_SOUND;
 		notification.setLatestEventInfo(this, getString(R.string.app_name), info, pendIntent);
 		notificationManager.notify(0, notification);
@@ -353,9 +363,8 @@ public class PUFFService extends Service implements ConnectionMonitor {
 	public void onDestroy() {
 		
 		if (connected) {
-
 			notifyAlert(getString(R.string.forward_stop),
-					getString(R.string.service_stopped));
+					getString(R.string.service_stopped), Notification.FLAG_AUTO_CANCEL);
 		}
 		
 		// Make sure the connection is closed, important here
