@@ -286,7 +286,7 @@ public class SSHTunnel extends PreferenceActivity implements
 		isAutoConnectCheck.setEnabled(false);
 		isAutoReconnectCheck.setEnabled(false);
 	}
-	
+
 	private void enableAll() {
 		hostText.setEnabled(true);
 		portText.setEnabled(true);
@@ -299,27 +299,15 @@ public class SSHTunnel extends PreferenceActivity implements
 		isAutoConnectCheck.setEnabled(true);
 		isAutoReconnectCheck.setEnabled(true);
 	}
-	
+
 	@Override
 	public boolean onPreferenceTreeClick(PreferenceScreen preferenceScreen,
 			Preference preference) {
 
 		if (preference.getKey() != null
 				&& preference.getKey().equals("isRunning")) {
-			SharedPreferences settings = PreferenceManager
-			.getDefaultSharedPreferences(this);
-			Editor edit = settings.edit();
-			
+
 			serviceStart();
-			
-			if (this.isWorked(SERVICE_NAME)) {
-				edit.putBoolean("isRunning", true);
-				disableAll();
-			} else {
-				edit.putBoolean("isRunning", false);
-				enableAll();
-			}
-			edit.commit();
 
 		}
 		return super.onPreferenceTreeClick(preferenceScreen, preference);
@@ -331,11 +319,11 @@ public class SSHTunnel extends PreferenceActivity implements
 		SharedPreferences settings = PreferenceManager
 				.getDefaultSharedPreferences(this);
 
-		if (this.isWorked(SERVICE_NAME)) {
-			isRunningCheck.setChecked(true);
-		} else {
-			isRunningCheck.setChecked(false);
-		}
+		// if (this.isWorked(SERVICE_NAME)) {
+		// isRunningCheck.setChecked(true);
+		// } else {
+		// isRunningCheck.setChecked(false);
+		// }
 
 		// Setup the initial values
 		if (!settings.getString("user", "").equals(""))
@@ -375,6 +363,17 @@ public class SSHTunnel extends PreferenceActivity implements
 		// Let's do something a preference value changes
 		SharedPreferences settings = PreferenceManager
 				.getDefaultSharedPreferences(this);
+
+		if (key.equals("isRunning")) {
+			if (settings.getBoolean("isRunning", false)) {
+				disableAll();
+				isRunningCheck.setChecked(true);
+			} else {
+				enableAll();
+				isRunningCheck.setChecked(false);
+			}
+		}
+
 		if (key.equals("user"))
 			if (settings.getString("user", "").equals(""))
 				userText.setSummary(getString(R.string.user_summary));

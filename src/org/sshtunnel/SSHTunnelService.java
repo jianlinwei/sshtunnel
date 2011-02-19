@@ -10,8 +10,11 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.preference.PreferenceManager;
 import android.util.Log;
 
 import com.trilead.ssh2.Connection;
@@ -26,6 +29,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	private PendingIntent pendIntent;
 
 	private static final String TAG = "SSHTunnel";
+	private SharedPreferences settings = null;
 
 	private String host;
 	private int port;
@@ -349,6 +353,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	@Override
 	public void onCreate() {
 		super.onCreate();
+		settings = PreferenceManager.getDefaultSharedPreferences(this);
 		notificationManager = (NotificationManager) this
 				.getSystemService(NOTIFICATION_SERVICE);
 
@@ -369,13 +374,18 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		
 		// Make sure the connection is closed, important here
 		onDisconnect();
-
+		
 		try {
 			if (dnsServer != null)
 				dnsServer.close();
 		} catch (Exception e) {
 			Log.e(TAG, "DNS Server close unexpected");
 		}
+		
+		Editor ed = settings.edit();
+		ed.putBoolean("isRunning", false);
+		ed.commit();
+		
 		super.onDestroy();
 	}
 
@@ -419,6 +429,9 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			notifyAlert(getString(R.string.forward_success),
 					getString(R.string.service_running));
 
+			Editor ed = settings.edit();
+			ed.putBoolean("isRunning", true);
+			ed.commit();
 			super.onStart(intent, startId);
 
 		} else {
@@ -426,6 +439,9 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			notifyAlert(getString(R.string.forward_fail),
 					getString(R.string.service_failed), Notification.FLAG_AUTO_CANCEL);
 			connected = false;
+			Editor ed = settings.edit();
+			ed.putBoolean("isRunning", false);
+			ed.commit();
 			stopSelf();
 		}
 	}
