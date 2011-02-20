@@ -5,10 +5,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
+import android.util.Log;
 
 public class SSHTunnelReceiver extends BroadcastReceiver {
-
-	public static final String PREFS_NAME = "SSHTunnel";
 
 	private String host;
 	private int port;
@@ -16,29 +16,34 @@ public class SSHTunnelReceiver extends BroadcastReceiver {
 	private int remotePort;
 	private String user;
 	private String password;
-	private boolean isSaved = false;
 	private boolean isAutoConnect = false;
 	private boolean isAutoReconnect = false;
 	private boolean isAutoSetProxy = false;
+	private static final String TAG = "SSHTunnelReceiver";
 
 	@Override
 	public void onReceive(Context context, Intent intent) {
 
-		SharedPreferences settings = context
-				.getSharedPreferences(PREFS_NAME, 0);
+		SharedPreferences settings = PreferenceManager
+				.getDefaultSharedPreferences(context);
 
-		isSaved = settings.getBoolean("isSaved", false);
 		isAutoConnect = settings.getBoolean("isAutoConnect", false);
 
-		if (isSaved && isAutoConnect) {
-			host = settings.getString("host", "");
-			user = settings.getString("user", "");
-			password = settings.getString("password", "");
-			port = settings.getInt("port", 0);
-			localPort = settings.getInt("localPort", 0);
-			remotePort = settings.getInt("remotePort", 0);
-			isAutoReconnect = settings.getBoolean("isAutoReconnect", false);
-			isAutoSetProxy = settings.getBoolean("isAutoSetProxy", false);
+		if (isAutoConnect) {
+			try {
+				host = settings.getString("host", "");
+				user = settings.getString("user", "");
+				password = settings.getString("password", "");
+				port = Integer.valueOf(settings.getString("port", "22"));
+				localPort = Integer
+						.valueOf(settings.getString("localPort", "1984"));
+				remotePort = Integer.valueOf(settings.getString("remotePort",
+						"3128"));
+				isAutoReconnect = settings.getBoolean("isAutoReconnect", false);
+				isAutoSetProxy = settings.getBoolean("isAutoSetProxy", false);
+			} catch (Exception e) {
+				Log.e(TAG, "Exception when get preferences");
+			}
 
 			Intent it = new Intent(context, SSHTunnelService.class);
 			Bundle bundle = new Bundle();
@@ -55,6 +60,5 @@ public class SSHTunnelReceiver extends BroadcastReceiver {
 			context.startService(it);
 		}
 	}
-	
 
 }

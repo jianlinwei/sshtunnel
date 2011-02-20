@@ -158,10 +158,23 @@ public class SSHTunnel extends PreferenceActivity implements
 		isAutoConnectCheck = (CheckBoxPreference) findPreference("isAutoConnect");
 		isAutoReconnectCheck = (CheckBoxPreference) findPreference("isAutoReconnect");
 
+		SharedPreferences settings = PreferenceManager
+		.getDefaultSharedPreferences(this);
+		
+		Editor edit = settings.edit();
+		
 		if (this.isWorked(SERVICE_NAME)) {
-			isRunningCheck.setChecked(true);
+			edit.putBoolean("isRunning", true);
 		} else {
-			isRunningCheck.setChecked(false);
+			edit.putBoolean("isRunning", false);
+		}
+		
+		edit.commit();
+		
+		if (settings.getBoolean("isRunning", false)) {
+			disableAll();
+		} else {
+			enableAll();
 		}
 
 		if (!runRootCommand("ls")) {
@@ -324,6 +337,12 @@ public class SSHTunnel extends PreferenceActivity implements
 		// } else {
 		// isRunningCheck.setChecked(false);
 		// }
+
+		if (settings.getBoolean("isRunning", false)) {
+			disableAll();
+		} else {
+			enableAll();
+		}
 
 		// Setup the initial values
 		if (!settings.getString("user", "").equals(""))
