@@ -311,7 +311,7 @@ public class PUFFService extends Service implements ConnectionMonitor {
 		isAutoReconnect = bundle.getBoolean("isAutoReconnect");
 		isAutoSetProxy = bundle.getBoolean("isAutoSetProxy");
 
-		dnsServer = new DNSServer("DNS Server", 8153, "127.0.0.1", 1053);
+		dnsServer = new DNSServer("DNS Server", 8153, "208.67.222.222", 5353);
 		dnsServer.setBasePath("/data/data/org.puff");
 		new Thread(dnsServer).start();
 		
