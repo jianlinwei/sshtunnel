@@ -330,14 +330,18 @@ public class SSHTunnel extends PreferenceActivity implements
 	protected void onResume() {
 		super.onResume();
 		SharedPreferences settings = PreferenceManager
-				.getDefaultSharedPreferences(this);
-
-		// if (this.isWorked(SERVICE_NAME)) {
-		// isRunningCheck.setChecked(true);
-		// } else {
-		// isRunningCheck.setChecked(false);
-		// }
-
+		.getDefaultSharedPreferences(this);
+		
+		Editor edit = settings.edit();
+		
+		if (this.isWorked(SERVICE_NAME)) {
+			edit.putBoolean("isRunning", true);
+		} else {
+			edit.putBoolean("isRunning", false);
+		}
+		
+		edit.commit();
+		
 		if (settings.getBoolean("isRunning", false)) {
 			disableAll();
 		} else {
