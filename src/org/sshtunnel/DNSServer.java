@@ -254,7 +254,7 @@ public class DNSServer implements WrapServer {
 	 */
 	protected byte[] fetchAnswer(byte[] quest) {
 
-		Socket innerSocket = new InnerSocketBuilder("8.8.8.8", 53, target)
+		Socket innerSocket = new InnerSocketBuilder(dnsHost, dnsPort, target)
 				.getSocket();
 		DataInputStream in;
 		DataOutputStream out;

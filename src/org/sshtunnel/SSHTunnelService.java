@@ -40,7 +40,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	private boolean isAutoReconnect = false;
 	private boolean isAutoSetProxy = false;
 	private LocalPortForwarder lpf1 = null;
-	// private LocalPortForwarder lpf2 = null;
+	private LocalPortForwarder lpf2 = null;
 	private DNSServer dnsServer = null;
 
 	private final static int AUTH_TRIES = 2;
@@ -251,7 +251,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		try {
 			lpf1 = connection.createLocalPortForwarder(localPort, "127.0.0.1",
 					remotePort);
-			// lpf2 = connection.createLocalPortForwarder(1053, "8.8.4.4", 53);
+			lpf2 = connection.createLocalPortForwarder(1053, "8.8.8.8", 53);
 		} catch (Exception e) {
 			Log.e(TAG, "Could not create local port forward", e);
 			return false;
@@ -397,6 +397,10 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			if (lpf1 != null) {
 				lpf1.close();
 				lpf1 = null;
+			}
+			if (lpf2 != null) {
+				lpf2.close();
+				lpf2 = null;
 			}
 		} catch (Exception ignore) {
 			// Nothing
