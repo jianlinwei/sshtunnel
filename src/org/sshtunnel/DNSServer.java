@@ -1,5 +1,6 @@
 package org.sshtunnel;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -8,14 +9,18 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.HttpURLConnection;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketException;
+import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.Hashtable;
 
@@ -317,8 +322,36 @@ public class DNSServer implements WrapServer {
 	}
 
 	private void initOrgCache() {
-		// TODO: 由Preference读取
-		// TODO: 重构
+		try {
+			URL aURL = new URL("http://myhosts.sinaapp.com/hosts");
+			HttpURLConnection conn = (HttpURLConnection) aURL.openConnection();
+			conn.connect();
+			InputStream is = conn.getInputStream();
+			BufferedReader reader = new BufferedReader(
+					new InputStreamReader(is));
+			String line = reader.readLine();
+			if (line == null)
+				return;
+			if (!line.startsWith("#SSHTunnel"))
+				return;
+			while (true) {
+				line = reader.readLine();
+				if (line == null)
+					break;
+				if (line.startsWith("#"))
+					continue;
+				line = line.trim().toLowerCase();
+				if (line.equals(""))
+					continue;
+				String[] hosts = line.split(" ");
+				if (hosts.length == 2) {
+					orgCache.put(hosts[1], hosts[0]);
+					Log.d(TAG, hosts[0] + " " + hosts[1]);
+				}
+			}
+		} catch (Exception e) {
+			Log.e(TAG, "cannot get remote host files", e);
+		}
 
 	}
 
