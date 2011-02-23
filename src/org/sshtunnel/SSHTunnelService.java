@@ -235,6 +235,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	@Override
 	public void onDestroy() {
 
+		sm.close();
+		
 		if (connected) {
 
 			notifyAlert(getString(R.string.forward_stop),
@@ -244,6 +246,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 		// Make sure the connection is closed, important here
 		onDisconnect();
+		
 
 		try {
 			if (dnsServer != null)
