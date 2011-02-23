@@ -34,9 +34,6 @@ public class SSHTunnel extends PreferenceActivity implements
 
 	private static final String TAG = "SSHTunnel";
 	private static final String SERVICE_NAME = "org.sshtunnel.SSHTunnelService";
-	
-	Process sshProcess = null;
-	DataOutputStream sshOS = null;
 
 	private String host;
 	private int port;
@@ -45,12 +42,10 @@ public class SSHTunnel extends PreferenceActivity implements
 	private String user;
 	private String password;
 	public static boolean isAutoConnect = false;
-	public static boolean isAutoReconnect = false;
 	public static boolean isAutoSetProxy = false;
 	public static boolean isRoot = false;
 
 	private CheckBoxPreference isAutoConnectCheck;
-	private CheckBoxPreference isAutoReconnectCheck;
 	private CheckBoxPreference isAutoSetProxyCheck;
 	private EditTextPreference hostText;
 	private EditTextPreference portText;
@@ -162,7 +157,6 @@ public class SSHTunnel extends PreferenceActivity implements
 		isRunningCheck = (CheckBoxPreference) findPreference("isRunning");
 		isAutoSetProxyCheck = (CheckBoxPreference) findPreference("isAutoSetProxy");
 		isAutoConnectCheck = (CheckBoxPreference) findPreference("isAutoConnect");
-		isAutoReconnectCheck = (CheckBoxPreference) findPreference("isAutoReconnect");
 
 		SharedPreferences settings = PreferenceManager
 		.getDefaultSharedPreferences(this);
@@ -204,8 +198,6 @@ public class SSHTunnel extends PreferenceActivity implements
 			runRootCommand("chmod 777 /data/data/org.sshtunnel/redsocks");
 			runRootCommand("chmod 777 /data/data/org.sshtunnel/proxy.sh");
 		}
-		
-		runCommand();
 
 	}
 
@@ -260,7 +252,6 @@ public class SSHTunnel extends PreferenceActivity implements
 
 		isAutoConnect = settings.getBoolean("isAutoConnect", false);
 		isAutoSetProxy = settings.getBoolean("isAutoSetProxy", false);
-		isAutoReconnect = settings.getBoolean("isAutoReconnect", false);
 
 		try {
 
@@ -272,7 +263,6 @@ public class SSHTunnel extends PreferenceActivity implements
 			bundle.putInt("port", port);
 			bundle.putInt("localPort", localPort);
 			bundle.putInt("remotePort", remotePort);
-			bundle.putBoolean("isAutoReconnect", isAutoReconnect);
 			bundle.putBoolean("isAutoSetProxy", isAutoSetProxy);
 
 			it.putExtras(bundle);
@@ -308,7 +298,6 @@ public class SSHTunnel extends PreferenceActivity implements
 
 		isAutoSetProxyCheck.setEnabled(false);
 		isAutoConnectCheck.setEnabled(false);
-		isAutoReconnectCheck.setEnabled(false);
 	}
 
 	private void enableAll() {
@@ -321,7 +310,6 @@ public class SSHTunnel extends PreferenceActivity implements
 
 		isAutoSetProxyCheck.setEnabled(true);
 		isAutoConnectCheck.setEnabled(true);
-		isAutoReconnectCheck.setEnabled(true);
 	}
 
 	@Override

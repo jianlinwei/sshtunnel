@@ -17,7 +17,6 @@ public class SSHTunnelReceiver extends BroadcastReceiver {
 	private String user;
 	private String password;
 	private boolean isAutoConnect = false;
-	private boolean isAutoReconnect = false;
 	private boolean isAutoSetProxy = false;
 	private static final String TAG = "SSHTunnelReceiver";
 
@@ -39,7 +38,6 @@ public class SSHTunnelReceiver extends BroadcastReceiver {
 						.valueOf(settings.getString("localPort", "1984"));
 				remotePort = Integer.valueOf(settings.getString("remotePort",
 						"3128"));
-				isAutoReconnect = settings.getBoolean("isAutoReconnect", false);
 				isAutoSetProxy = settings.getBoolean("isAutoSetProxy", false);
 			} catch (Exception e) {
 				Log.e(TAG, "Exception when get preferences");
@@ -53,7 +51,6 @@ public class SSHTunnelReceiver extends BroadcastReceiver {
 			bundle.putInt("port", port);
 			bundle.putInt("localPort", localPort);
 			bundle.putInt("remotePort", remotePort);
-			bundle.putBoolean("isAutoConnect", isAutoReconnect);
 			bundle.putBoolean("isAutoSetProxy", isAutoSetProxy);
 
 			it.putExtras(bundle);
