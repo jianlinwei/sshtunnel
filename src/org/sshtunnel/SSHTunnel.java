@@ -159,18 +159,18 @@ public class SSHTunnel extends PreferenceActivity implements
 		isAutoConnectCheck = (CheckBoxPreference) findPreference("isAutoConnect");
 
 		SharedPreferences settings = PreferenceManager
-		.getDefaultSharedPreferences(this);
-		
+				.getDefaultSharedPreferences(this);
+
 		Editor edit = settings.edit();
-		
+
 		if (this.isWorked(SERVICE_NAME)) {
 			edit.putBoolean("isRunning", true);
 		} else {
 			edit.putBoolean("isRunning", false);
 		}
-		
+
 		edit.commit();
-		
+
 		if (settings.getBoolean("isRunning", false)) {
 			isRunningCheck.setChecked(true);
 			disableAll();
@@ -190,7 +190,7 @@ public class SSHTunnel extends PreferenceActivity implements
 			isAutoSetProxyCheck.setChecked(false);
 			isAutoSetProxyCheck.setEnabled(false);
 		}
-		
+
 		if (!isWorked(SERVICE_NAME)) {
 			CopyAssets();
 			runRootCommand("chmod 777 /data/data/org.sshtunnel/iptables_g1");
@@ -209,7 +209,7 @@ public class SSHTunnel extends PreferenceActivity implements
 	}
 
 	/** Called when connect button is clicked. */
-	public void serviceStart() {
+	public boolean serviceStart() {
 
 		if (isWorked(SERVICE_NAME)) {
 			try {
@@ -217,7 +217,7 @@ public class SSHTunnel extends PreferenceActivity implements
 			} catch (Exception e) {
 				// Nothing
 			}
-			return;
+			return false;
 		}
 
 		SharedPreferences settings = PreferenceManager
@@ -225,29 +225,31 @@ public class SSHTunnel extends PreferenceActivity implements
 
 		host = settings.getString("host", "");
 		if (isTextEmpty(host, getString(R.string.host_empty)))
-			return;
+			return false;
 
 		user = settings.getString("user", "");
 		if (isTextEmpty(user, getString(R.string.user_empty)))
-			return;
+			return false;
 
 		password = settings.getString("password", "");
 
 		String portText = settings.getString("port", "");
 		if (isTextEmpty(portText, getString(R.string.port_empty)))
-			return;
+			return false;
 		port = Integer.valueOf(portText);
 
 		String localPortText = settings.getString("localPort", "");
 		if (isTextEmpty(localPortText, getString(R.string.local_port_empty)))
-			return;
+			return false;
 		localPort = Integer.valueOf(localPortText);
-		if (localPort <= 1024)
+		if (localPort <= 1024) {
 			this.showAToast(getString(R.string.port_alert));
+			return false;
+		}
 
 		String remotePortText = settings.getString("remotePort", "");
 		if (isTextEmpty(remotePortText, getString(R.string.remote_port_empty)))
-			return;
+			return false;
 		remotePort = Integer.valueOf(remotePortText);
 
 		isAutoConnect = settings.getBoolean("isAutoConnect", false);
@@ -271,7 +273,7 @@ public class SSHTunnel extends PreferenceActivity implements
 			// Nothing
 		}
 
-		return;
+		return true;
 	}
 
 	private void showAToast(String msg) {
@@ -319,7 +321,19 @@ public class SSHTunnel extends PreferenceActivity implements
 		if (preference.getKey() != null
 				&& preference.getKey().equals("isRunning")) {
 
-			serviceStart();
+			if (!serviceStart()) {
+				SharedPreferences settings = PreferenceManager
+						.getDefaultSharedPreferences(this);
+
+				Editor edit = settings.edit();
+
+				edit.putBoolean("isRunning", false);
+
+				edit.commit();
+
+				isRunningCheck.setChecked(false);
+				enableAll();
+			}
 
 		}
 		return super.onPreferenceTreeClick(preferenceScreen, preference);
@@ -329,18 +343,18 @@ public class SSHTunnel extends PreferenceActivity implements
 	protected void onResume() {
 		super.onResume();
 		SharedPreferences settings = PreferenceManager
-		.getDefaultSharedPreferences(this);
-		
+				.getDefaultSharedPreferences(this);
+
 		Editor edit = settings.edit();
-		
+
 		if (this.isWorked(SERVICE_NAME)) {
 			edit.putBoolean("isRunning", true);
 		} else {
 			edit.putBoolean("isRunning", false);
 		}
-		
+
 		edit.commit();
-		
+
 		if (settings.getBoolean("isRunning", false)) {
 			isRunningCheck.setChecked(true);
 			disableAll();

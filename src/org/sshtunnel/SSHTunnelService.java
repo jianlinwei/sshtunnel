@@ -21,12 +21,13 @@ import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.util.Log;
 
-public class SSHTunnelService extends Service {
+public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 	private Notification notification;
 	private NotificationManager notificationManager;
 	private Intent intent;
 	private PendingIntent pendIntent;
+	private SSHMonitor sm;
 
 	private static final String TAG = "SSHTunnel";
 	private SharedPreferences settings = null;
@@ -121,9 +122,10 @@ public class SSHTunnelService extends Service {
 			sshOS.close();
 			sshProcess.destroy();
 
-			String cmd = "/data/data/org.sshtunnel/ssh -f -N -T -y -L "
+			String cmd = "/data/data/org.sshtunnel/ssh -N -T -y -L "
 					+ localPort + ":" + "127.0.0.1" + ":" + remotePort + " "
-					+ user + "@" + host + ":" + port;
+					+ user + "@" + host + "/" + port;
+			Log.e(TAG, cmd);
 
 			sshProcess = Runtime.getRuntime().exec(cmd);
 			sshOS = new DataOutputStream(sshProcess.getOutputStream());
@@ -262,12 +264,15 @@ public class SSHTunnelService extends Service {
 		connected = false;
 
 		try {
-			if (sshOS != null)
+			if (sshOS != null) {
+				sshOS.writeBytes("exit\n");
+				sshOS.flush();
 				sshOS.close();
+			}
 			if (sshProcess != null)
 				sshProcess.destroy();
 		} catch (Exception e) {
-			
+
 			Log.e(TAG, "close connection error", e);
 		}
 
@@ -302,10 +307,13 @@ public class SSHTunnelService extends Service {
 			// Connection and forward successful
 			notifyAlert(getString(R.string.forward_success),
 					getString(R.string.service_running));
-
+			connected = true;
 			Editor ed = settings.edit();
 			ed.putBoolean("isRunning", true);
 			ed.commit();
+			sm = new SSHMonitor();
+			sm.addMonitor(this);
+			new Thread(sm).start();
 			super.onStart(intent, startId);
 
 		} else {
@@ -329,6 +337,46 @@ public class SSHTunnelService extends Service {
 		if (networkInfo == null)
 			return false;
 		return true;
+	}
+
+	@Override
+	public synchronized void connectionLost(boolean isReconnect) {
+
+		SimpleDateFormat df = new SimpleDateFormat("HH:mm:ss");
+
+		if (!isOnline() || !isReconnect) {
+
+			connected = false;
+			notifyAlert(
+					getString(R.string.auto_reconnected) + " "
+							+ df.format(new Date()),
+					getString(R.string.reconnect_fail) + " @"
+					+ df.format(new Date()),
+					Notification.FLAG_AUTO_CANCEL);
+			stopSelf();
+			return;
+		}
+
+		try {
+			Thread.sleep(1000);
+		} catch (Exception ignore) {
+			// Nothing
+		}
+
+		connect();
+
+		return;
+
+	}
+
+	@Override
+	public void notifySuccess() {
+		SimpleDateFormat df = new SimpleDateFormat("HH:mm:ss");
+		notifyAlert(
+				getString(R.string.auto_reconnected) + " "
+						+ df.format(new Date()),
+				getString(R.string.reconnect_success) + " @"
+				+ df.format(new Date()));
 	}
 
 }
