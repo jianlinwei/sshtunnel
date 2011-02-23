@@ -4,6 +4,8 @@ import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -40,7 +42,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	private boolean isAutoReconnect = false;
 	private boolean isAutoSetProxy = false;
 	private LocalPortForwarder lpf1 = null;
-//	private LocalPortForwarder lpf2 = null;
+	// private LocalPortForwarder lpf2 = null;
 	private DNSServer dnsServer = null;
 
 	private final static int AUTH_TRIES = 2;
@@ -49,7 +51,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	private Connection connection;
 
 	private boolean connected = false;
-	private boolean authenticated = false;
 
 	// Flag indicating if this is an ARMv6 device (-1: unknown, 0: no, 1: yes)
 	private static int isARMv6 = -1;
@@ -117,7 +118,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	private void authenticate() {
 		try {
 			if (connection.authenticateWithNone(user)) {
-				finishConnection();
 				return;
 			}
 		} catch (Exception e) {
@@ -127,25 +127,27 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		try {
 
 			if (connection.authenticateWithPassword(user, password))
-				finishConnection();
+				return;
 
 		} catch (IllegalStateException e) {
 			Log.e(TAG,
 					"Connection went away while we were trying to authenticate",
 					e);
-			return;
 		} catch (Exception e) {
 			Log.e(TAG, "Problem during handleAuthentication()", e);
 		}
 	}
 
-	public void connect() throws Exception {
+	public boolean connect() {
 
 		connection = new Connection(host, port);
 		connection.addConnectionMonitor(this);
 
 		try {
+
 			connection.setCompression(true);
+			connection.setTCPNoDelay(true);
+
 		} catch (IOException e) {
 			Log.e(TAG, "Could not enable compression!", e);
 		}
@@ -166,7 +168,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			 * Logger.enabled = true; Logger.logger = logger;
 			 */
 
-			connection.connect();
+			connection.connect(null, 10 * 1000, 10 * 1000);
 			connected = true;
 
 		} catch (Exception e) {
@@ -175,7 +177,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 			// Display the reason in the text.
 
-			throw (e);
+			return false;
 		}
 
 		try {
@@ -191,40 +193,50 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		} catch (Exception e) {
 			Log.e(TAG,
 					"Problem in SSH connection thread during authentication", e);
-			throw (e);
+			return false;
 		}
+
+		if (connection.isAuthenticationComplete())
+			return finishConnection();
+
+		return false;
 
 	}
 
 	public void connectionLost(Throwable reason) {
+
+		if (reason != null)
+			Log.e(TAG, "connection lost", reason);
+
+		SimpleDateFormat df = new SimpleDateFormat("HH:mm:ss");
 
 		if (isAutoReconnect && connected) {
 			for (int reconNum = 1; reconNum <= RECONNECT_TRIES; reconNum++) {
 
 				onDisconnect();
 
-				try {
+				if (!connect()) {
 
-					// Reconnect now.
-					connect();
-
-				} catch (Exception e) {
-					Log.e(TAG, "Forward Failed" + e.getMessage());
 					try {
 						Thread.sleep(5000 * reconNum);
 					} catch (Exception ignore) {
-
+						// Nothing
 					}
+
 					continue;
 				}
 
-				notifyAlert(getString(R.string.auto_reconnected),
+				notifyAlert(
+						getString(R.string.auto_reconnected) + " "
+								+ df.format(new Date()),
 						getString(R.string.reconnect_success));
 				return;
 			}
 
 			connected = false;
-			notifyAlert(getString(R.string.auto_reconnected),
+			notifyAlert(
+					getString(R.string.auto_reconnected) + " "
+							+ df.format(new Date()),
 					getString(R.string.reconnect_fail));
 			stopSelf();
 
@@ -234,9 +246,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	}
 
 	public boolean enablePortForward() {
-
-		if (!authenticated)
-			return false;
 
 		/*
 		 * DynamicPortForwarder dpf = null;
@@ -251,7 +260,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		try {
 			lpf1 = connection.createLocalPortForwarder(localPort, "127.0.0.1",
 					remotePort);
-//			lpf2 = connection.createLocalPortForwarder(8253, "8.8.8.8", 53);
+			// lpf2 = connection.createLocalPortForwarder(8253, "8.8.8.8", 53);
 		} catch (Exception e) {
 			Log.e(TAG, "Could not create local port forward", e);
 			return false;
@@ -264,36 +273,38 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	 * Internal method to request actual PTY terminal once we've finished
 	 * authentication. If called before authenticated, it will just fail.
 	 */
-	private void finishConnection() {
-		authenticated = true;
+	private boolean finishConnection() {
 
-		try {
-			if (enablePortForward()) {
-				Log.e(TAG, "Forward Successful");
-				if (isAutoSetProxy) {
-					runRootCommand("/data/data/org.sshtunnel/proxy.sh start "
-							+ localPort);
+		if (enablePortForward()) {
+			Log.e(TAG, "Forward Successful");
+			if (isAutoSetProxy) {
+				runRootCommand("/data/data/org.sshtunnel/proxy.sh start "
+						+ localPort);
 
-					if (isARMv6()) {
-						runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp "
-								+ "--dport 80 -j REDIRECT --to-ports 8123");
-						runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp "
-								+ "--dport 443 -j REDIRECT --to-ports 8124");
-						runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p udp "
-								+ "--dport 53 -j REDIRECT --to-ports 8153");
-					} else {
-						runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
-								+ "--dport 80 -j REDIRECT --to-ports 8123");
-						runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
-								+ "--dport 443 -j REDIRECT --to-ports 8124");
-						runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p udp "
-								+ "--dport 53 -j REDIRECT --to-ports 8153");
-					}
+				if (isARMv6()) {
+					runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp "
+							+ "--dport 80 -j REDIRECT --to-ports 8123");
+					runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp "
+							+ "--dport 443 -j REDIRECT --to-ports 8124");
+					runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p udp "
+							+ "--dport 53 -j REDIRECT --to-ports 8153");
+				} else {
+					runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
+							+ "--dport 80 -j REDIRECT --to-ports 8123");
+					runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
+							+ "--dport 443 -j REDIRECT --to-ports 8124");
+					runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p udp "
+							+ "--dport 53 -j REDIRECT --to-ports 8153");
 				}
 			}
 
-		} catch (Exception e) {
-			Log.e(TAG, "Error setting up port forward during connect", e);
+			// Forward Successful
+			return true;
+
+		} else {
+
+			// Forward Unsuccessful
+			return false;
 		}
 
 	}
@@ -316,14 +327,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		dnsServer = new DNSServer("DNS Server", 8153, "208.67.222.222", 5353);
 		dnsServer.setBasePath("/data/data/org.sshtunnel");
 		new Thread(dnsServer).start();
-		
-		try {
-			connect();
-		} catch (Exception e) {
-			Log.e(TAG, "Forward Failed" + e.getMessage());
-			return false;
-		}
-		return true;
+
+		return connect();
 	}
 
 	private void notifyAlert(String title, String info) {
@@ -334,7 +339,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 				info, pendIntent);
 		notificationManager.notify(0, notification);
 	}
-	
+
 	private void notifyAlert(String title, String info, int flags) {
 		notification.icon = R.drawable.icon;
 		notification.tickerText = title;
@@ -369,23 +374,24 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		if (connected) {
 
 			notifyAlert(getString(R.string.forward_stop),
-					getString(R.string.service_stopped), Notification.FLAG_AUTO_CANCEL);
+					getString(R.string.service_stopped),
+					Notification.FLAG_AUTO_CANCEL);
 		}
-		
+
 		// Make sure the connection is closed, important here
 		onDisconnect();
-		
+
 		try {
 			if (dnsServer != null)
 				dnsServer.close();
 		} catch (Exception e) {
 			Log.e(TAG, "DNS Server close unexpected");
 		}
-		
+
 		Editor ed = settings.edit();
 		ed.putBoolean("isRunning", false);
 		ed.commit();
-		
+
 		super.onDestroy();
 	}
 
@@ -398,10 +404,10 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 				lpf1.close();
 				lpf1 = null;
 			}
-//			if (lpf2 != null) {
-//				lpf2.close();
-//				lpf2 = null;
-//			}
+			// if (lpf2 != null) {
+			// lpf2.close();
+			// lpf2 = null;
+			// }
 		} catch (Exception ignore) {
 			// Nothing
 		}
@@ -441,7 +447,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		} else {
 			// Connection or forward unsuccessful
 			notifyAlert(getString(R.string.forward_fail),
-					getString(R.string.service_failed), Notification.FLAG_AUTO_CANCEL);
+					getString(R.string.service_failed),
+					Notification.FLAG_AUTO_CANCEL);
 			connected = false;
 			Editor ed = settings.edit();
 			ed.putBoolean("isRunning", false);

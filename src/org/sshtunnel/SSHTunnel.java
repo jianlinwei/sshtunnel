@@ -172,8 +172,10 @@ public class SSHTunnel extends PreferenceActivity implements
 		edit.commit();
 		
 		if (settings.getBoolean("isRunning", false)) {
+			isRunningCheck.setChecked(true);
 			disableAll();
 		} else {
+			isRunningCheck.setChecked(false);
 			enableAll();
 		}
 
@@ -343,8 +345,10 @@ public class SSHTunnel extends PreferenceActivity implements
 		edit.commit();
 		
 		if (settings.getBoolean("isRunning", false)) {
+			isRunningCheck.setChecked(true);
 			disableAll();
 		} else {
+			isRunningCheck.setChecked(false);
 			enableAll();
 		}
 
