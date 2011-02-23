@@ -11,7 +11,7 @@
 <string name="already_running">服务已启动</string>
 <string name="forward_stop">安全隧道连接已关闭</string>
 <string name="service_failed">请检查你的网络状况或者账户信息</string>
-<string name="reconnect_fail">恢复连接失败</string>
+<string name="reconnect_fail">恢复连接失败，服务已停止</string>
 <string name="ok_iknow">我知道了</string>
 <string name="user">用户名</string>
 <string name="host">主机地址</string>

@@ -14,6 +14,8 @@ import android.app.Service;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
@@ -205,13 +207,37 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 	public void connectionLost(Throwable reason) {
 
-		if (reason != null)
-			Log.e(TAG, "connection lost", reason);
-
 		SimpleDateFormat df = new SimpleDateFormat("HH:mm:ss");
+
+		if (reason != null) {
+			if (reason.getMessage().contains(
+					"There was a problem during connect")) {
+				Log.e(TAG, "connection lost", reason);
+				return;
+			} else if (reason.getMessage().contains(
+					"Closed due to user request")) {
+				Log.e(TAG, "connection lost", reason);
+				return;
+			}
+			Log.e(TAG, "connection lost: " + reason.getMessage());
+		} else {
+			return;
+		}
 
 		if (isAutoReconnect && connected) {
 			for (int reconNum = 1; reconNum <= RECONNECT_TRIES; reconNum++) {
+
+				if (!isOnline()) {
+
+					connected = false;
+					notifyAlert(
+							getString(R.string.auto_reconnected) + " "
+									+ df.format(new Date()),
+							getString(R.string.reconnect_fail),
+							Notification.FLAG_AUTO_CANCEL);
+					stopSelf();
+					return;
+				}
 
 				onDisconnect();
 
@@ -237,7 +263,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			notifyAlert(
 					getString(R.string.auto_reconnected) + " "
 							+ df.format(new Date()),
-					getString(R.string.reconnect_fail));
+					getString(R.string.reconnect_fail),
+					Notification.FLAG_AUTO_CANCEL);
 			stopSelf();
 
 		} else
@@ -335,6 +362,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		notification.icon = R.drawable.icon;
 		notification.tickerText = title;
 		notification.flags = Notification.FLAG_ONGOING_EVENT;
+		notification.defaults = Notification.DEFAULT_SOUND;
 		notification.setLatestEventInfo(this, getString(R.string.app_name),
 				info, pendIntent);
 		notificationManager.notify(0, notification);
@@ -395,7 +423,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		super.onDestroy();
 	}
 
-	private void onDisconnect() {
+	private synchronized void onDisconnect() {
 
 		connected = false;
 
@@ -444,7 +472,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	// method will not be called.
 	@Override
 	public void onStart(Intent intent, int startId) {
-		if (handleCommand(intent)) {
+		if (isOnline() && handleCommand(intent)) {
 			// Connection and forward successful
 			notifyAlert(getString(R.string.forward_success),
 					getString(R.string.service_running));
@@ -465,6 +493,16 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			ed.commit();
 			stopSelf();
 		}
+	}
+
+	public boolean isOnline() {
+
+		ConnectivityManager manager = (ConnectivityManager) this
+				.getSystemService(CONNECTIVITY_SERVICE);
+		NetworkInfo networkInfo = manager.getActiveNetworkInfo();
+		if (networkInfo == null)
+			return false;
+		return true;
 	}
 
 }
