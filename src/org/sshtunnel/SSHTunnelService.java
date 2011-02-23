@@ -308,6 +308,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			ed.commit();
 			sm = new SSHMonitor();
 			sm.addMonitor(this);
+			sm.addProcess(sshProcess);
 			monitorThread = new Thread(sm);
 			monitorThread.start();
 			super.onStart(intent, startId);
