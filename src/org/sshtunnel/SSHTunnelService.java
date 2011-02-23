@@ -50,6 +50,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	// Flag indicating if this is an ARMv6 device (-1: unknown, 0: no, 1: yes)
 	private static int isARMv6 = -1;
 
+	private Thread monitorThread = null;
+
 	/**
 	 * Check if this is an ARMv6 device
 	 * 
@@ -112,15 +114,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 	public boolean connect() {
 		try {
-
-			sshProcess = Runtime.getRuntime().exec("/system/bin/sh");
-			sshOS = new DataOutputStream(sshProcess.getOutputStream());
-			sshOS.writeBytes("chmod 777 /data/data/org.sshtunnel/ssh\n");
-			sshOS.writeBytes("exit\n");
-			sshOS.flush();
-			sshProcess.waitFor();
-			sshOS.close();
-			sshProcess.destroy();
 
 			String cmd = "/data/data/org.sshtunnel/ssh -N -T -y -L "
 					+ localPort + ":" + "127.0.0.1" + ":" + remotePort + " "
@@ -236,7 +229,9 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	public void onDestroy() {
 
 		sm.close();
-		
+		if (monitorThread != null)
+			monitorThread.stop();
+
 		if (connected) {
 
 			notifyAlert(getString(R.string.forward_stop),
@@ -246,7 +241,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 		// Make sure the connection is closed, important here
 		onDisconnect();
-		
 
 		try {
 			if (dnsServer != null)
@@ -268,8 +262,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 		try {
 			if (sshOS != null) {
-				sshOS.writeBytes("exit\n");
-				sshOS.flush();
 				sshOS.close();
 			}
 			if (sshProcess != null)
@@ -316,7 +308,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			ed.commit();
 			sm = new SSHMonitor();
 			sm.addMonitor(this);
-			new Thread(sm).start();
+			monitorThread = new Thread(sm);
+			monitorThread.start();
 			super.onStart(intent, startId);
 
 		} else {
@@ -354,7 +347,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 					getString(R.string.auto_reconnected) + " "
 							+ df.format(new Date()),
 					getString(R.string.reconnect_fail) + " @"
-					+ df.format(new Date()),
+							+ df.format(new Date()),
 					Notification.FLAG_AUTO_CANCEL);
 			stopSelf();
 			return;
@@ -365,10 +358,12 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		} catch (Exception ignore) {
 			// Nothing
 		}
-		
+
 		onDisconnect();
 
 		connect();
+
+		connected = true;
 
 		return;
 
@@ -381,7 +376,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 				getString(R.string.auto_reconnected) + " "
 						+ df.format(new Date()),
 				getString(R.string.reconnect_success) + " @"
-				+ df.format(new Date()));
+						+ df.format(new Date()));
 	}
 
 }
