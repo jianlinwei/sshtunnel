@@ -419,9 +419,19 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 		if (isAutoSetProxy) {
 			if (isARMv6()) {
-				runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -F OUTPUT");
+				runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp "
+						+ "--dport 80 -j REDIRECT --to-ports 8123");
+				runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp "
+						+ "--dport 443 -j REDIRECT --to-ports 8124");
+				runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p udp "
+						+ "--dport 53 -j REDIRECT --to-ports 8153");
 			} else {
-				runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -F OUTPUT");
+				runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p tcp "
+						+ "--dport 80 -j REDIRECT --to-ports 8123");
+				runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p tcp "
+						+ "--dport 443 -j REDIRECT --to-ports 8124");
+				runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p udp "
+						+ "--dport 53 -j REDIRECT --to-ports 8153");
 			}
 
 			runRootCommand("/data/data/org.sshtunnel/proxy.sh stop");
