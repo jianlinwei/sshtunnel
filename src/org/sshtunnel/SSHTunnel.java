@@ -3,6 +3,7 @@ package org.sshtunnel;
 import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -217,7 +218,9 @@ public class SSHTunnel extends PreferenceActivity implements
 			isAutoSetProxyCheck.setEnabled(false);
 		}
 
-		if (!isWorked(SERVICE_NAME)) {
+		if (!isWorked(SERVICE_NAME) || !isCopied("iptables_g1")
+				|| !isCopied("iptables_n1") || !isCopied("redsocks")
+				|| !isCopied("proxy.sh") || !isCopied("ssh")) {
 			CopyAssets();
 			runCommand("chmod 777 /data/data/org.sshtunnel/iptables_g1");
 			runCommand("chmod 777 /data/data/org.sshtunnel/iptables_n1");
@@ -227,6 +230,11 @@ public class SSHTunnel extends PreferenceActivity implements
 			
 		}
 
+	}
+	
+	public boolean isCopied(String path) {
+		File f = new File("chmod 777 /data/data/org.sshtunnel/" + path);
+		return f.exists();
 	}
 
 	/** Called when the activity is closed. */
