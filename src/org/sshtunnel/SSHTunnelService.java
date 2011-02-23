@@ -362,6 +362,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		} catch (Exception ignore) {
 			// Nothing
 		}
+		
+		onDisconnect();
 
 		connect();
 
