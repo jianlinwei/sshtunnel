@@ -229,8 +229,10 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	public void onDestroy() {
 
 		sm.close();
-		if (monitorThread != null)
+		if (monitorThread != null) {
 			monitorThread.stop();
+			monitorThread = null;
+		}
 
 		if (connected) {
 
@@ -243,8 +245,10 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		onDisconnect();
 
 		try {
-			if (dnsServer != null)
+			if (dnsServer != null) {
 				dnsServer.close();
+				dnsServer = null;
+			}
 		} catch (Exception e) {
 			Log.e(TAG, "DNS Server close unexpected");
 		}
@@ -263,9 +267,12 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		try {
 			if (sshOS != null) {
 				sshOS.close();
+				sshOS = null;
 			}
-			if (sshProcess != null)
+			if (sshProcess != null) {
 				sshProcess.destroy();
+				sshProcess = null;
+			}
 		} catch (Exception e) {
 
 			Log.e(TAG, "close connection error", e);
@@ -307,8 +314,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			ed.putBoolean("isRunning", true);
 			ed.commit();
 			sm = new SSHMonitor();
-			sm.addMonitor(this);
-			sm.addProcess(sshProcess);
+			sm.setMonitor(this);
 			monitorThread = new Thread(sm);
 			monitorThread.start();
 			super.onStart(intent, startId);
@@ -378,6 +384,20 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 						+ df.format(new Date()),
 				getString(R.string.reconnect_success) + " @"
 						+ df.format(new Date()));
+	}
+
+	@Override
+	public void waitFor() {
+		synchronized (this) {
+			try {
+				if (sshProcess != null) {
+					sshProcess.waitFor();
+				}
+			} catch (Exception ignore) {
+				// Nothing
+			}
+		}
+
 	}
 
 }

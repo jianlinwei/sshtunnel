@@ -14,13 +14,7 @@ public class SSHMonitor implements Runnable {
 	private boolean closed = false;
 	private int reconnect = 0;
 
-	private Process process;
-
-	public void addProcess(Process p) {
-		this.process = p;
-	}
-
-	public void addMonitor(ConnectionMonitor cm) {
+	public void setMonitor(ConnectionMonitor cm) {
 		this.cm = cm;
 	}
 
@@ -34,7 +28,7 @@ public class SSHMonitor implements Runnable {
 					reconnect = 0;
 				}
 
-				process.waitFor();
+				cm.waitFor();
 
 				// service not running
 
