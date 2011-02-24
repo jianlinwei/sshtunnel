@@ -80,7 +80,7 @@ public class SSHTunnel extends PreferenceActivity implements
 		}
 		return true;
 	}
-	
+
 	public static boolean runRootCommand(String command) {
 		Process process = null;
 		DataOutputStream os = null;
@@ -236,7 +236,7 @@ public class SSHTunnel extends PreferenceActivity implements
 	}
 
 	/** Called when connect button is clicked. */
-	public void serviceStart() {
+	public boolean serviceStart() {
 
 		if (isWorked(SERVICE_NAME)) {
 			try {
@@ -244,7 +244,7 @@ public class SSHTunnel extends PreferenceActivity implements
 			} catch (Exception e) {
 				// Nothing
 			}
-			return;
+			return false;
 		}
 
 		SharedPreferences settings = PreferenceManager
@@ -252,29 +252,29 @@ public class SSHTunnel extends PreferenceActivity implements
 
 		host = settings.getString("host", "");
 		if (isTextEmpty(host, getString(R.string.host_empty)))
-			return;
+			return false;
 
 		user = settings.getString("user", "");
 		if (isTextEmpty(user, getString(R.string.user_empty)))
-			return;
+			return false;
 
 		password = settings.getString("password", "");
 
 		String portText = settings.getString("port", "");
 		if (isTextEmpty(portText, getString(R.string.port_empty)))
-			return;
+			return false;
 		port = Integer.valueOf(portText);
 
 		String localPortText = settings.getString("localPort", "");
 		if (isTextEmpty(localPortText, getString(R.string.local_port_empty)))
-			return;
+			return false;
 		localPort = Integer.valueOf(localPortText);
 		if (localPort <= 1024)
 			this.showAToast(getString(R.string.port_alert));
 
 		String remotePortText = settings.getString("remotePort", "");
 		if (isTextEmpty(remotePortText, getString(R.string.remote_port_empty)))
-			return;
+			return false;
 		remotePort = Integer.valueOf(remotePortText);
 
 		isAutoConnect = settings.getBoolean("isAutoConnect", false);
@@ -300,7 +300,7 @@ public class SSHTunnel extends PreferenceActivity implements
 			// Nothing
 		}
 
-		return;
+		return true;
 	}
 
 	private void showAToast(String msg) {
@@ -350,7 +350,19 @@ public class SSHTunnel extends PreferenceActivity implements
 		if (preference.getKey() != null
 				&& preference.getKey().equals("isRunning")) {
 
-			serviceStart();
+			if (!serviceStart()) {
+				SharedPreferences settings = PreferenceManager
+						.getDefaultSharedPreferences(this);
+
+				Editor edit = settings.edit();
+
+				edit.putBoolean("isRunning", false);
+
+				edit.commit();
+
+				isRunningCheck.setChecked(false);
+				enableAll();
+			}
 
 		}
 		return super.onPreferenceTreeClick(preferenceScreen, preference);
