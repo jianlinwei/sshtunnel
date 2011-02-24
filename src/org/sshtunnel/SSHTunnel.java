@@ -80,32 +80,6 @@ public class SSHTunnel extends PreferenceActivity implements
 		}
 		return true;
 	}
-	
-	public static boolean runCommand(String command) {
-		Process process = null;
-		DataOutputStream os = null;
-		try {
-			process = Runtime.getRuntime().exec("/system/bin/sh");
-			os = new DataOutputStream(process.getOutputStream());
-			os.writeBytes(command + "\n");
-			os.writeBytes("exit\n");
-			os.flush();
-			process.waitFor();
-		} catch (Exception e) {
-			Log.e(TAG, e.getMessage());
-			return false;
-		} finally {
-			try {
-				if (os != null) {
-					os.close();
-				}
-				process.destroy();
-			} catch (Exception e) {
-				// nothing
-			}
-		}
-		return true;
-	}
 
 	private void CopyAssets() {
 		AssetManager assetManager = getAssets();
@@ -218,21 +192,14 @@ public class SSHTunnel extends PreferenceActivity implements
 			isAutoSetProxyCheck.setEnabled(false);
 		}
 
-		if (!isWorked(SERVICE_NAME) || !isCopied("iptables_g1")
-				|| !isCopied("iptables_n1") || !isCopied("redsocks")
-				|| !isCopied("proxy.sh")) {
+		if (!isWorked(SERVICE_NAME)) {
 			CopyAssets();
+			runRootCommand("chmod 777 /data/data/org.sshtunnel/iptables_g1");
+			runRootCommand("chmod 777 /data/data/org.sshtunnel/iptables_n1");
+			runRootCommand("chmod 777 /data/data/org.sshtunnel/redsocks");
+			runRootCommand("chmod 777 /data/data/org.sshtunnel/proxy.sh");
 		}
-		runCommand("chmod +x /data/data/org.sshtunnel/iptables_g1");
-		runCommand("chmod +x /data/data/org.sshtunnel/iptables_n1");
-		runCommand("chmod +x /data/data/org.sshtunnel/redsocks");
-		runCommand("chmod +x /data/data/org.sshtunnel/proxy.sh");
 
-	}
-
-	public boolean isCopied(String path) {
-		File f = new File("/data/data/org.sshtunnel/" + path);
-		return f.exists();
 	}
 
 	/** Called when the activity is closed. */

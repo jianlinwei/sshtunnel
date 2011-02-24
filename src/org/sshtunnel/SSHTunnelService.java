@@ -46,7 +46,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	private boolean isAutoReconnect = false;
 	private boolean isAutoSetProxy = false;
 	private LocalPortForwarder lpf1 = null;
-//	private LocalPortForwarder lpf2 = null;
+	// private LocalPortForwarder lpf2 = null;
 	private DNSServer dnsServer = null;
 
 	private final static int AUTH_TRIES = 2;
@@ -289,7 +289,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		try {
 			lpf1 = connection.createLocalPortForwarder(localPort, "127.0.0.1",
 					remotePort);
-//			lpf2 = connection.createLocalPortForwarder(5353, "8.8.8.8", 53);
+			// lpf2 = connection.createLocalPortForwarder(5353, "8.8.8.8", 53);
 		} catch (Exception e) {
 			Log.e(TAG, "Could not create local port forward", e);
 			return false;
@@ -306,41 +306,45 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 		if (enablePortForward()) {
 			Log.e(TAG, "Forward Successful");
-			// XXX: Flush iptables first?
-			if (isARMv6()) {
-				String cmd = "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp "
-						+ "--dport 80 -j REDIRECT --to-ports 8123\n"
-						+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp "
-						+ "--dport 443 -j REDIRECT --to-ports 8124\n"
-						+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p udp "
-						+ "--dport 53 -j REDIRECT --to-ports 8153";
-				runRootCommand(cmd);
-			} else {
-				String cmd = "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p tcp "
-						+ "--dport 80 -j REDIRECT --to-ports 8123\n"
-						+ "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p tcp "
-						+ "--dport 443 -j REDIRECT --to-ports 8124\n"
-						+ "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p udp "
-						+ "--dport 53 -j REDIRECT --to-ports 8153";
-				runRootCommand(cmd);
-			}
+			if (isAutoSetProxy) {
+				runRootCommand("/data/data/org.sshtunnel/proxy.sh start "
+						+ localPort);
+				// XXX: Flush iptables first?
+				if (isARMv6()) {
+					String cmd = "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp "
+							+ "--dport 80 -j REDIRECT --to-ports 8123\n"
+							+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp "
+							+ "--dport 443 -j REDIRECT --to-ports 8124\n"
+							+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p udp "
+							+ "--dport 53 -j REDIRECT --to-ports 8153";
+					runRootCommand(cmd);
+				} else {
+					String cmd = "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p tcp "
+							+ "--dport 80 -j REDIRECT --to-ports 8123\n"
+							+ "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p tcp "
+							+ "--dport 443 -j REDIRECT --to-ports 8124\n"
+							+ "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p udp "
+							+ "--dport 53 -j REDIRECT --to-ports 8153";
+					runRootCommand(cmd);
+				}
 
-			if (isARMv6()) {
-				String cmd = "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp "
-						+ "--dport 80 -j REDIRECT --to-ports 8123\n"
-						+ "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp "
-						+ "--dport 443 -j REDIRECT --to-ports 8124\n"
-						+ "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p udp "
-						+ "--dport 53 -j REDIRECT --to-ports 8153";
-				runRootCommand(cmd);
-			} else {
-				String cmd = "/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
-						+ "--dport 80 -j REDIRECT --to-ports 8123\n"
-						+ "/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
-						+ "--dport 443 -j REDIRECT --to-ports 8124\n"
-						+ "/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p udp "
-						+ "--dport 53 -j REDIRECT --to-ports 8153";
-				runRootCommand(cmd);
+				if (isARMv6()) {
+					String cmd = "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp "
+							+ "--dport 80 -j REDIRECT --to-ports 8123\n"
+							+ "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp "
+							+ "--dport 443 -j REDIRECT --to-ports 8124\n"
+							+ "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p udp "
+							+ "--dport 53 -j REDIRECT --to-ports 8153";
+					runRootCommand(cmd);
+				} else {
+					String cmd = "/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
+							+ "--dport 80 -j REDIRECT --to-ports 8123\n"
+							+ "/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
+							+ "--dport 443 -j REDIRECT --to-ports 8124\n"
+							+ "/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p udp "
+							+ "--dport 53 -j REDIRECT --to-ports 8153";
+					runRootCommand(cmd);
+				}
 			}
 
 			// Forward Successful
@@ -370,7 +374,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		isAutoSetProxy = bundle.getBoolean("isAutoSetProxy");
 
 		dnsServer = new DNSServer("DNS Server", 8153, "208.67.222.222", 5353);
-//		dnsServer = new DNSServer("DNS Server", 8153, "127.0.0.1", 5353);
+		// dnsServer = new DNSServer("DNS Server", 8153, "127.0.0.1", 5353);
 		dnsServer.setBasePath("/data/data/org.sshtunnel");
 		new Thread(dnsServer).start();
 
@@ -451,10 +455,10 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 				lpf1.close();
 				lpf1 = null;
 			}
-//			if (lpf2 != null) {
-//				lpf2.close();
-//				lpf2 = null;
-//			}
+			// if (lpf2 != null) {
+			// lpf2.close();
+			// lpf2 = null;
+			// }
 		} catch (Exception ignore) {
 			// Nothing
 		}
@@ -465,23 +469,23 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		}
 
 		if (isAutoSetProxy) {
-            if (isARMv6()) {
-                String cmd = "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp "
-                                + "--dport 80 -j REDIRECT --to-ports 8123\n"
-                                + "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp "
-                                + "--dport 443 -j REDIRECT --to-ports 8124\n"
-                                + "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p udp "
-                                + "--dport 53 -j REDIRECT --to-ports 8153";
-                runRootCommand(cmd);
-        } else {
-                String cmd = "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p tcp "
-                                + "--dport 80 -j REDIRECT --to-ports 8123\n"
-                                + "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p tcp "
-                                + "--dport 443 -j REDIRECT --to-ports 8124\n"
-                                + "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p udp "
-                                + "--dport 53 -j REDIRECT --to-ports 8153";
-                runRootCommand(cmd);
-        }
+			if (isARMv6()) {
+				String cmd = "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp "
+						+ "--dport 80 -j REDIRECT --to-ports 8123\n"
+						+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp "
+						+ "--dport 443 -j REDIRECT --to-ports 8124\n"
+						+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p udp "
+						+ "--dport 53 -j REDIRECT --to-ports 8153";
+				runRootCommand(cmd);
+			} else {
+				String cmd = "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p tcp "
+						+ "--dport 80 -j REDIRECT --to-ports 8123\n"
+						+ "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p tcp "
+						+ "--dport 443 -j REDIRECT --to-ports 8124\n"
+						+ "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p udp "
+						+ "--dport 53 -j REDIRECT --to-ports 8153";
+				runRootCommand(cmd);
+			}
 
 			runRootCommand("/data/data/org.sshtunnel/proxy.sh stop");
 		}

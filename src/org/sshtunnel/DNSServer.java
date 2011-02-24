@@ -164,7 +164,7 @@ public class DNSServer implements WrapServer {
 
 		if (dnsHost != null && !dnsHost.equals(""))
 			target = dnsHost + ":" + dnsPort;
-
+		
 		try {
 			srvSocket = new DatagramSocket(srvPort,
 					InetAddress.getByName("127.0.0.1"));
@@ -476,7 +476,7 @@ public class DNSServer implements WrapServer {
 	}
 
 	public void run() {
-
+		
 		initOrgCache();
 		
 		loadCache();
