@@ -1,6 +1,7 @@
 package org.sshtunnel;
 
 import java.io.DataOutputStream;
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -59,6 +60,32 @@ public class SSHTunnel extends PreferenceActivity implements
 		DataOutputStream os = null;
 		try {
 			process = Runtime.getRuntime().exec("su");
+			os = new DataOutputStream(process.getOutputStream());
+			os.writeBytes(command + "\n");
+			os.writeBytes("exit\n");
+			os.flush();
+			process.waitFor();
+		} catch (Exception e) {
+			Log.e(TAG, e.getMessage());
+			return false;
+		} finally {
+			try {
+				if (os != null) {
+					os.close();
+				}
+				process.destroy();
+			} catch (Exception e) {
+				// nothing
+			}
+		}
+		return true;
+	}
+	
+	public static boolean runCommand(String command) {
+		Process process = null;
+		DataOutputStream os = null;
+		try {
+			process = Runtime.getRuntime().exec("/system/bin/sh");
 			os = new DataOutputStream(process.getOutputStream());
 			os.writeBytes(command + "\n");
 			os.writeBytes("exit\n");
@@ -159,18 +186,18 @@ public class SSHTunnel extends PreferenceActivity implements
 		isAutoReconnectCheck = (CheckBoxPreference) findPreference("isAutoReconnect");
 
 		SharedPreferences settings = PreferenceManager
-		.getDefaultSharedPreferences(this);
-		
+				.getDefaultSharedPreferences(this);
+
 		Editor edit = settings.edit();
-		
+
 		if (this.isWorked(SERVICE_NAME)) {
 			edit.putBoolean("isRunning", true);
 		} else {
 			edit.putBoolean("isRunning", false);
 		}
-		
+
 		edit.commit();
-		
+
 		if (settings.getBoolean("isRunning", false)) {
 			isRunningCheck.setChecked(true);
 			disableAll();
@@ -191,13 +218,22 @@ public class SSHTunnel extends PreferenceActivity implements
 			isAutoSetProxyCheck.setEnabled(false);
 		}
 
-		if (!isWorked(SERVICE_NAME)) {
+		if (!isWorked(SERVICE_NAME) || !isCopied("iptables_g1")
+				|| !isCopied("iptables_n1") || !isCopied("redsocks")
+				|| !isCopied("proxy.sh")) {
 			CopyAssets();
-			runRootCommand("chmod 777 /data/data/org.sshtunnel/iptables_g1");
-			runRootCommand("chmod 777 /data/data/org.sshtunnel/iptables_n1");
-			runRootCommand("chmod 777 /data/data/org.sshtunnel/redsocks");
-			runRootCommand("chmod 777 /data/data/org.sshtunnel/proxy.sh");
+			runCommand("chmod 777 /data/data/org.sshtunnel/iptables_g1");
+			runCommand("chmod 777 /data/data/org.sshtunnel/iptables_n1");
+			runCommand("chmod 777 /data/data/org.sshtunnel/redsocks");
+			runCommand("chmod 777 /data/data/org.sshtunnel/proxy.sh");
+
 		}
+
+	}
+
+	public boolean isCopied(String path) {
+		File f = new File("/data/data/org.sshtunnel/" + path);
+		return f.exists();
 	}
 
 	/** Called when the activity is closed. */
@@ -332,18 +368,18 @@ public class SSHTunnel extends PreferenceActivity implements
 	protected void onResume() {
 		super.onResume();
 		SharedPreferences settings = PreferenceManager
-		.getDefaultSharedPreferences(this);
-		
+				.getDefaultSharedPreferences(this);
+
 		Editor edit = settings.edit();
-		
+
 		if (this.isWorked(SERVICE_NAME)) {
 			edit.putBoolean("isRunning", true);
 		} else {
 			edit.putBoolean("isRunning", false);
 		}
-		
+
 		edit.commit();
-		
+
 		if (settings.getBoolean("isRunning", false)) {
 			isRunningCheck.setChecked(true);
 			disableAll();
