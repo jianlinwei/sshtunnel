@@ -277,7 +277,10 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	public void onDestroy() {
 
 		synchronized (this) {
-			sm.close();
+			if (sm != null) {
+				sm.close();
+				sm = null;
+			}
 
 			if (connected) {
 
