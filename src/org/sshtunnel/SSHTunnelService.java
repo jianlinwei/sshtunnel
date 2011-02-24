@@ -223,6 +223,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			Log.e(TAG, "cannot resolve the host name");
 			return false;
 		}
+		
+		Log.d(TAG, "Host IP: " + hostIP);
 
 		dnsServer = new DNSServer("DNS Server", 8153, "208.67.222.222", 5353);
 		dnsServer.setBasePath("/data/data/org.sshtunnel");
