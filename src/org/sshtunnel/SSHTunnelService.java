@@ -3,7 +3,6 @@ package org.sshtunnel;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.FileReader;
-import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
@@ -38,7 +37,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	private DataOutputStream sshOS = null;
 
 	private String host;
-	private String hostIP = "127.0.0.1";
 	private int port;
 	private int localPort;
 	private int remotePort;
@@ -119,7 +117,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			String cmd = "/data/data/org.sshtunnel/ssh -N -T -y -L "
 					+ localPort + ":" + "127.0.0.1" + ":" + remotePort + " -L "
 					+ "5353:8.8.8.8:53 "
-					+ user + "@" + hostIP + "/" + port;
+					+ user + "@" + host + "/" + port;
 			Log.e(TAG, cmd);
 
 			sshProcess = Runtime.getRuntime().exec(cmd);
@@ -151,9 +149,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 				String cmd = "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp "
 						+ "--dport 80 -j REDIRECT --to-ports 8123\n"
 						+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp "
-						+ "-d ! "
-						+ hostIP
-						+ " "
 						+ "--dport 443 -j REDIRECT --to-ports 8124\n"
 						+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p udp "
 						+ "--dport 53 -j REDIRECT --to-ports 8153";
@@ -162,9 +157,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 				String cmd = "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p tcp "
 						+ "--dport 80 -j REDIRECT --to-ports 8123\n"
 						+ "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p tcp "
-						+ "-d ! "
-						+ hostIP
-						+ " "
 						+ "--dport 443 -j REDIRECT --to-ports 8124\n"
 						+ "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p udp "
 						+ "--dport 53 -j REDIRECT --to-ports 8153";
@@ -175,9 +167,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 				String cmd = "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp "
 						+ "--dport 80 -j REDIRECT --to-ports 8123\n"
 						+ "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp "
-						+ "-d ! "
-						+ hostIP
-						+ " "
 						+ "--dport 443 -j REDIRECT --to-ports 8124\n"
 						+ "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p udp "
 						+ "--dport 53 -j REDIRECT --to-ports 8153";
@@ -186,9 +175,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 				String cmd = "/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
 						+ "--dport 80 -j REDIRECT --to-ports 8123\n"
 						+ "/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
-						+ "-d ! "
-						+ hostIP
-						+ " "
 						+ "--dport 443 -j REDIRECT --to-ports 8124\n"
 						+ "/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p udp "
 						+ "--dport 53 -j REDIRECT --to-ports 8153";
@@ -214,19 +200,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		localPort = bundle.getInt("localPort");
 		remotePort = bundle.getInt("remotePort");
 		isAutoSetProxy = bundle.getBoolean("isAutoSetProxy");
-		try {
-			InetAddress ia;
-			ia = InetAddress.getByName(host);
-			String ip = ia.getHostAddress();
-			if (ip != null && !ip.equals(""))
-				hostIP = ip;
-		} catch (UnknownHostException e) {
-			Log.e(TAG, "cannot resolve the host name");
-			return false;
-		}
 		
-		Log.d(TAG, "Host IP: " + hostIP);
-
 //		dnsServer = new DNSServer("DNS Server", 8153, "208.67.222.222", 5353);
 		dnsServer = new DNSServer("DNS Server", 8153, "127.0.0.1", 5353);
 		dnsServer.setBasePath("/data/data/org.sshtunnel");
@@ -329,9 +303,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 				String cmd = "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp "
 						+ "--dport 80 -j REDIRECT --to-ports 8123\n"
 						+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp "
-						+ "-d ! "
-						+ hostIP
-						+ " "
 						+ "--dport 443 -j REDIRECT --to-ports 8124\n"
 						+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p udp "
 						+ "--dport 53 -j REDIRECT --to-ports 8153";
@@ -340,9 +311,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 				String cmd = "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p tcp "
 						+ "--dport 80 -j REDIRECT --to-ports 8123\n"
 						+ "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p tcp "
-						+ "-d ! "
-						+ hostIP
-						+ " "
 						+ "--dport 443 -j REDIRECT --to-ports 8124\n"
 						+ "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p udp "
 						+ "--dport 53 -j REDIRECT --to-ports 8153";
