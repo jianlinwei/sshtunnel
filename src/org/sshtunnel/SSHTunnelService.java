@@ -44,7 +44,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	private boolean isAutoReconnect = false;
 	private boolean isAutoSetProxy = false;
 	private LocalPortForwarder lpf1 = null;
-	// private LocalPortForwarder lpf2 = null;
+	private LocalPortForwarder lpf2 = null;
 	private DNSServer dnsServer = null;
 
 	private final static int AUTH_TRIES = 2;
@@ -287,7 +287,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		try {
 			lpf1 = connection.createLocalPortForwarder(localPort, "127.0.0.1",
 					remotePort);
-			// lpf2 = connection.createLocalPortForwarder(8253, "8.8.8.8", 53);
+			lpf2 = connection.createLocalPortForwarder(5353, "8.8.8.8", 53);
 		} catch (Exception e) {
 			Log.e(TAG, "Could not create local port forward", e);
 			return false;
@@ -351,7 +351,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		isAutoReconnect = bundle.getBoolean("isAutoReconnect");
 		isAutoSetProxy = bundle.getBoolean("isAutoSetProxy");
 
-		dnsServer = new DNSServer("DNS Server", 8153, "208.67.222.222", 5353);
+//		dnsServer = new DNSServer("DNS Server", 8153, "208.67.222.222", 5353);
+		dnsServer = new DNSServer("DNS Server", 8153, "127.0.0.1", 5353);
 		dnsServer.setBasePath("/data/data/org.sshtunnel");
 		new Thread(dnsServer).start();
 
@@ -432,10 +433,10 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 				lpf1.close();
 				lpf1 = null;
 			}
-			// if (lpf2 != null) {
-			// lpf2.close();
-			// lpf2 = null;
-			// }
+			if (lpf2 != null) {
+				lpf2.close();
+				lpf2 = null;
+			}
 		} catch (Exception ignore) {
 			// Nothing
 		}
