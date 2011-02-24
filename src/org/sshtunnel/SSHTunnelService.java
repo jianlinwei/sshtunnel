@@ -50,8 +50,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	// Flag indicating if this is an ARMv6 device (-1: unknown, 0: no, 1: yes)
 	private static int isARMv6 = -1;
 
-	private Thread monitorThread = null;
-
 	/**
 	 * Check if this is an ARMv6 device
 	 * 
@@ -250,10 +248,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	public void onDestroy() {
 
 		sm.close();
-		if (monitorThread != null) {
-			monitorThread.stop();
-			monitorThread = null;
-		}
 
 		if (connected) {
 
@@ -338,8 +332,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			ed.commit();
 			sm = new SSHMonitor();
 			sm.setMonitor(this);
-			monitorThread = new Thread(sm);
-			monitorThread.start();
+			new Thread(sm).start();
 			super.onStart(intent, startId);
 
 		} else {
