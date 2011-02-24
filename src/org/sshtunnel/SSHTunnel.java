@@ -222,13 +222,13 @@ public class SSHTunnel extends PreferenceActivity implements
 				|| !isCopied("iptables_n1") || !isCopied("redsocks")
 				|| !isCopied("proxy.sh") || !isCopied("ssh")) {
 			CopyAssets();
-			runCommand("chmod 777 /data/data/org.sshtunnel/iptables_g1");
-			runCommand("chmod 777 /data/data/org.sshtunnel/iptables_n1");
-			runCommand("chmod 777 /data/data/org.sshtunnel/redsocks");
-			runCommand("chmod 777 /data/data/org.sshtunnel/proxy.sh");
-			runCommand("chmod 777 /data/data/org.sshtunnel/ssh");
-			
 		}
+		
+		runCommand("chmod 777 /data/data/org.sshtunnel/iptables_g1");
+		runCommand("chmod 777 /data/data/org.sshtunnel/iptables_n1");
+		runCommand("chmod 777 /data/data/org.sshtunnel/redsocks");
+		runCommand("chmod 777 /data/data/org.sshtunnel/proxy.sh");
+		runCommand("chmod 777 /data/data/org.sshtunnel/ssh");
 
 	}
 	
