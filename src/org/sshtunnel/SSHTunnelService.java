@@ -141,41 +141,41 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		if (isAutoSetProxy) {
 			runRootCommand("/data/data/org.sshtunnel/proxy.sh start "
 					+ localPort);
-			
-			//XXX: Flush iptables first?
+
+			// XXX: Flush iptables first?
 			if (isARMv6()) {
 				String cmd = "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp "
-					+ "--dport 80 -j REDIRECT --to-ports 8123\n"
-					+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp "
-					+ "--dport 80 -j REDIRECT --to-ports 8123\n"
-					+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p udp "
-					+ "--dport 53 -j REDIRECT --to-ports 8153";
+						+ "--dport 80 -j REDIRECT --to-ports 8123\n"
+						+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp "
+						+ "--dport 80 -j REDIRECT --to-ports 8123\n"
+						+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p udp "
+						+ "--dport 53 -j REDIRECT --to-ports 8153";
 				runRootCommand(cmd);
 			} else {
 				String cmd = "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p tcp "
-					+ "--dport 80 -j REDIRECT --to-ports 8123\n"
-					+ "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p tcp "
-					+ "--dport 80 -j REDIRECT --to-ports 8123\n"
-					+ "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p udp "
-					+ "--dport 53 -j REDIRECT --to-ports 8153";
+						+ "--dport 80 -j REDIRECT --to-ports 8123\n"
+						+ "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p tcp "
+						+ "--dport 80 -j REDIRECT --to-ports 8123\n"
+						+ "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p udp "
+						+ "--dport 53 -j REDIRECT --to-ports 8153";
 				runRootCommand(cmd);
 			}
 
 			if (isARMv6()) {
 				String cmd = "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp "
-					+ "--dport 80 -j REDIRECT --to-ports 8123\n"
-					+ "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp "
-					+ "--dport 80 -j REDIRECT --to-ports 8123\n"
-					+ "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p udp "
-					+ "--dport 53 -j REDIRECT --to-ports 8153";
+						+ "--dport 80 -j REDIRECT --to-ports 8123\n"
+						+ "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp "
+						+ "--dport 80 -j REDIRECT --to-ports 8123\n"
+						+ "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p udp "
+						+ "--dport 53 -j REDIRECT --to-ports 8153";
 				runRootCommand(cmd);
 			} else {
 				String cmd = "/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
-					+ "--dport 80 -j REDIRECT --to-ports 8123\n"
-					+ "/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
-					+ "--dport 80 -j REDIRECT --to-ports 8123\n"
-					+ "/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p udp "
-					+ "--dport 53 -j REDIRECT --to-ports 8153";
+						+ "--dport 80 -j REDIRECT --to-ports 8123\n"
+						+ "/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
+						+ "--dport 80 -j REDIRECT --to-ports 8123\n"
+						+ "/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p udp "
+						+ "--dport 53 -j REDIRECT --to-ports 8153";
 				runRootCommand(cmd);
 			}
 		}
@@ -247,17 +247,19 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	@Override
 	public void onDestroy() {
 
-		sm.close();
+		synchronized (this) {
+			sm.close();
 
-		if (connected) {
+			if (connected) {
 
-			notifyAlert(getString(R.string.forward_stop),
-					getString(R.string.service_stopped),
-					Notification.FLAG_AUTO_CANCEL);
+				notifyAlert(getString(R.string.forward_stop),
+						getString(R.string.service_stopped),
+						Notification.FLAG_AUTO_CANCEL);
+			}
+
+			// Make sure the connection is closed, important here
+			onDisconnect();
 		}
-
-		// Make sure the connection is closed, important here
-		onDisconnect();
 
 		try {
 			if (dnsServer != null) {
@@ -296,19 +298,19 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		if (isAutoSetProxy) {
 			if (isARMv6()) {
 				String cmd = "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp "
-					+ "--dport 80 -j REDIRECT --to-ports 8123\n"
-					+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp "
-					+ "--dport 80 -j REDIRECT --to-ports 8123\n"
-					+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p udp "
-					+ "--dport 53 -j REDIRECT --to-ports 8153";
+						+ "--dport 80 -j REDIRECT --to-ports 8123\n"
+						+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp "
+						+ "--dport 80 -j REDIRECT --to-ports 8123\n"
+						+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p udp "
+						+ "--dport 53 -j REDIRECT --to-ports 8153";
 				runRootCommand(cmd);
 			} else {
 				String cmd = "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p tcp "
-					+ "--dport 80 -j REDIRECT --to-ports 8123\n"
-					+ "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p tcp "
-					+ "--dport 80 -j REDIRECT --to-ports 8123\n"
-					+ "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p udp "
-					+ "--dport 53 -j REDIRECT --to-ports 8153";
+						+ "--dport 80 -j REDIRECT --to-ports 8123\n"
+						+ "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p tcp "
+						+ "--dport 80 -j REDIRECT --to-ports 8123\n"
+						+ "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p udp "
+						+ "--dport 53 -j REDIRECT --to-ports 8153";
 				runRootCommand(cmd);
 			}
 
@@ -359,7 +361,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	}
 
 	@Override
-	public synchronized void connectionLost(boolean isReconnect) {
+	public void connectionLost(boolean isReconnect) {
 
 		SimpleDateFormat df = new SimpleDateFormat("HH:mm:ss");
 
@@ -382,11 +384,13 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			// Nothing
 		}
 
-		onDisconnect();
+		synchronized (this) {
+			onDisconnect();
 
-		connect();
+			connect();
 
-		connected = true;
+			connected = true;
+		}
 
 		return;
 
@@ -404,14 +408,12 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 	@Override
 	public void waitFor() {
-		synchronized (this) {
-			try {
-				if (sshProcess != null) {
-					sshProcess.waitFor();
-				}
-			} catch (Exception ignore) {
-				// Nothing
+		try {
+			if (sshProcess != null) {
+				sshProcess.waitFor();
 			}
+		} catch (Exception ignore) {
+			// Nothing
 		}
 
 	}
