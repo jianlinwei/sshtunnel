@@ -6,7 +6,11 @@ PATH=$DIR:$PATH
 
 case $1 in
  start)
-
+  
+  #kill process first
+  kill -9 `cat $DIR/redsocks.pid`
+  rm $DIR/redsocks.pid
+  
 echo "
 base {
  log_debug = off;
