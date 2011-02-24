@@ -277,7 +277,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		super.onDestroy();
 	}
 
-	private synchronized void onDisconnect() {
+	private void onDisconnect() {
 
 		connected = false;
 
@@ -363,6 +363,9 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	@Override
 	public void connectionLost(boolean isReconnect) {
 
+		if (!connected)
+			return;
+		
 		SimpleDateFormat df = new SimpleDateFormat("HH:mm:ss");
 
 		if (!isOnline() || !isReconnect) {
