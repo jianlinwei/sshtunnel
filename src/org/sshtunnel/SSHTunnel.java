@@ -55,6 +55,32 @@ public class SSHTunnel extends PreferenceActivity implements
 	private EditTextPreference remotePortText;
 	private CheckBoxPreference isRunningCheck;
 
+	public static boolean runCommand(String command) {
+		Process process = null;
+		DataOutputStream os = null;
+		try {
+			process = Runtime.getRuntime().exec("/system/bin/sh");
+			os = new DataOutputStream(process.getOutputStream());
+			os.writeBytes(command + "\n");
+			os.writeBytes("exit\n");
+			os.flush();
+			process.waitFor();
+		} catch (Exception e) {
+			Log.e(TAG, e.getMessage());
+			return false;
+		} finally {
+			try {
+				if (os != null) {
+					os.close();
+				}
+				process.destroy();
+			} catch (Exception e) {
+				// nothing
+			}
+		}
+		return true;
+	}
+	
 	public static boolean runRootCommand(String command) {
 		Process process = null;
 		DataOutputStream os = null;
@@ -194,10 +220,10 @@ public class SSHTunnel extends PreferenceActivity implements
 
 		if (!isWorked(SERVICE_NAME)) {
 			CopyAssets();
-			runRootCommand("chmod 777 /data/data/org.sshtunnel/iptables_g1");
-			runRootCommand("chmod 777 /data/data/org.sshtunnel/iptables_n1");
-			runRootCommand("chmod 777 /data/data/org.sshtunnel/redsocks");
-			runRootCommand("chmod 777 /data/data/org.sshtunnel/proxy.sh");
+			runCommand("chmod 777 /data/data/org.sshtunnel/iptables_g1");
+			runCommand("chmod 777 /data/data/org.sshtunnel/iptables_n1");
+			runCommand("chmod 777 /data/data/org.sshtunnel/redsocks");
+			runCommand("chmod 777 /data/data/org.sshtunnel/proxy.sh");
 		}
 
 	}
