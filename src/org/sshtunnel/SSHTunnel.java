@@ -81,7 +81,7 @@ public class SSHTunnel extends PreferenceActivity implements
 		}
 		return true;
 	}
-	
+
 	public static boolean runCommand(String command) {
 		Process process = null;
 		DataOutputStream os = null;
@@ -221,17 +221,18 @@ public class SSHTunnel extends PreferenceActivity implements
 		if (!isWorked(SERVICE_NAME) || !isCopied("iptables_g1")
 				|| !isCopied("iptables_n1") || !isCopied("redsocks")
 				|| !isCopied("proxy.sh") || !isCopied("ssh")) {
+			
 			CopyAssets();
+
+			runCommand("chmod 777 /data/data/org.sshtunnel/iptables_g1\n + "
+					+ "chmod 777 /data/data/org.sshtunnel/iptables_n1\n"
+					+ "chmod 777 /data/data/org.sshtunnel/redsocks\n"
+					+ "chmod 777 /data/data/org.sshtunnel/proxy.sh\n"
+					+ "chmod 777 /data/data/org.sshtunnel/ssh");
 		}
-		
-		runCommand("chmod 777 /data/data/org.sshtunnel/iptables_g1");
-		runCommand("chmod 777 /data/data/org.sshtunnel/iptables_n1");
-		runCommand("chmod 777 /data/data/org.sshtunnel/redsocks");
-		runCommand("chmod 777 /data/data/org.sshtunnel/proxy.sh");
-		runCommand("chmod 777 /data/data/org.sshtunnel/ssh");
 
 	}
-	
+
 	public boolean isCopied(String path) {
 		File f = new File("/data/data/org.sshtunnel/" + path);
 		return f.exists();
