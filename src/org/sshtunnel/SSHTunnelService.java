@@ -143,21 +143,42 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		if (isAutoSetProxy) {
 			runRootCommand("/data/data/org.sshtunnel/proxy.sh start "
 					+ localPort);
+			
+			//XXX: Flush iptables first?
+			if (isARMv6()) {
+				String cmd = "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp "
+					+ "--dport 80 -j REDIRECT --to-ports 8123\n"
+					+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp "
+					+ "--dport 80 -j REDIRECT --to-ports 8123\n"
+					+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p udp "
+					+ "--dport 53 -j REDIRECT --to-ports 8153";
+				runRootCommand(cmd);
+			} else {
+				String cmd = "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p tcp "
+					+ "--dport 80 -j REDIRECT --to-ports 8123\n"
+					+ "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p tcp "
+					+ "--dport 80 -j REDIRECT --to-ports 8123\n"
+					+ "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p udp "
+					+ "--dport 53 -j REDIRECT --to-ports 8153";
+				runRootCommand(cmd);
+			}
 
 			if (isARMv6()) {
-				runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp "
-						+ "--dport 80 -j REDIRECT --to-ports 8123");
-				runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp "
-						+ "--dport 443 -j REDIRECT --to-ports 8124");
-				runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p udp "
-						+ "--dport 53 -j REDIRECT --to-ports 8153");
+				String cmd = "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp "
+					+ "--dport 80 -j REDIRECT --to-ports 8123\n"
+					+ "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp "
+					+ "--dport 80 -j REDIRECT --to-ports 8123\n"
+					+ "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p udp "
+					+ "--dport 53 -j REDIRECT --to-ports 8153";
+				runRootCommand(cmd);
 			} else {
-				runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
-						+ "--dport 80 -j REDIRECT --to-ports 8123");
-				runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
-						+ "--dport 443 -j REDIRECT --to-ports 8124");
-				runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p udp "
-						+ "--dport 53 -j REDIRECT --to-ports 8153");
+				String cmd = "/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
+					+ "--dport 80 -j REDIRECT --to-ports 8123\n"
+					+ "/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
+					+ "--dport 80 -j REDIRECT --to-ports 8123\n"
+					+ "/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p udp "
+					+ "--dport 53 -j REDIRECT --to-ports 8153";
+				runRootCommand(cmd);
 			}
 		}
 
@@ -280,19 +301,21 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 		if (isAutoSetProxy) {
 			if (isARMv6()) {
-				runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp "
-						+ "--dport 80 -j REDIRECT --to-ports 8123");
-				runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp "
-						+ "--dport 443 -j REDIRECT --to-ports 8124");
-				runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p udp "
-						+ "--dport 53 -j REDIRECT --to-ports 8153");
+				String cmd = "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp "
+					+ "--dport 80 -j REDIRECT --to-ports 8123\n"
+					+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp "
+					+ "--dport 80 -j REDIRECT --to-ports 8123\n"
+					+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p udp "
+					+ "--dport 53 -j REDIRECT --to-ports 8153";
+				runRootCommand(cmd);
 			} else {
-				runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p tcp "
-						+ "--dport 80 -j REDIRECT --to-ports 8123");
-				runRootCommand("/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p tcp "
-						+ "--dport 443 -j REDIRECT --to-ports 8124");
-				runRootCommand("/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p udp "
-						+ "--dport 53 -j REDIRECT --to-ports 8153");
+				String cmd = "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p tcp "
+					+ "--dport 80 -j REDIRECT --to-ports 8123\n"
+					+ "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p tcp "
+					+ "--dport 80 -j REDIRECT --to-ports 8123\n"
+					+ "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p udp "
+					+ "--dport 53 -j REDIRECT --to-ports 8153";
+				runRootCommand(cmd);
 			}
 
 			runRootCommand("/data/data/org.sshtunnel/proxy.sh stop");
