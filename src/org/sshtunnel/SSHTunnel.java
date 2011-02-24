@@ -233,7 +233,7 @@ public class SSHTunnel extends PreferenceActivity implements
 	}
 	
 	public boolean isCopied(String path) {
-		File f = new File("chmod 777 /data/data/org.sshtunnel/" + path);
+		File f = new File("/data/data/org.sshtunnel/" + path);
 		return f.exists();
 	}
 
