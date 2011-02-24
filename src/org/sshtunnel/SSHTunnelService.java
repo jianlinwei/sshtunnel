@@ -117,8 +117,9 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		try {
 
 			String cmd = "/data/data/org.sshtunnel/ssh -N -T -y -L "
-					+ localPort + ":" + "127.0.0.1" + ":" + remotePort + " "
-					+ user + "@" + host + "/" + port;
+					+ localPort + ":" + "127.0.0.1" + ":" + remotePort + " -L "
+					+ "5353:8.8.8.8:53 "
+					+ user + "@" + hostIP + "/" + port;
 			Log.e(TAG, cmd);
 
 			sshProcess = Runtime.getRuntime().exec(cmd);
@@ -226,7 +227,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		
 		Log.d(TAG, "Host IP: " + hostIP);
 
-		dnsServer = new DNSServer("DNS Server", 8153, "208.67.222.222", 5353);
+//		dnsServer = new DNSServer("DNS Server", 8153, "208.67.222.222", 5353);
+		dnsServer = new DNSServer("DNS Server", 8153, "127.0.0.1", 5353);
 		dnsServer.setBasePath("/data/data/org.sshtunnel");
 		new Thread(dnsServer).start();
 
