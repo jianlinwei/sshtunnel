@@ -260,22 +260,28 @@ public class SSHTunnel extends PreferenceActivity implements
 
 		password = settings.getString("password", "");
 
-		String portText = settings.getString("port", "");
-		if (isTextEmpty(portText, getString(R.string.port_empty)))
-			return false;
-		port = Integer.valueOf(portText);
+		try {
+			String portText = settings.getString("port", "");
+			if (isTextEmpty(portText, getString(R.string.port_empty)))
+				return false;
+			port = Integer.valueOf(portText);
 
-		String localPortText = settings.getString("localPort", "");
-		if (isTextEmpty(localPortText, getString(R.string.local_port_empty)))
-			return false;
-		localPort = Integer.valueOf(localPortText);
-		if (localPort <= 1024)
-			this.showAToast(getString(R.string.port_alert));
+			String localPortText = settings.getString("localPort", "");
+			if (isTextEmpty(localPortText, getString(R.string.local_port_empty)))
+				return false;
+			localPort = Integer.valueOf(localPortText);
+			if (localPort <= 1024)
+				this.showAToast(getString(R.string.port_alert));
 
-		String remotePortText = settings.getString("remotePort", "");
-		if (isTextEmpty(remotePortText, getString(R.string.remote_port_empty)))
+			String remotePortText = settings.getString("remotePort", "");
+			if (isTextEmpty(remotePortText, getString(R.string.remote_port_empty)))
+				return false;
+			remotePort = Integer.valueOf(remotePortText);
+		} catch (NumberFormatException e) {
+			showAToast(getString(R.string.number_alert));
+			Log.e(TAG, "wrong number", e);
 			return false;
-		remotePort = Integer.valueOf(remotePortText);
+		}
 
 		isAutoConnect = settings.getBoolean("isAutoConnect", false);
 		isAutoSetProxy = settings.getBoolean("isAutoSetProxy", false);

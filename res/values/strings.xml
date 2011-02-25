@@ -48,4 +48,5 @@
 <string name="password_summary">SSH Password</string>
 <string name="host_summary">The host name of SSH service</string>
 <string name="auto_reconnect_summary">Try to reconnect the SSH service, when connection closed unexpected</string>
+<string name="number_alert">Please check your port number</string>
 </resources>

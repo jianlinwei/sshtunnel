@@ -48,4 +48,5 @@
 <string name="host_summary">SSH主机的地址</string>
 <string name="auto_reconnect_summary">网络中断后尝试自动恢复连接</string>
 <string name="user_empty">用户名不能为空</string>
+<string name="number_alert">请检查端口号设置，必须为数字</string>
 </resources>
