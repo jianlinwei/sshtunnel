@@ -221,7 +221,7 @@ public class SSHTunnel extends PreferenceActivity implements
 		if (!isWorked(SERVICE_NAME) || !isCopied("iptables_g1")
 				|| !isCopied("iptables_n1") || !isCopied("redsocks")
 				|| !isCopied("proxy.sh") || !isCopied("ssh")) {
-			
+
 			CopyAssets();
 
 			runCommand("chmod 777 /data/data/org.sshtunnel/iptables_g1\n + "
@@ -256,41 +256,45 @@ public class SSHTunnel extends PreferenceActivity implements
 			}
 			return false;
 		}
+		try {
+			SharedPreferences settings = PreferenceManager
+					.getDefaultSharedPreferences(this);
 
-		SharedPreferences settings = PreferenceManager
-				.getDefaultSharedPreferences(this);
+			host = settings.getString("host", "");
+			if (isTextEmpty(host, getString(R.string.host_empty)))
+				return false;
 
-		host = settings.getString("host", "");
-		if (isTextEmpty(host, getString(R.string.host_empty)))
-			return false;
+			user = settings.getString("user", "");
+			if (isTextEmpty(user, getString(R.string.user_empty)))
+				return false;
 
-		user = settings.getString("user", "");
-		if (isTextEmpty(user, getString(R.string.user_empty)))
-			return false;
+			password = settings.getString("password", "");
 
-		password = settings.getString("password", "");
+			String portText = settings.getString("port", "");
+			if (isTextEmpty(portText, getString(R.string.port_empty)))
+				return false;
+			port = Integer.valueOf(portText);
 
-		String portText = settings.getString("port", "");
-		if (isTextEmpty(portText, getString(R.string.port_empty)))
-			return false;
-		port = Integer.valueOf(portText);
+			String localPortText = settings.getString("localPort", "");
+			if (isTextEmpty(localPortText, getString(R.string.local_port_empty)))
+				return false;
+			localPort = Integer.valueOf(localPortText);
+			if (localPort <= 1024) {
+				this.showAToast(getString(R.string.port_alert));
+				return false;
+			}
 
-		String localPortText = settings.getString("localPort", "");
-		if (isTextEmpty(localPortText, getString(R.string.local_port_empty)))
-			return false;
-		localPort = Integer.valueOf(localPortText);
-		if (localPort <= 1024) {
-			this.showAToast(getString(R.string.port_alert));
+			String remotePortText = settings.getString("remotePort", "");
+			if (isTextEmpty(remotePortText,
+					getString(R.string.remote_port_empty)))
+				return false;
+			remotePort = Integer.valueOf(remotePortText);
+
+			isAutoConnect = settings.getBoolean("isAutoConnect", false);
+			isAutoSetProxy = settings.getBoolean("isAutoSetProxy", false);
+		} catch (Exception e) {
 			return false;
 		}
-
-		String remotePortText = settings.getString("remotePort", "");
-		if (isTextEmpty(remotePortText, getString(R.string.remote_port_empty)))
-			return false;
-		remotePort = Integer.valueOf(remotePortText);
-
-		isAutoConnect = settings.getBoolean("isAutoConnect", false);
-		isAutoSetProxy = settings.getBoolean("isAutoSetProxy", false);
 
 		try {
 
