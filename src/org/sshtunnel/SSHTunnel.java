@@ -26,6 +26,8 @@ import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 import android.preference.PreferenceScreen;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 
 public class SSHTunnel extends PreferenceActivity implements
 		OnSharedPreferenceChangeListener {
@@ -479,6 +481,51 @@ public class SSHTunnel extends PreferenceActivity implements
 				passwordText.setSummary("*********");
 			else
 				passwordText.setSummary(getString(R.string.password_summary));
+	}
+	
+	// 点击Menu时，系统调用当前Activity的onCreateOptionsMenu方法，并传一个实现了一个Menu接口的menu对象供你使用
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		/*
+		 * add()方法的四个参数，依次是： 1、组别，如果不分组的话就写Menu.NONE,
+		 * 2、Id，这个很重要，Android根据这个Id来确定不同的菜单 3、顺序，那个菜单现在在前面由这个参数的大小决定
+		 * 4、文本，菜单的显示文本
+		 */
+		menu.add(Menu.NONE, Menu.FIRST + 1, 1, getString(R.string.recovery))
+				.setIcon(android.R.drawable.ic_menu_delete);
+		// return true才会起作用
+		return true;
+
+	}
+
+	// 菜单项被选择事件
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		switch (item.getItemId()) {
+		case Menu.FIRST + 1:
+			recovery();
+			break;
+		}
+
+		return true;
+	}
+
+	private void recovery() {
+		try {
+			stopService(new Intent(this, SSHTunnelService.class));
+		} catch (Exception e) {
+			// Nothing
+		}
+
+		if (SSHTunnelService.isARMv6()) {
+			runRootCommand(SSHTunnelService.BASE
+					+ "iptables_g1 -t nat -F OUTPUT");
+		} else {
+			runRootCommand(SSHTunnelService.BASE
+					+ "iptables_n1 -t nat -F OUTPUT");
+		}
+
+		runRootCommand(SSHTunnelService.BASE + "proxy.sh stop");
 	}
 
 }

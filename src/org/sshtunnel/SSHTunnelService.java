@@ -4,6 +4,8 @@ import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
@@ -57,14 +59,83 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	private boolean connected = false;
 
 	// Flag indicating if this is an ARMv6 device (-1: unknown, 0: no, 1: yes)
-	private static int isARMv6 = -1;
+	public static int isARMv6 = -1;
+	
+	public final static String BASE = "/data/data/org.sshtunnel/";
+	
+	private static final Class<?>[] mStartForegroundSignature = new Class[] {
+	    int.class, Notification.class};
+	private static final Class<?>[] mStopForegroundSignature = new Class[] {
+	    boolean.class};
+
+	private Method mStartForeground;
+	private Method mStopForeground;
+	
+	private Object[] mStartForegroundArgs = new Object[2];
+	private Object[] mStopForegroundArgs = new Object[1];
+
+	void invokeMethod(Method method, Object[] args) {
+	    try {
+	        method.invoke(this, mStartForegroundArgs);
+	    } catch (InvocationTargetException e) {
+	        // Should not happen.
+	        Log.w("ApiDemos", "Unable to invoke method", e);
+	    } catch (IllegalAccessException e) {
+	        // Should not happen.
+	        Log.w("ApiDemos", "Unable to invoke method", e);
+	    }
+	}
+
+	/**
+	 * This is a wrapper around the new startForeground method, using the older
+	 * APIs if it is not available.
+	 */
+	void startForegroundCompat(int id, Notification notification) {
+	    // If we have the new startForeground API, then use it.
+	    if (mStartForeground != null) {
+	        mStartForegroundArgs[0] = Integer.valueOf(id);
+	        mStartForegroundArgs[1] = notification;
+	        invokeMethod(mStartForeground, mStartForegroundArgs);
+	        return;
+	    }
+
+	    // Fall back on the old API.
+	    setForeground(true);
+	    notificationManager.notify(id, notification);
+	}
+
+	/**
+	 * This is a wrapper around the new stopForeground method, using the older
+	 * APIs if it is not available.
+	 */
+	void stopForegroundCompat(int id) {
+	    // If we have the new stopForeground API, then use it.
+	    if (mStopForeground != null) {
+	        mStopForegroundArgs[0] = Boolean.TRUE;
+	        try {
+	            mStopForeground.invoke(this, mStopForegroundArgs);
+	        } catch (InvocationTargetException e) {
+	            // Should not happen.
+	            Log.w("ApiDemos", "Unable to invoke stopForeground", e);
+	        } catch (IllegalAccessException e) {
+	            // Should not happen.
+	            Log.w("ApiDemos", "Unable to invoke stopForeground", e);
+	        }
+	        return;
+	    }
+
+	    // Fall back on the old API.  Note to cancel BEFORE changing the
+	    // foreground state, since we could be killed at that point.
+	    notificationManager.cancel(id);
+	    setForeground(false);
+	}
 
 	/**
 	 * Check if this is an ARMv6 device
 	 * 
 	 * @return true if this is ARMv6
 	 */
-	private static boolean isARMv6() {
+	public static boolean isARMv6() {
 		if (isARMv6 == -1) {
 			BufferedReader r = null;
 			try {
@@ -388,7 +459,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		notification.defaults = Notification.DEFAULT_SOUND;
 		notification.setLatestEventInfo(this, getString(R.string.app_name),
 				info, pendIntent);
-		notificationManager.notify(0, notification);
+		startForegroundCompat(1, notification);
 	}
 
 	private void notifyAlert(String title, String info, int flags) {
@@ -416,12 +487,24 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		intent = new Intent(this, SSHTunnel.class);
 		pendIntent = PendingIntent.getActivity(this, 0, intent, 0);
 		notification = new Notification();
+		
+        try {
+            mStartForeground = getClass().getMethod("startForeground",
+                    mStartForegroundSignature);
+            mStopForeground = getClass().getMethod("stopForeground",
+                    mStopForegroundSignature);
+        } catch (NoSuchMethodException e) {
+            // Running on an older platform.
+            mStartForeground = mStopForeground = null;
+        }
 	}
 
 	/** Called when the activity is closed. */
 	@Override
 	public void onDestroy() {
 
+		stopForegroundCompat(1);
+		
 		if (connected) {
 
 			notifyAlert(getString(R.string.forward_stop),
