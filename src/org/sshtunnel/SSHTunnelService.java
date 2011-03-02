@@ -50,14 +50,16 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	private boolean connected = false;
 
 	// Flag indicating if this is an ARMv6 device (-1: unknown, 0: no, 1: yes)
-	private static int isARMv6 = -1;
+	public static int isARMv6 = -1;
+	
+	public static final String BASE = "/data/data/org.sshtunnel/";
 
 	/**
 	 * Check if this is an ARMv6 device
 	 * 
 	 * @return true if this is ARMv6
 	 */
-	private static boolean isARMv6() {
+	public static boolean isARMv6() {
 		if (isARMv6 == -1) {
 			BufferedReader r = null;
 			try {
