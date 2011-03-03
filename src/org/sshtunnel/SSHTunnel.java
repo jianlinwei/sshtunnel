@@ -306,6 +306,7 @@ public class SSHTunnel extends PreferenceActivity implements
 			startService(it);
 		} catch (Exception e) {
 			// Nothing
+			return false;
 		}
 
 		return true;
