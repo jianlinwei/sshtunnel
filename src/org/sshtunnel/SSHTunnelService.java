@@ -187,10 +187,17 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 	public boolean connect() {
 		try {
-
-			String cmd = "/data/data/org.sshtunnel/ssh -N -T -y -L "
-					+ localPort + ":" + "127.0.0.1" + ":" + remotePort + " -L "
-					+ "5353:8.8.8.8:53 " + user + "@" + hostIP + "/" + port;
+			String cmd = "";
+			if (isARMv6())
+				cmd = "/data/data/org.sshtunnel/ssh_g1 -N -T -y -L "
+						+ localPort + ":" + "127.0.0.1" + ":" + remotePort
+						+ " -L " + "5353:8.8.8.8:53 " + user + "@" + hostIP
+						+ "/" + port;
+			else
+				cmd = "/data/data/org.sshtunnel/ssh_n1 -N -T -y -L "
+						+ localPort + ":" + "127.0.0.1" + ":" + remotePort
+						+ " -L " + "5353:8.8.8.8:53 " + user + "@" + hostIP
+						+ "/" + port;
 			Log.e(TAG, cmd);
 
 			sshProcess = Runtime.getRuntime().exec(cmd);
