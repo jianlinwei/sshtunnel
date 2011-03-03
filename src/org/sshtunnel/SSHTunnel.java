@@ -226,11 +226,11 @@ public class SSHTunnel extends PreferenceActivity implements
 
 			CopyAssets();
 
-			runCommand("chmod 777 /data/data/org.sshtunnel/iptables_g1\n + "
-					+ "chmod 777 /data/data/org.sshtunnel/iptables_n1\n"
-					+ "chmod 777 /data/data/org.sshtunnel/redsocks\n"
-					+ "chmod 777 /data/data/org.sshtunnel/proxy.sh\n"
-					+ "chmod 777 /data/data/org.sshtunnel/ssh");
+			runCommand("/system/bin/chmod 777 /data/data/org.sshtunnel/iptables_g1\n + "
+					+ "/system/bin/chmod 777 /data/data/org.sshtunnel/iptables_n1\n"
+					+ "/system/bin/chmod 777 /data/data/org.sshtunnel/redsocks\n"
+					+ "/system/bin/chmod 777 /data/data/org.sshtunnel/proxy.sh\n"
+					+ "/system/bin/chmod 777 /data/data/org.sshtunnel/ssh");
 		}
 
 	}
