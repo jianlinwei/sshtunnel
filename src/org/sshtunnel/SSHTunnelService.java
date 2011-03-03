@@ -159,7 +159,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 				DataOutputStream os = null;
 				DataInputStream is = null;
 				try {
-					process = Runtime.getRuntime().exec("su");
+					process = Runtime.getRuntime().exec("/system/bin/sh");
 					os = new DataOutputStream(process.getOutputStream());
 					is = new DataInputStream(process.getInputStream());
 					os.writeBytes("/data/data/org.sshtunnel/iptables_g1 --version" + "\n");
