@@ -230,7 +230,8 @@ public class SSHTunnel extends PreferenceActivity implements
 					+ "/system/bin/chmod 777 /data/data/org.sshtunnel/iptables_n1\n"
 					+ "/system/bin/chmod 777 /data/data/org.sshtunnel/redsocks\n"
 					+ "/system/bin/chmod 777 /data/data/org.sshtunnel/proxy.sh\n"
-					+ "/system/bin/chmod 777 /data/data/org.sshtunnel/ssh");
+					+ "/system/bin/chmod 777 /data/data/org.sshtunnel/ssh_g1\n"
+					+ "/system/bin/chmod 777 /data/data/org.sshtunnel/ssh_n1");
 		}
 
 	}
