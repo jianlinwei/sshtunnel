@@ -53,30 +53,29 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 	// Flag indicating if this is an ARMv6 device (-1: unknown, 0: no, 1: yes)
 	public static int isARMv6 = -1;
-	
+
 	public static final String BASE = "/data/data/org.sshtunnel/";
-	
+
 	private static final Class<?>[] mStartForegroundSignature = new Class[] {
-	    int.class, Notification.class};
-	private static final Class<?>[] mStopForegroundSignature = new Class[] {
-	    boolean.class};
+			int.class, Notification.class };
+	private static final Class<?>[] mStopForegroundSignature = new Class[] { boolean.class };
 
 	private Method mStartForeground;
 	private Method mStopForeground;
-	
+
 	private Object[] mStartForegroundArgs = new Object[2];
 	private Object[] mStopForegroundArgs = new Object[1];
 
 	void invokeMethod(Method method, Object[] args) {
-	    try {
-	        method.invoke(this, mStartForegroundArgs);
-	    } catch (InvocationTargetException e) {
-	        // Should not happen.
-	        Log.w("ApiDemos", "Unable to invoke method", e);
-	    } catch (IllegalAccessException e) {
-	        // Should not happen.
-	        Log.w("ApiDemos", "Unable to invoke method", e);
-	    }
+		try {
+			method.invoke(this, mStartForegroundArgs);
+		} catch (InvocationTargetException e) {
+			// Should not happen.
+			Log.w("ApiDemos", "Unable to invoke method", e);
+		} catch (IllegalAccessException e) {
+			// Should not happen.
+			Log.w("ApiDemos", "Unable to invoke method", e);
+		}
 	}
 
 	/**
@@ -84,17 +83,17 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	 * APIs if it is not available.
 	 */
 	void startForegroundCompat(int id, Notification notification) {
-	    // If we have the new startForeground API, then use it.
-	    if (mStartForeground != null) {
-	        mStartForegroundArgs[0] = Integer.valueOf(id);
-	        mStartForegroundArgs[1] = notification;
-	        invokeMethod(mStartForeground, mStartForegroundArgs);
-	        return;
-	    }
+		// If we have the new startForeground API, then use it.
+		if (mStartForeground != null) {
+			mStartForegroundArgs[0] = Integer.valueOf(id);
+			mStartForegroundArgs[1] = notification;
+			invokeMethod(mStartForeground, mStartForegroundArgs);
+			return;
+		}
 
-	    // Fall back on the old API.
-	    setForeground(true);
-	    notificationManager.notify(id, notification);
+		// Fall back on the old API.
+		setForeground(true);
+		notificationManager.notify(id, notification);
 	}
 
 	/**
@@ -102,25 +101,25 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	 * APIs if it is not available.
 	 */
 	void stopForegroundCompat(int id) {
-	    // If we have the new stopForeground API, then use it.
-	    if (mStopForeground != null) {
-	        mStopForegroundArgs[0] = Boolean.TRUE;
-	        try {
-	            mStopForeground.invoke(this, mStopForegroundArgs);
-	        } catch (InvocationTargetException e) {
-	            // Should not happen.
-	            Log.w("ApiDemos", "Unable to invoke stopForeground", e);
-	        } catch (IllegalAccessException e) {
-	            // Should not happen.
-	            Log.w("ApiDemos", "Unable to invoke stopForeground", e);
-	        }
-	        return;
-	    }
+		// If we have the new stopForeground API, then use it.
+		if (mStopForeground != null) {
+			mStopForegroundArgs[0] = Boolean.TRUE;
+			try {
+				mStopForeground.invoke(this, mStopForegroundArgs);
+			} catch (InvocationTargetException e) {
+				// Should not happen.
+				Log.w("ApiDemos", "Unable to invoke stopForeground", e);
+			} catch (IllegalAccessException e) {
+				// Should not happen.
+				Log.w("ApiDemos", "Unable to invoke stopForeground", e);
+			}
+			return;
+		}
 
-	    // Fall back on the old API.  Note to cancel BEFORE changing the
-	    // foreground state, since we could be killed at that point.
-	    notificationManager.cancel(id);
-	    setForeground(false);
+		// Fall back on the old API. Note to cancel BEFORE changing the
+		// foreground state, since we could be killed at that point.
+		notificationManager.cancel(id);
+		setForeground(false);
 	}
 
 	/**
@@ -147,50 +146,14 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 				}
 			} catch (Exception ex) {
 			} finally {
-				if (r != null)
+				if (r != null) {
 					try {
 						r.close();
 					} catch (Exception ex) {
 					}
-			}
-			if (isARMv6 == 1)
-			{
-				Process process = null;
-				DataOutputStream os = null;
-				DataInputStream is = null;
-				try {
-					process = Runtime.getRuntime().exec("/system/bin/sh");
-					os = new DataOutputStream(process.getOutputStream());
-					is = new DataInputStream(process.getInputStream());
-					os.writeBytes("/data/data/org.sshtunnel/iptables_g1 --version" + "\n");
-					os.flush();
-					isARMv6 = 0;
-					while (true) {
-						String line = is.readLine();
-						if (line == null || line.equals(""))
-							break;
-						if (line.contains("1.4.7")) {
-							isARMv6 = 1;
-							break;
-						}
-					}
-					os.writeBytes("exit\n");
-					os.flush();
-					process.waitFor();
-				} catch (Exception e) {
-					Log.e(TAG, e.getMessage());
-					return false;
-				} finally {
-					try {
-						if (os != null) {
-							os.close();
-						}
-						process.destroy();
-					} catch (Exception e) {
-						// nothing
-					}
 				}
 			}
+
 		}
 		Log.d(TAG, "isARMv6: " + isARMv6);
 		return (isARMv6 == 1);
@@ -347,7 +310,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 	private void notifyAlert(String title, String info) {
 		Notification notification = new Notification(R.drawable.icon, title,
-                System.currentTimeMillis());
+				System.currentTimeMillis());
 		notification.defaults = Notification.DEFAULT_SOUND;
 		notification.setLatestEventInfo(this, getString(R.string.app_name),
 				info, pendIntent);
@@ -356,7 +319,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 	private void notifyAlert(String title, String info, int flags) {
 		Notification notification = new Notification(R.drawable.icon, title,
-                System.currentTimeMillis());
+				System.currentTimeMillis());
 		notification.flags = flags;
 		notification.defaults = Notification.DEFAULT_SOUND;
 		notification.setLatestEventInfo(this, getString(R.string.app_name),
@@ -379,16 +342,16 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 		intent = new Intent(this, SSHTunnel.class);
 		pendIntent = PendingIntent.getActivity(this, 0, intent, 0);
-		
-	    try {
-	        mStartForeground = getClass().getMethod("startForeground",
-	                mStartForegroundSignature);
-	        mStopForeground = getClass().getMethod("stopForeground",
-	                mStopForegroundSignature);
-	    } catch (NoSuchMethodException e) {
-	        // Running on an older platform.
-	        mStartForeground = mStopForeground = null;
-	    }
+
+		try {
+			mStartForeground = getClass().getMethod("startForeground",
+					mStartForegroundSignature);
+			mStopForeground = getClass().getMethod("stopForeground",
+					mStopForegroundSignature);
+		} catch (NoSuchMethodException e) {
+			// Running on an older platform.
+			mStartForeground = mStopForeground = null;
+		}
 	}
 
 	/** Called when the activity is closed. */
@@ -396,7 +359,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	public void onDestroy() {
 
 		stopForegroundCompat(1);
-		
+
 		synchronized (this) {
 			if (sm != null) {
 				sm.close();
