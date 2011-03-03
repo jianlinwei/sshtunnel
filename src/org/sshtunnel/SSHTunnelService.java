@@ -198,6 +198,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 						+ localPort + ":" + "127.0.0.1" + ":" + remotePort
 						+ " -L " + "5353:8.8.8.8:53 " + user + "@" + hostIP
 						+ "/" + port;
+			
 			Log.e(TAG, cmd);
 
 			sshProcess = Runtime.getRuntime().exec(cmd);
