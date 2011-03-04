@@ -213,7 +213,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		finishConnection();
 		return true;
 	}
-
+	
 	/**
 	 * Internal method to request actual PTY terminal once we've finished
 	 * authentication. If called before authenticated, it will just fail.

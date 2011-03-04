@@ -86,22 +86,14 @@ public class SSHTunnel extends PreferenceActivity implements
 
 	public static boolean runCommand(String command) {
 		Process process = null;
-		DataOutputStream os = null;
 		try {
-			process = Runtime.getRuntime().exec("/system/bin/sh");
-			os = new DataOutputStream(process.getOutputStream());
-			os.writeBytes(command + "\n");
-			os.writeBytes("exit\n");
-			os.flush();
+			process = Runtime.getRuntime().exec(command);
 			process.waitFor();
 		} catch (Exception e) {
 			Log.e(TAG, e.getMessage());
 			return false;
 		} finally {
 			try {
-				if (os != null) {
-					os.close();
-				}
 				process.destroy();
 			} catch (Exception e) {
 				// nothing
@@ -226,12 +218,12 @@ public class SSHTunnel extends PreferenceActivity implements
 
 			CopyAssets();
 
-			runCommand("/system/bin/chmod 777 /data/data/org.sshtunnel/iptables_g1\n + "
-					+ "/system/bin/chmod 777 /data/data/org.sshtunnel/iptables_n1\n"
-					+ "/system/bin/chmod 777 /data/data/org.sshtunnel/redsocks\n"
-					+ "/system/bin/chmod 777 /data/data/org.sshtunnel/proxy.sh\n"
-					+ "/system/bin/chmod 777 /data/data/org.sshtunnel/ssh_g1\n"
-					+ "/system/bin/chmod 777 /data/data/org.sshtunnel/ssh_n1");
+			runCommand("chmod 777 /data/data/org.sshtunnel/iptables_g1");
+			runCommand("chmod 777 /data/data/org.sshtunnel/iptables_n1");
+			runCommand("chmod 777 /data/data/org.sshtunnel/redsocks");
+			runCommand("chmod 777 /data/data/org.sshtunnel/proxy.sh");
+			runCommand("chmod 777 /data/data/org.sshtunnel/ssh_g1");
+			runCommand("chmod 777 /data/data/org.sshtunnel/ssh_n1");
 		}
 
 	}
@@ -489,7 +481,7 @@ public class SSHTunnel extends PreferenceActivity implements
 			else
 				passwordText.setSummary(getString(R.string.password_summary));
 	}
-	
+
 	// 点击Menu时，系统调用当前Activity的onCreateOptionsMenu方法，并传一个实现了一个Menu接口的menu对象供你使用
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
