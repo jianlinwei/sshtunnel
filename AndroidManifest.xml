@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest package="org.sshtunnel" xmlns:android="http://schemas.android.com/apk/res/android"
-	android:versionName="0.7.10" android:versionCode="19">
+	android:versionName="0.7.11" android:versionCode="20">
 	<uses-sdk android:minSdkVersion="4" />
 	<uses-permission android:name="android.permission.INTERNET"></uses-permission>
 	<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"></uses-permission>
