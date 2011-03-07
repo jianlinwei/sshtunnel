@@ -51,8 +51,24 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 	private boolean connected = false;
 
+	final static String CMD_IPTABLES_DNAT_DEL_G1 = "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp --dport 80 -j DNAT --to-destination 127.0.0.1:8123\n"
+			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp --dport 443 -j DNAT --to-destination 127.0.0.1:8124\n"
+			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:8153";
+	final static String CMD_IPTABLES_DNAT_ADD_G1 = "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp --dport 80 -j DNAT --to-destination 127.0.0.1:8123\n"
+			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp --dport 443 -j DNAT --to-destination 127.0.0.1:8124\n"
+			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:8153";
+
+	final static String CMD_IPTABLES_DNAT_DEL_N1 = "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p tcp --dport 80 -j DNAT --to-destination 127.0.0.1:8123\n"
+			+ "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p tcp --dport 443 -j DNAT --to-destination 127.0.0.1:8124\n"
+			+ "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:8153";
+
+	final static String CMD_IPTABLES_DNAT_ADD_N1 = "/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp --dport 80 -j DNAT --to-destination 127.0.0.1:8123\n"
+			+ "/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp --dport 443 -j DNAT --to-destination 127.0.0.1:8124\n"
+			+ "/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:8153";
+
 	// Flag indicating if this is an ARMv6 device (-1: unknown, 0: no, 1: yes)
 	public static int isARMv6 = -1;
+	private boolean hasRedirectSupport = true;
 
 	public static final String BASE = "/data/data/org.sshtunnel/";
 
@@ -159,6 +175,54 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		return (isARMv6 == 1);
 	}
 
+	private void initHasRedirectSupported() {
+		Process process = null;
+		DataOutputStream os = null;
+		DataInputStream es = null;
+
+		String command;
+		String line = null;
+
+		if (isARMv6()) {
+			command = "/data/data/org.gaeproxy/iptables_g1 -t nat -A OUTPUT -p udp --dport 53 -j REDIRECT --to-ports 8153";
+		} else
+			command = "/data/data/org.gaeproxy/iptables_n1 -t nat -A OUTPUT -p udp --dport 53 -j REDIRECT --to-ports 8153";
+
+		try {
+			process = Runtime.getRuntime().exec("su");
+			es = new DataInputStream(process.getErrorStream());
+			os = new DataOutputStream(process.getOutputStream());
+			os.writeBytes(command + "\n");
+			os.writeBytes("exit\n");
+			os.flush();
+			process.waitFor();
+
+			while (null != (line = es.readLine())) {
+				Log.d(TAG, line);
+				if (line.contains("No chain/target/match")) {
+					this.hasRedirectSupport = false;
+					break;
+				}
+			}
+		} catch (Exception e) {
+			Log.e(TAG, e.getMessage());
+		} finally {
+			try {
+				if (os != null) {
+					os.close();
+				}
+				if (es != null)
+					es.close();
+				process.destroy();
+			} catch (Exception e) {
+				// nothing
+			}
+		}
+
+		// flush the check command
+		runRootCommand(command.replace("-A", "-D"));
+	}
+
 	public static boolean runRootCommand(String command) {
 		Process process = null;
 		DataOutputStream os = null;
@@ -198,7 +262,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 						+ localPort + ":" + "127.0.0.1" + ":" + remotePort
 						+ " -L " + "5353:8.8.8.8:53 " + user + "@" + hostIP
 						+ "/" + port;
-			
+
 			Log.e(TAG, cmd);
 
 			sshProcess = Runtime.getRuntime().exec(cmd);
@@ -213,7 +277,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		finishConnection();
 		return true;
 	}
-	
+
 	/**
 	 * Internal method to request actual PTY terminal once we've finished
 	 * authentication. If called before authenticated, it will just fail.
@@ -236,7 +300,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 						+ "--dport 443 -j REDIRECT --to-ports 8124\n"
 						+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p udp "
 						+ "--dport 53 -j REDIRECT --to-ports 8153";
-				runRootCommand(cmd);
+				runRootCommand(hasRedirectSupport ? cmd : CMD_IPTABLES_DNAT_DEL_G1);
 			} else {
 				String cmd = "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p tcp "
 						+ "--dport 80 -j REDIRECT --to-ports 8123\n"
@@ -247,7 +311,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 						+ "--dport 443 -j REDIRECT --to-ports 8124\n"
 						+ "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p udp "
 						+ "--dport 53 -j REDIRECT --to-ports 8153";
-				runRootCommand(cmd);
+				runRootCommand(hasRedirectSupport ? cmd : CMD_IPTABLES_DNAT_DEL_N1);
 			}
 
 			if (isARMv6()) {
@@ -260,7 +324,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 						+ "--dport 443 -j REDIRECT --to-ports 8124\n"
 						+ "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p udp "
 						+ "--dport 53 -j REDIRECT --to-ports 8153";
-				runRootCommand(cmd);
+				runRootCommand(hasRedirectSupport ? cmd : CMD_IPTABLES_DNAT_ADD_G1);
 			} else {
 				String cmd = "/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
 						+ "--dport 80 -j REDIRECT --to-ports 8123\n"
@@ -271,7 +335,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 						+ "--dport 443 -j REDIRECT --to-ports 8124\n"
 						+ "/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p udp "
 						+ "--dport 53 -j REDIRECT --to-ports 8153";
-				runRootCommand(cmd);
+				runRootCommand(hasRedirectSupport ? cmd : CMD_IPTABLES_DNAT_ADD_N1);
 			}
 		}
 
@@ -348,6 +412,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		notificationManager = (NotificationManager) this
 				.getSystemService(NOTIFICATION_SERVICE);
 
+		initHasRedirectSupported();
+		
 		intent = new Intent(this, SSHTunnel.class);
 		pendIntent = PendingIntent.getActivity(this, 0, intent, 0);
 
@@ -430,7 +496,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 						+ "--dport 443 -j REDIRECT --to-ports 8124\n"
 						+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p udp "
 						+ "--dport 53 -j REDIRECT --to-ports 8153";
-				runRootCommand(cmd);
+				runRootCommand(hasRedirectSupport ? cmd : CMD_IPTABLES_DNAT_DEL_G1);
 			} else {
 				String cmd = "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p tcp "
 						+ "--dport 80 -j REDIRECT --to-ports 8123\n"
@@ -441,7 +507,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 						+ "--dport 443 -j REDIRECT --to-ports 8124\n"
 						+ "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p udp "
 						+ "--dport 53 -j REDIRECT --to-ports 8153";
-				runRootCommand(cmd);
+				runRootCommand(hasRedirectSupport ? cmd : CMD_IPTABLES_DNAT_DEL_N1);
 			}
 
 			runRootCommand("/data/data/org.sshtunnel/proxy.sh stop");
