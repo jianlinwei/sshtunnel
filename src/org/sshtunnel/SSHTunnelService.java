@@ -294,7 +294,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			 * Logger.enabled = true; Logger.logger = logger;
 			 */
 
-			connection.connect(null, 10 * 1000, 10 * 1000);
+			connection.connect(null, 10 * 1000, 20 * 1000);
 			connected = true;
 
 		} catch (Exception e) {
