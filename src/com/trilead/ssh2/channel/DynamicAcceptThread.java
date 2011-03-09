@@ -29,6 +29,8 @@ import java.net.NoRouteToHostException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
+import android.util.Log;
+
 import net.sourceforge.jsocks.Proxy;
 import net.sourceforge.jsocks.ProxyMessage;
 import net.sourceforge.jsocks.Socks4Message;
@@ -252,6 +254,7 @@ public class DynamicAcceptThread extends Thread implements IChannelWorkerThread 
 		try {
 			cm.registerThread(this);
 		} catch (IOException e) {
+			Log.e("SSH", "Cannot register CM");
 			stopWorking();
 			return;
 		}
@@ -262,15 +265,18 @@ public class DynamicAcceptThread extends Thread implements IChannelWorkerThread 
 			try {
 				sock = ss.accept();
 			} catch (IOException e) {
+				Log.e("SSH", "Server socket error");
 				stopWorking();
 				return;
 			}
 
+			Log.d("SSH", "New socket");
 			DynamicAcceptRunnable dar = new DynamicAcceptRunnable(
 					new ServerAuthenticatorNone(), sock);
 			Thread t = new Thread(dar);
-			t.setDaemon(true);
-			t.start();
+//			t.setDaemon(true);
+//			t.start();
+			t.run();
 		}
 	}
 
