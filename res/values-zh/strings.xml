@@ -49,4 +49,9 @@
 <string name="auto_reconnect_summary">网络中断后尝试自动恢复连接</string>
 <string name="user_empty">用户名不能为空</string>
 <string name="recovery">清除连接状态</string>
+<!-- settings notification category -->
+<string name="notif_cat">通知设置</string>
+<string name="notif_ringtone_title">选择铃声</string>
+<string name="notif_vibrate_title">震动</string>
+<string name="notif_vibrate_summary">在连接状态改变时震动</string>
 </resources>
