@@ -411,10 +411,10 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		// LocalPortForwarder lpf1 = null;
 		try {
 			dpf = connection.createDynamicPortForwarder(new InetSocketAddress(
-					InetAddress.getLocalHost(), localPort));
+					"127.0.0.1", localPort));
 			// lpf2 = connection.createLocalPortForwarder(5353, "8.8.8.8", 53);
 		} catch (Exception e) {
-			Log.e(TAG, "Could not create local port forward", e);
+			Log.e(TAG, "Could not create dynamic port forward", e);
 			return false;
 		}
 

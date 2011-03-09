@@ -23,14 +23,7 @@ redsocks {
  local_port = 8123;
  ip = 127.0.0.1;
  port = $2;
- type = http-relay;
-} 
-redsocks {
- local_ip = 127.0.0.1;
- local_port = 8124;
- ip = 127.0.0.1;
- port = $2;
- type = http-connect;
+ type = socks5;
 } 
 " >>$DIR/redsocks.conf
 
