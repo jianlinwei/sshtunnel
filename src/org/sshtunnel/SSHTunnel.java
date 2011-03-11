@@ -504,7 +504,30 @@ public class SSHTunnel extends PreferenceActivity implements
 			recovery();
 			break;
 		case Menu.FIRST + 2:
-			if (this.isWorked(SERVICE_NAME)) {
+			boolean check = true;
+			try {
+				SharedPreferences settings = PreferenceManager
+						.getDefaultSharedPreferences(this);
+
+				host = settings.getString("host", "");
+				if (isTextEmpty(host, getString(R.string.host_empty)))
+					check =  false;
+
+				user = settings.getString("user", "");
+				if (isTextEmpty(user, getString(R.string.user_empty)))
+					check = false;
+
+				password = settings.getString("password", "");
+
+				String portText = settings.getString("port", "");
+				if (isTextEmpty(portText, getString(R.string.port_empty)))
+					check = false;
+				port = Integer.valueOf(portText);
+
+			} catch (Exception e) {
+				check = false;
+			}
+			if (check) {
 				try {
 					recovery();
 					String cmd = "";
