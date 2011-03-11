@@ -504,28 +504,34 @@ public class SSHTunnel extends PreferenceActivity implements
 			recovery();
 			break;
 		case Menu.FIRST + 2:
-			try {
-				String cmd = "";
-				if (SSHTunnelService.isARMv6())
-					cmd = "/data/data/org.sshtunnel/ssh_g1 " + user + "@"
-							+ host + "/" + port;
-				else
-					cmd = "/data/data/org.sshtunnel/ssh_n1 " + user + "@"
-							+ host + "/" + port;
+			if (this.isWorked(SERVICE_NAME)) {
+				try {
+					recovery();
+					String cmd = "";
+					if (SSHTunnelService.isARMv6())
+						cmd = "/data/data/org.sshtunnel/ssh_g1 " + user + "@"
+								+ host + "/" + port;
+					else
+						cmd = "/data/data/org.sshtunnel/ssh_n1 " + user + "@"
+								+ host + "/" + port;
 
-				Log.e(TAG, cmd);
+					Log.e(TAG, cmd);
 
-				Process p = Runtime.getRuntime().exec(cmd);
-				DataOutputStream os = new DataOutputStream(p.getOutputStream());
-				os.writeBytes(password + "\n");
-				os.flush();
-				os.writeBytes("cd ~\n");
-				os.writeBytes("wget http://sshtunnel.googlecode.com/files/setup.sh\n");
-				os.writeBytes("bash ./setup.sh\n");
-				os.flush();
+					Process p = Runtime.getRuntime().exec(cmd);
+					DataOutputStream os = new DataOutputStream(
+							p.getOutputStream());
+					os.writeBytes(password + "\n");
+					os.flush();
+					os.writeBytes("cd ~\n");
+					os.writeBytes("wget http://sshtunnel.googlecode.com/files/setup.sh\n");
+					os.writeBytes("bash ./setup.sh\n");
+					os.flush();
 
-			} catch (Exception e) {
-				Log.e(TAG, e.getMessage());
+				} catch (Exception e) {
+					Log.e(TAG, e.getMessage());
+				}
+			} else {
+				showAToast(getString(R.string.setup_alert));
 			}
 			break;
 		}
