@@ -568,6 +568,15 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 				sshProcess.destroy();
 				sshProcess = null;
 			}
+			
+			if (proxyOS != null) {
+				proxyOS.close();
+				proxyOS = null;
+			}
+			if (proxyProcess != null) {
+				proxyProcess.destroy();
+				proxyProcess = null;
+			}
 		} catch (Exception e) {
 
 			Log.e(TAG, "close connection error", e);
