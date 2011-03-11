@@ -487,9 +487,9 @@ public class SSHTunnel extends PreferenceActivity implements
 		 * 2、Id，这个很重要，Android根据这个Id来确定不同的菜单 3、顺序，那个菜单现在在前面由这个参数的大小决定
 		 * 4、文本，菜单的显示文本
 		 */
-		menu.add(Menu.NONE, Menu.FIRST + 1, 1, getString(R.string.recovery))
+		menu.add(Menu.NONE, Menu.FIRST + 1, 2, getString(R.string.recovery))
 				.setIcon(android.R.drawable.ic_menu_delete);
-		menu.add(Menu.NONE, Menu.FIRST + 2, 2, getString(R.string.setup))
+		menu.add(Menu.NONE, Menu.FIRST + 2, 1, getString(R.string.setup))
 				.setIcon(android.R.drawable.ic_menu_add);
 		// return true才会起作用
 		return true;
