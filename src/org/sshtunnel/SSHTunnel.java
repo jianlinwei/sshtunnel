@@ -521,7 +521,7 @@ public class SSHTunnel extends PreferenceActivity implements
 				os.flush();
 				os.writeBytes("cd ~\n");
 				os.writeBytes("wget http://sshtunnel.googlecode.com/files/setup.sh\n");
-				os.writeBytes("./setup.sh\n");
+				os.writeBytes("bash ./setup.sh\n");
 				os.flush();
 
 			} catch (Exception e) {
