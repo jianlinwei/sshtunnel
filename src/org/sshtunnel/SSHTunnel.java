@@ -489,6 +489,8 @@ public class SSHTunnel extends PreferenceActivity implements
 		 */
 		menu.add(Menu.NONE, Menu.FIRST + 1, 1, getString(R.string.recovery))
 				.setIcon(android.R.drawable.ic_menu_delete);
+		menu.add(Menu.NONE, Menu.FIRST + 2, 2, getString(R.string.setup))
+				.setIcon(android.R.drawable.ic_menu_add);
 		// return true才会起作用
 		return true;
 
@@ -500,6 +502,31 @@ public class SSHTunnel extends PreferenceActivity implements
 		switch (item.getItemId()) {
 		case Menu.FIRST + 1:
 			recovery();
+			break;
+		case Menu.FIRST + 2:
+			try {
+				String cmd = "";
+				if (SSHTunnelService.isARMv6())
+					cmd = "/data/data/org.sshtunnel/ssh_g1 " + user + "@"
+							+ host + "/" + port;
+				else
+					cmd = "/data/data/org.sshtunnel/ssh_n1 " + user + "@"
+							+ host + "/" + port;
+
+				Log.e(TAG, cmd);
+
+				Process p = Runtime.getRuntime().exec(cmd);
+				DataOutputStream os = new DataOutputStream(p.getOutputStream());
+				os.writeBytes(password + "\n");
+				os.flush();
+				os.writeBytes("cd ~\n");
+				os.writeBytes("wget http://sshtunnel.googlecode.com/files/setup.sh\n");
+				os.writeBytes("./setup.sh\n");
+				os.flush();
+
+			} catch (Exception e) {
+				Log.e(TAG, e.getMessage());
+			}
 			break;
 		}
 

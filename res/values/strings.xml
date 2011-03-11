@@ -49,6 +49,7 @@
 <string name="host_summary">The host name of SSH service</string>
 <string name="auto_reconnect_summary">Try to reconnect the SSH service, when connection closed unexpected</string>
 <string name="recovery">Recover the status</string>
+<string name="setup">Setup remote service</string>
 <!-- settings notification category -->
 <string name="notif_cat">Notification settings</string>
 <string name="notif_ringtone_title">Select ringtone</string>
