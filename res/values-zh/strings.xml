@@ -50,7 +50,7 @@
 <string name="user_empty">用户名不能为空</string>
 <string name="recovery">清除连接状态</string>
 <string name="setup">配置远程服务</string>
-<string name="setup_alert">请先启动服务</string>
+<string name="setup_alert">远程服务配置完毕，请将远程端口更改为 3128，并尝试连接。</string>
 <!-- settings notification category -->
 <string name="notif_cat">通知设置</string>
 <string name="notif_ringtone_title">选择铃声</string>

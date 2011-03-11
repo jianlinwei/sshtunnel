@@ -511,7 +511,7 @@ public class SSHTunnel extends PreferenceActivity implements
 
 				host = settings.getString("host", "");
 				if (isTextEmpty(host, getString(R.string.host_empty)))
-					check =  false;
+					check = false;
 
 				user = settings.getString("user", "");
 				if (isTextEmpty(user, getString(R.string.user_empty)))
@@ -528,33 +528,55 @@ public class SSHTunnel extends PreferenceActivity implements
 				check = false;
 			}
 			if (check) {
+				Process p = null;
+				DataOutputStream os = null;
 				try {
-					recovery();
+					// recovery();
 					String cmd = "";
 					if (SSHTunnelService.isARMv6())
-						cmd = "/data/data/org.sshtunnel/ssh_g1 " + user + "@"
-								+ host + "/" + port;
+						cmd = "/data/data/org.sshtunnel/ssh_g1 -y " + user
+								+ "@" + host + "/" + port;
 					else
-						cmd = "/data/data/org.sshtunnel/ssh_n1 " + user + "@"
-								+ host + "/" + port;
+						cmd = "/data/data/org.sshtunnel/ssh_n1 -y " + user
+								+ "@" + host + "/" + port;
 
-					Log.e(TAG, cmd);
+					String cmd1 = cmd
+							+ " wget http://sshtunnel.googlecode.com/files/setup.sh";
 
-					Process p = Runtime.getRuntime().exec(cmd);
-					DataOutputStream os = new DataOutputStream(
-							p.getOutputStream());
+					p = Runtime.getRuntime().exec(cmd1);
+					os = new DataOutputStream(p.getOutputStream());
+
+					Log.e(TAG, cmd1);
+
 					os.writeBytes(password + "\n");
-					os.flush();
-					os.writeBytes("cd ~\n");
-					os.writeBytes("wget http://sshtunnel.googlecode.com/files/setup.sh\n");
-					os.writeBytes("bash ./setup.sh\n");
-					os.flush();
+
+					p.waitFor();
+					
+					String cmd2 = cmd + " bash ./setup.sh";
+					p = Runtime.getRuntime().exec(cmd2);
+					
+					os = new DataOutputStream(p.getOutputStream());
+
+					Log.e(TAG, cmd2);
+
+					os.writeBytes(password + "\n");
+					
+					p.waitFor();
+					
+					showAToast(getString(R.string.setup_alert));
 
 				} catch (Exception e) {
 					Log.e(TAG, e.getMessage());
+				} finally {
+					if (p != null)
+						p.destroy();
+					if (os != null)
+						try {
+							os.close();
+						} catch (IOException e) {
+							// Nothing
+						}
 				}
-			} else {
-				showAToast(getString(R.string.setup_alert));
 			}
 			break;
 		}
