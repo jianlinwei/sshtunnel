@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.FileReader;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.InetAddress;
@@ -40,6 +41,9 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 	private Process sshProcess = null;
 	private DataOutputStream sshOS = null;
+
+	private Process proxyProcess = null;
+	private DataOutputStream proxyOS = null;
 
 	private String host;
 	private String hostIP = "127.0.0.1";
@@ -143,7 +147,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 	/**
 	 * Check if this is an ARMv6 device
-	 *
+	 * 
 	 * @return true if this is ARMv6
 	 */
 	public static boolean isARMv6() {
@@ -253,8 +257,54 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	}
 
 	public boolean connect() {
+
+		String cmd = "";
+		
+		if (SSHTunnelService.isARMv6())
+			cmd = "/data/data/org.sshtunnel/ssh_g1 -y " + user + "@" + host
+					+ "/" + port;
+		else
+			cmd = "/data/data/org.sshtunnel/ssh_n1 -y " + user + "@" + host
+					+ "/" + port;
+		
 		try {
-			String cmd = "";
+
+			String cmd1 = cmd
+					+ " wget http://sshtunnel.googlecode.com/files/run.sh";
+
+			Process p = Runtime.getRuntime().exec(cmd1);
+			DataOutputStream os = new DataOutputStream(p.getOutputStream());
+
+			Log.e(TAG, cmd1);
+
+			os.writeBytes(password + "\n");
+			os.flush();
+
+			p.waitFor();
+			p.destroy();
+			os.close();
+
+		} catch (Exception e) {
+			Log.e(TAG, e.getMessage());
+		}
+		
+		try {
+			String cmd2 = cmd + " bash ./run.sh";
+			proxyProcess = Runtime.getRuntime().exec(cmd2);
+
+			proxyOS = new DataOutputStream(proxyProcess.getOutputStream());
+
+			Log.e(TAG, cmd2);
+
+			proxyOS.writeBytes(password + "\n");
+			proxyOS.flush();
+
+		} catch (Exception e) {
+			Log.e(TAG, e.getMessage());
+		}
+		
+		try {
+			cmd = "";
 			if (isARMv6())
 				cmd = "/data/data/org.sshtunnel/ssh_g1 -N -T -y -L "
 						+ localPort + ":" + "127.0.0.1" + ":" + remotePort
@@ -277,6 +327,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			Log.e(TAG, e.getMessage());
 			return false;
 		}
+
+
 		finishConnection();
 		return true;
 	}
@@ -303,7 +355,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 						+ "--dport 443 -j REDIRECT --to-ports 8124\n"
 						+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p udp "
 						+ "--dport 53 -j REDIRECT --to-ports 8153";
-				runRootCommand(hasRedirectSupport ? cmd : getCmd(CMD_IPTABLES_DNAT_DEL_G1));
+				runRootCommand(hasRedirectSupport ? cmd
+						: getCmd(CMD_IPTABLES_DNAT_DEL_G1));
 			} else {
 				String cmd = "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p tcp "
 						+ "--dport 80 -j REDIRECT --to-ports 8123\n"
@@ -314,7 +367,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 						+ "--dport 443 -j REDIRECT --to-ports 8124\n"
 						+ "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p udp "
 						+ "--dport 53 -j REDIRECT --to-ports 8153";
-				runRootCommand(hasRedirectSupport ? cmd : getCmd(CMD_IPTABLES_DNAT_DEL_N1));
+				runRootCommand(hasRedirectSupport ? cmd
+						: getCmd(CMD_IPTABLES_DNAT_DEL_N1));
 			}
 
 			if (isARMv6()) {
@@ -327,7 +381,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 						+ "--dport 443 -j REDIRECT --to-ports 8124\n"
 						+ "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p udp "
 						+ "--dport 53 -j REDIRECT --to-ports 8153";
-				runRootCommand(hasRedirectSupport ? cmd : getCmd(CMD_IPTABLES_DNAT_ADD_G1));
+				runRootCommand(hasRedirectSupport ? cmd
+						: getCmd(CMD_IPTABLES_DNAT_ADD_G1));
 			} else {
 				String cmd = "/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
 						+ "--dport 80 -j REDIRECT --to-ports 8123\n"
@@ -338,7 +393,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 						+ "--dport 443 -j REDIRECT --to-ports 8124\n"
 						+ "/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p udp "
 						+ "--dport 53 -j REDIRECT --to-ports 8153";
-				runRootCommand(hasRedirectSupport ? cmd : getCmd(CMD_IPTABLES_DNAT_ADD_N1));
+				runRootCommand(hasRedirectSupport ? cmd
+						: getCmd(CMD_IPTABLES_DNAT_ADD_N1));
 			}
 		}
 
@@ -346,8 +402,10 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		return;
 
 	}
-    private String getCmd(String cmd) {
-        return cmd.replace("--dport 443", "! -d "  + hostIP + " " + "--dport 443");
+
+	private String getCmd(String cmd) {
+		return cmd.replace("--dport 443", "! -d " + hostIP + " "
+				+ "--dport 443");
 	}
 
 	/** Called when the activity is first created. */
@@ -398,18 +456,19 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	}
 
 	private void initSoundVibrateLights(Notification notification) {
-		final String ringtone = settings.getString("settings_key_notif_ringtone", null);
-        AudioManager audioManager = (AudioManager)this.getSystemService(
-                Context.AUDIO_SERVICE);
-        if(audioManager.getStreamVolume(AudioManager.STREAM_RING) == 0) {
-            notification.sound = null;
-        } else if (ringtone != null)
+		final String ringtone = settings.getString(
+				"settings_key_notif_ringtone", null);
+		AudioManager audioManager = (AudioManager) this
+				.getSystemService(Context.AUDIO_SERVICE);
+		if (audioManager.getStreamVolume(AudioManager.STREAM_RING) == 0) {
+			notification.sound = null;
+		} else if (ringtone != null)
 			notification.sound = Uri.parse(ringtone);
-        else
-        	notification.defaults |= Notification.DEFAULT_SOUND;
+		else
+			notification.defaults |= Notification.DEFAULT_SOUND;
 
-		if (settings.getBoolean("settings_key_notif_vibrate",false)) {
-			long[] vibrate = {0, 1000, 500, 1000, 500, 1000};
+		if (settings.getBoolean("settings_key_notif_vibrate", false)) {
+			long[] vibrate = { 0, 1000, 500, 1000, 500, 1000 };
 			notification.vibrate = vibrate;
 		}
 
@@ -525,7 +584,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 						+ "--dport 443 -j REDIRECT --to-ports 8124\n"
 						+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p udp "
 						+ "--dport 53 -j REDIRECT --to-ports 8153";
-				runRootCommand(hasRedirectSupport ? cmd : getCmd(CMD_IPTABLES_DNAT_DEL_G1));
+				runRootCommand(hasRedirectSupport ? cmd
+						: getCmd(CMD_IPTABLES_DNAT_DEL_G1));
 			} else {
 				String cmd = "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p tcp "
 						+ "--dport 80 -j REDIRECT --to-ports 8123\n"
@@ -536,7 +596,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 						+ "--dport 443 -j REDIRECT --to-ports 8124\n"
 						+ "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p udp "
 						+ "--dport 53 -j REDIRECT --to-ports 8153";
-				runRootCommand(hasRedirectSupport ? cmd : getCmd(CMD_IPTABLES_DNAT_DEL_N1));
+				runRootCommand(hasRedirectSupport ? cmd
+						: getCmd(CMD_IPTABLES_DNAT_DEL_N1));
 			}
 
 			runRootCommand("/data/data/org.sshtunnel/proxy.sh stop");

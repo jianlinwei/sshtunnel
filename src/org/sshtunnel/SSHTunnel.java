@@ -549,6 +549,7 @@ public class SSHTunnel extends PreferenceActivity implements
 					Log.e(TAG, cmd1);
 
 					os.writeBytes(password + "\n");
+					os.flush();
 
 					p.waitFor();
 					
@@ -561,6 +562,7 @@ public class SSHTunnel extends PreferenceActivity implements
 
 					os.writeBytes(password + "\n");
 					
+					os.flush();
 					p.waitFor();
 					
 					showAToast(getString(R.string.setup_alert));
