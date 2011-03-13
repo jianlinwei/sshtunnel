@@ -510,6 +510,14 @@ public class SSHTunnel extends PreferenceActivity implements
 		} catch (Exception e) {
 			// Nothing
 		}
+		
+		try {
+			File cache = new File(SSHTunnelService.BASE + "cache/dnscache");
+			if (cache.exists())
+				cache.delete();
+		} catch (Exception ignore) {
+			// Nothing
+		}
 
 		if (SSHTunnelService.isARMv6()) {
 			runRootCommand(SSHTunnelService.BASE
