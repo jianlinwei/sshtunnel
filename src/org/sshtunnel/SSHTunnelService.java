@@ -485,6 +485,23 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 				// for proxy specified apps
 				ProxyedApp[] apps = AppManager.getApps(this);
 				StringBuffer cmd = new StringBuffer();
+				
+				if (isARMv6()) {
+					cmd.append((hasRedirectSupport ? CMD_IPTABLES_REDIRECT_DEL_G1
+							: CMD_IPTABLES_DNAT_DEL_G1).replace("-t nat",
+							"-t nat -m owner --uid-owner root"));
+					cmd.append((hasRedirectSupport ? CMD_IPTABLES_REDIRECT_ADD_G1
+							: CMD_IPTABLES_DNAT_DEL_G1).replace("-t nat",
+							"-t nat -m owner --uid-owner root"));
+				} else {
+					cmd.append((hasRedirectSupport ? CMD_IPTABLES_REDIRECT_DEL_N1
+							: CMD_IPTABLES_DNAT_DEL_N1).replace("-t nat",
+							"-t nat -m owner --uid-owner root"));
+					cmd.append((hasRedirectSupport ? CMD_IPTABLES_REDIRECT_ADD_N1
+							: CMD_IPTABLES_DNAT_DEL_N1).replace("-t nat",
+							"-t nat -m owner --uid-owner root"));
+				}
+
 				for (int i = 0; i < apps.length; i++) {
 					if (apps[i].isProxyed()) {
 						// XXX: Flush iptables first?
@@ -551,7 +568,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		isAutoReconnect = bundle.getBoolean("isAutoReconnect");
 		isAutoSetProxy = bundle.getBoolean("isAutoSetProxy");
 
-//		dnsServer = new DNSServer("DNS Server", 8153, "208.67.222.222", 5353);
+		// dnsServer = new DNSServer("DNS Server", 8153, "208.67.222.222",
+		// 5353);
 		dnsServer = new DNSServer("DNS Server", 8153, "8.8.8.8", 53);
 		// dnsServer = new DNSServer("DNS Server", 8153, "127.0.0.1", 5353);
 		dnsServer.setBasePath("/data/data/org.sshtunnel");
@@ -681,6 +699,15 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			// for proxy specified apps
 			ProxyedApp[] apps = AppManager.getApps(this);
 			StringBuffer cmd = new StringBuffer();
+			if (isARMv6()) {
+				cmd.append((hasRedirectSupport ? CMD_IPTABLES_REDIRECT_DEL_G1
+						: CMD_IPTABLES_DNAT_DEL_G1).replace("-t nat",
+						"-t nat -m owner --uid-owner root"));
+			} else {
+				cmd.append((hasRedirectSupport ? CMD_IPTABLES_REDIRECT_DEL_N1
+						: CMD_IPTABLES_DNAT_DEL_N1).replace("-t nat",
+						"-t nat -m owner --uid-owner root"));
+			}
 			for (int i = 0; i < apps.length; i++) {
 				if (apps[i].isProxyed()) {
 					if (isARMv6()) {
