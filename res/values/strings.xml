@@ -22,7 +22,7 @@
 	<string name="remote_port">Remote Port</string>
 	<string name="auto_connect">Connect at boot</string>
 	<string name="auto_reconnect">Auto reconnect</string>
-	<string name="auto_set_proxy">Auto set proxy</string>
+	<string name="auto_set_proxy">Global proxy</string>
 	<string name="disconnect">Disconnect</string>
 	<string name="connect">Connect</string>
 	<string name="feedback">Feedback @ofmax</string>
@@ -54,4 +54,5 @@
 		closed unexpected</string>
 	<string name="recovery">Recover the connection status</string>
 	<string name="number_alert">Please check your port number</string>
+	<string name="proxyed_apps">Choose Apps through proxy</string>
 </resources>

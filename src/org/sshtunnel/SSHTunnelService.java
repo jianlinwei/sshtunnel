@@ -64,9 +64,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	public final static String BASE = "/data/data/org.sshtunnel/";
 
 	private static final Class<?>[] mStartForegroundSignature = new Class[] {
-	    int.class, Notification.class};
-	private static final Class<?>[] mStopForegroundSignature = new Class[] {
-	    boolean.class};
+			int.class, Notification.class };
+	private static final Class<?>[] mStopForegroundSignature = new Class[] { boolean.class };
 
 	private Method mStartForeground;
 	private Method mStopForeground;
@@ -75,15 +74,15 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	private Object[] mStopForegroundArgs = new Object[1];
 
 	void invokeMethod(Method method, Object[] args) {
-	    try {
-	        method.invoke(this, mStartForegroundArgs);
-	    } catch (InvocationTargetException e) {
-	        // Should not happen.
-	        Log.w("ApiDemos", "Unable to invoke method", e);
-	    } catch (IllegalAccessException e) {
-	        // Should not happen.
-	        Log.w("ApiDemos", "Unable to invoke method", e);
-	    }
+		try {
+			method.invoke(this, mStartForegroundArgs);
+		} catch (InvocationTargetException e) {
+			// Should not happen.
+			Log.w("ApiDemos", "Unable to invoke method", e);
+		} catch (IllegalAccessException e) {
+			// Should not happen.
+			Log.w("ApiDemos", "Unable to invoke method", e);
+		}
 	}
 
 	/**
@@ -91,17 +90,17 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	 * APIs if it is not available.
 	 */
 	void startForegroundCompat(int id, Notification notification) {
-	    // If we have the new startForeground API, then use it.
-	    if (mStartForeground != null) {
-	        mStartForegroundArgs[0] = Integer.valueOf(id);
-	        mStartForegroundArgs[1] = notification;
-	        invokeMethod(mStartForeground, mStartForegroundArgs);
-	        return;
-	    }
+		// If we have the new startForeground API, then use it.
+		if (mStartForeground != null) {
+			mStartForegroundArgs[0] = Integer.valueOf(id);
+			mStartForegroundArgs[1] = notification;
+			invokeMethod(mStartForeground, mStartForegroundArgs);
+			return;
+		}
 
-	    // Fall back on the old API.
-	    setForeground(true);
-	    notificationManager.notify(id, notification);
+		// Fall back on the old API.
+		setForeground(true);
+		notificationManager.notify(id, notification);
 	}
 
 	/**
@@ -109,30 +108,30 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	 * APIs if it is not available.
 	 */
 	void stopForegroundCompat(int id) {
-	    // If we have the new stopForeground API, then use it.
-	    if (mStopForeground != null) {
-	        mStopForegroundArgs[0] = Boolean.TRUE;
-	        try {
-	            mStopForeground.invoke(this, mStopForegroundArgs);
-	        } catch (InvocationTargetException e) {
-	            // Should not happen.
-	            Log.w("ApiDemos", "Unable to invoke stopForeground", e);
-	        } catch (IllegalAccessException e) {
-	            // Should not happen.
-	            Log.w("ApiDemos", "Unable to invoke stopForeground", e);
-	        }
-	        return;
-	    }
+		// If we have the new stopForeground API, then use it.
+		if (mStopForeground != null) {
+			mStopForegroundArgs[0] = Boolean.TRUE;
+			try {
+				mStopForeground.invoke(this, mStopForegroundArgs);
+			} catch (InvocationTargetException e) {
+				// Should not happen.
+				Log.w("ApiDemos", "Unable to invoke stopForeground", e);
+			} catch (IllegalAccessException e) {
+				// Should not happen.
+				Log.w("ApiDemos", "Unable to invoke stopForeground", e);
+			}
+			return;
+		}
 
-	    // Fall back on the old API.  Note to cancel BEFORE changing the
-	    // foreground state, since we could be killed at that point.
-	    notificationManager.cancel(id);
-	    setForeground(false);
+		// Fall back on the old API. Note to cancel BEFORE changing the
+		// foreground state, since we could be killed at that point.
+		notificationManager.cancel(id);
+		setForeground(false);
 	}
 
 	/**
 	 * Check if this is an ARMv6 device
-	 *
+	 * 
 	 * @return true if this is ARMv6
 	 */
 	public static boolean isARMv6() {
@@ -203,7 +202,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 		if (isARMv6()) {
 			command = "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p udp --dport 53 -j REDIRECT --to-ports 8153";
-		}else
+		} else
 			command = "/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p udp --dport 53 -j REDIRECT --to-ports 8153";
 
 		try {
@@ -215,7 +214,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			os.flush();
 			process.waitFor();
 
-			while(null != (line = es.readLine())) {
+			while (null != (line = es.readLine())) {
 				Log.d(TAG, line);
 				if (line.contains("No chain/target/match")) {
 					this.hasRedirectSupport = false;
@@ -237,7 +236,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			}
 		}
 
-		//flush the check command
+		// flush the check command
 		runRootCommand(command.replace("-A", "-D"));
 	}
 
@@ -285,12 +284,12 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 			/*
 			 * DebugLogger logger = new DebugLogger() {
-			 *
+			 * 
 			 * public void log(int level, String className, String message) {
 			 * Log.d("SSH", message); }
-			 *
+			 * 
 			 * };
-			 *
+			 * 
 			 * Logger.enabled = true; Logger.logger = logger;
 			 */
 
@@ -400,7 +399,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 		/*
 		 * DynamicPortForwarder dpf = null;
-		 *
+		 * 
 		 * try { dpf = connection.createDynamicPortForwarder(new
 		 * InetSocketAddress( InetAddress.getLocalHost(), 1984)); } catch
 		 * (Exception e) { Log.e(TAG, "Could not create dynamic port forward",
@@ -420,22 +419,37 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		return true;
 	}
 
-    final static String CMD_IPTABLES_DNAT_DEL_G1 = "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp --dport 80 -j DNAT --to-destination 127.0.0.1:8123\n" +
-        "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp --dport 443 -j DNAT --to-destination 127.0.0.1:8124\n" +
-        "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:8153";
-    final static String CMD_IPTABLES_DNAT_ADD_G1 =
-        "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp --dport 80 -j DNAT --to-destination 127.0.0.1:8123\n" +
-        "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp --dport 443 -j DNAT --to-destination 127.0.0.1:8124\n" +
-        "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:8153";
+	final static String CMD_IPTABLES_REDIRECT_DEL_G1 = "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp --dport 80 -j REDIRECT --to-ports 8123\n"
+			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp --dport 443 -j REDIRECT --to-ports 8124\n"
+			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p udp --dport 53 -j REDIRECT --to-ports 8153\n";
 
-    final static String CMD_IPTABLES_DNAT_DEL_N1 = "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p tcp --dport 80 -j DNAT --to-destination 127.0.0.1:8123\n" +
-    	"/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p tcp --dport 443 -j DNAT --to-destination 127.0.0.1:8124\n" +
-    	"/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:8153";
+	final static String CMD_IPTABLES_REDIRECT_ADD_G1 = "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp --dport 80 -j REDIRECT --to-ports 8123\n"
+			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp --dport 443 -j REDIRECT --to-ports 8124\n"
+			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p udp --dport 53 -j REDIRECT --to-ports 8153\n";
 
-    final static String CMD_IPTABLES_DNAT_ADD_N1 =
-    	"/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp --dport 80 -j DNAT --to-destination 127.0.0.1:8123\n" +
-    	"/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp --dport 443 -j DNAT --to-destination 127.0.0.1:8124\n" +
-    	"/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:8153";
+	final static String CMD_IPTABLES_REDIRECT_DEL_N1 = "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p tcp --dport 80 -j REDIRECT --to-ports 8123\n"
+			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp --dport 443 -j REDIRECT --to-ports 8124\n"
+			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p udp --dport 53 -j REDIRECT --to-ports 8153\n";
+
+	final static String CMD_IPTABLES_REDIRECT_ADD_N1 = "/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp --dport 80 -j REDIRECT --to-ports 8123\n"
+			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp --dport 443 -j REDIRECT --to-ports 8124\n"
+			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p udp --dport 53 -j REDIRECT --to-ports 8153\n";
+
+	final static String CMD_IPTABLES_DNAT_DEL_G1 = "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp --dport 80 -j DNAT --to-destination 127.0.0.1:8123\n"
+			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp --dport 443 -j DNAT --to-destination 127.0.0.1:8124\n"
+			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:8153\n";
+
+	final static String CMD_IPTABLES_DNAT_ADD_G1 = "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp --dport 80 -j DNAT --to-destination 127.0.0.1:8123\n"
+			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp --dport 443 -j DNAT --to-destination 127.0.0.1:8124\n"
+			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:8153\n";
+
+	final static String CMD_IPTABLES_DNAT_DEL_N1 = "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p tcp --dport 80 -j DNAT --to-destination 127.0.0.1:8123\n"
+			+ "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p tcp --dport 443 -j DNAT --to-destination 127.0.0.1:8124\n"
+			+ "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:8153\n";
+
+	final static String CMD_IPTABLES_DNAT_ADD_N1 = "/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp --dport 80 -j DNAT --to-destination 127.0.0.1:8123\n"
+			+ "/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp --dport 443 -j DNAT --to-destination 127.0.0.1:8124\n"
+			+ "/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:8153\n";
 
 	/**
 	 * Internal method to request actual PTY terminal once we've finished
@@ -445,45 +459,70 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 		if (enablePortForward()) {
 			Log.e(TAG, "Forward Successful");
+
+			runRootCommand("/data/data/org.sshtunnel/proxy.sh start "
+					+ localPort);
 			if (isAutoSetProxy) {
-				runRootCommand("/data/data/org.sshtunnel/proxy.sh start "
-						+ localPort);
+
 				// XXX: Flush iptables first?
 				if (isARMv6()) {
-					String cmd = "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp "
-							+ "--dport 80 -j REDIRECT --to-ports 8123\n"
-							+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp "
-							+ "--dport 443 -j REDIRECT --to-ports 8124\n"
-							+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p udp "
-							+ "--dport 53 -j REDIRECT --to-ports 8153";
-					runRootCommand(hasRedirectSupport ? cmd : CMD_IPTABLES_DNAT_DEL_G1);
+
+					runRootCommand(hasRedirectSupport ? CMD_IPTABLES_REDIRECT_DEL_G1
+							: CMD_IPTABLES_DNAT_DEL_G1);
 				} else {
-					String cmd = "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p tcp "
-							+ "--dport 80 -j REDIRECT --to-ports 8123\n"
-							+ "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p tcp "
-							+ "--dport 443 -j REDIRECT --to-ports 8124\n"
-							+ "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p udp "
-							+ "--dport 53 -j REDIRECT --to-ports 8153";
-					runRootCommand(hasRedirectSupport ? cmd : CMD_IPTABLES_DNAT_DEL_N1);
+					runRootCommand(hasRedirectSupport ? CMD_IPTABLES_REDIRECT_DEL_N1
+							: CMD_IPTABLES_DNAT_DEL_N1);
 				}
 
 				if (isARMv6()) {
-					String cmd = "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp "
-							+ "--dport 80 -j REDIRECT --to-ports 8123\n"
-							+ "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp "
-							+ "--dport 443 -j REDIRECT --to-ports 8124\n"
-							+ "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p udp "
-							+ "--dport 53 -j REDIRECT --to-ports 8153";
-					runRootCommand(hasRedirectSupport ? cmd : CMD_IPTABLES_DNAT_ADD_G1);
+					runRootCommand(hasRedirectSupport ? CMD_IPTABLES_REDIRECT_ADD_G1
+							: CMD_IPTABLES_DNAT_ADD_G1);
 				} else {
-					String cmd = "/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
-							+ "--dport 80 -j REDIRECT --to-ports 8123\n"
-							+ "/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp "
-							+ "--dport 443 -j REDIRECT --to-ports 8124\n"
-							+ "/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p udp "
-							+ "--dport 53 -j REDIRECT --to-ports 8153";
-					runRootCommand(hasRedirectSupport ? cmd : CMD_IPTABLES_DNAT_ADD_N1);
+					runRootCommand(hasRedirectSupport ? CMD_IPTABLES_REDIRECT_ADD_N1
+							: CMD_IPTABLES_DNAT_ADD_N1);
 				}
+			} else {
+				// for proxy specified apps
+				ProxyedApp[] apps = AppManager.getApps(this);
+				StringBuffer cmd = new StringBuffer();
+				for (int i = 0; i < apps.length; i++) {
+					if (apps[i].isProxyed()) {
+						// XXX: Flush iptables first?
+						if (apps[i].isProxyed()) {
+							if (isARMv6()) {
+								cmd.append((hasRedirectSupport ? CMD_IPTABLES_REDIRECT_DEL_G1
+										: CMD_IPTABLES_DNAT_DEL_G1).replace(
+										"-t nat",
+										"-t nat -m owner --uid-owner "
+												+ apps[i].getUid()));
+							} else {
+								cmd.append((hasRedirectSupport ? CMD_IPTABLES_REDIRECT_DEL_N1
+										: CMD_IPTABLES_DNAT_DEL_N1).replace(
+										"-t nat",
+										"-t nat -m owner --uid-owner "
+												+ apps[i].getUid()));
+							}
+						}
+
+						if (apps[i].isProxyed()) {
+							if (isARMv6()) {
+								cmd.append((hasRedirectSupport ? CMD_IPTABLES_REDIRECT_ADD_G1
+										: CMD_IPTABLES_DNAT_DEL_G1).replace(
+										"-t nat",
+										"-t nat -m owner --uid-owner "
+												+ apps[i].getUid()));
+							} else {
+								cmd.append((hasRedirectSupport ? CMD_IPTABLES_REDIRECT_ADD_N1
+										: CMD_IPTABLES_DNAT_DEL_N1).replace(
+										"-t nat",
+										"-t nat -m owner --uid-owner "
+												+ apps[i].getUid()));
+							}
+						}
+					}
+				}
+				runRootCommand(cmd.toString());
+
 			}
 
 			// Forward Successful
@@ -555,18 +594,19 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		this.initHasRedirectSupported();
 
 		intent = new Intent(this, SSHTunnel.class);
+		intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
 		pendIntent = PendingIntent.getActivity(this, 0, intent, 0);
 		notification = new Notification();
 
-        try {
-            mStartForeground = getClass().getMethod("startForeground",
-                    mStartForegroundSignature);
-            mStopForeground = getClass().getMethod("stopForeground",
-                    mStopForegroundSignature);
-        } catch (NoSuchMethodException e) {
-            // Running on an older platform.
-            mStartForeground = mStopForeground = null;
-        }
+		try {
+			mStartForeground = getClass().getMethod("startForeground",
+					mStartForegroundSignature);
+			mStopForeground = getClass().getMethod("stopForeground",
+					mStopForegroundSignature);
+		} catch (NoSuchMethodException e) {
+			// Running on an older platform.
+			mStartForeground = mStopForeground = null;
+		}
 	}
 
 	/** Called when the activity is closed. */
@@ -596,6 +636,12 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		ed.putBoolean("isRunning", false);
 		ed.commit();
 
+		try {
+			notificationManager.cancel(0);
+		} catch (Exception ignore) {
+			// Nothing
+		}
+
 		super.onDestroy();
 	}
 
@@ -623,25 +669,37 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 		if (isAutoSetProxy) {
 			if (isARMv6()) {
-				String cmd = "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp "
-						+ "--dport 80 -j REDIRECT --to-ports 8123\n"
-						+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp "
-						+ "--dport 443 -j REDIRECT --to-ports 8124\n"
-						+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p udp "
-						+ "--dport 53 -j REDIRECT --to-ports 8153";
-				runRootCommand(hasRedirectSupport ? cmd : CMD_IPTABLES_DNAT_DEL_G1);
+				runRootCommand(hasRedirectSupport ? CMD_IPTABLES_REDIRECT_DEL_G1
+						: CMD_IPTABLES_DNAT_DEL_G1);
 			} else {
-				String cmd = "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p tcp "
-						+ "--dport 80 -j REDIRECT --to-ports 8123\n"
-						+ "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p tcp "
-						+ "--dport 443 -j REDIRECT --to-ports 8124\n"
-						+ "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p udp "
-						+ "--dport 53 -j REDIRECT --to-ports 8153";
-				runRootCommand(hasRedirectSupport ? cmd : CMD_IPTABLES_DNAT_DEL_N1);
-			}
 
-			runRootCommand("/data/data/org.sshtunnel/proxy.sh stop");
+				runRootCommand(hasRedirectSupport ? CMD_IPTABLES_REDIRECT_DEL_N1
+						: CMD_IPTABLES_DNAT_DEL_N1);
+			}
+		} else {
+			// for proxy specified apps
+			ProxyedApp[] apps = AppManager.getApps(this);
+			StringBuffer cmd = new StringBuffer();
+			for (int i = 0; i < apps.length; i++) {
+				if (apps[i].isProxyed()) {
+					if (isARMv6()) {
+						cmd.append((hasRedirectSupport ? CMD_IPTABLES_REDIRECT_DEL_G1
+								: CMD_IPTABLES_DNAT_DEL_G1).replace(
+								"-t nat",
+								"-t nat -m owner --uid-owner "
+										+ apps[i].getUid()));
+					} else {
+						cmd.append((hasRedirectSupport ? CMD_IPTABLES_REDIRECT_DEL_N1
+								: CMD_IPTABLES_DNAT_DEL_N1).replace(
+								"-t nat",
+								"-t nat -m owner --uid-owner "
+										+ apps[i].getUid()));
+					}
+				}
+			}
+			runRootCommand(cmd.toString());
 		}
+		runRootCommand("/data/data/org.sshtunnel/proxy.sh stop");
 
 	}
 

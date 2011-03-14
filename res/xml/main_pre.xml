@@ -14,8 +14,8 @@
 	<PreferenceCategory android:title="@string/user_cat">
 		<EditTextPreference android:title="@string/user"
 			android:key="user" android:summary="@string/user_summary"></EditTextPreference>
-		<EditTextPreference android:title="@string/password" android:password="true"
-			android:key="password" android:summary="@string/password_summary"></EditTextPreference>
+		<EditTextPreference android:title="@string/password"
+			android:password="true" android:key="password" android:summary="@string/password_summary"></EditTextPreference>
 	</PreferenceCategory>
 	<PreferenceCategory android:title="@string/port_cat">
 		<EditTextPreference android:title="@string/local_port"
@@ -30,6 +30,7 @@
 			android:title="@string/auto_reconnect" android:summary="@string/auto_reconnect_summary"></CheckBoxPreference>
 		<CheckBoxPreference android:key="isAutoSetProxy"
 			android:title="@string/auto_set_proxy" android:summary="@string/auto_set_proxy_summary"></CheckBoxPreference>
+		<Preference android:key="proxyedApps" android:title="@string/proxyed_apps"></Preference>
 
 	</PreferenceCategory>
 
