@@ -379,7 +379,7 @@ public class DNSServer implements WrapServer {
 					.clone();
 			for (DnsResponse resp : dnsCache.values()) {
 				// 检查缓存时效(十天)
-				if ((System.currentTimeMillis() - resp.getTimestamp()) > 864000000L) {
+				if ((System.currentTimeMillis() - resp.getTimestamp()) > 86400000L) {
 					Log.d(TAG, "删除" + resp.getRequest() + "记录");
 					tmpCache.remove(resp.getRequest());
 				}
