@@ -510,7 +510,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 						}
 					}
 				}
-				Log.d(TAG, cmd.toString());
 				runRootCommand(cmd.toString());
 
 			}
