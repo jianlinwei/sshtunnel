@@ -671,6 +671,20 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			// for proxy specified apps
 			ProxyedApp[] apps = AppManager.getApps(this);
 			StringBuffer cmd = new StringBuffer();
+			
+			if (hasRedirectSupport) {
+				if (isARMv6()) {
+					cmd.append("/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p udp --dport 53 -j REDIRECT --to-ports 8153\n");
+				} else {
+					cmd.append("/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p udp --dport 53 -j REDIRECT --to-ports 8153\n");
+				}
+			} else {
+				if (isARMv6()) {
+					cmd.append("/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:8153\n");
+				} else {
+					cmd.append("/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:8153\n");
+				}
+			}
 
 			for (int i = 0; i < apps.length; i++) {
 				if (apps[i].isProxyed()) {
