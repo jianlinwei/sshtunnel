@@ -424,16 +424,16 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p udp --dport 53 -j REDIRECT --to-ports 8153\n";
 
 	final static String CMD_IPTABLES_REDIRECT_ADD_G1 = "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp --dport 80 -j REDIRECT --to-ports 8123\n"
-			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp --dport 443 -j REDIRECT --to-ports 8124\n"
-			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p udp --dport 53 -j REDIRECT --to-ports 8153\n";
+			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp --dport 443 -j REDIRECT --to-ports 8124\n"
+			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p udp --dport 53 -j REDIRECT --to-ports 8153\n";
 
 	final static String CMD_IPTABLES_REDIRECT_DEL_N1 = "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p tcp --dport 80 -j REDIRECT --to-ports 8123\n"
 			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp --dport 443 -j REDIRECT --to-ports 8124\n"
 			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p udp --dport 53 -j REDIRECT --to-ports 8153\n";
 
 	final static String CMD_IPTABLES_REDIRECT_ADD_N1 = "/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp --dport 80 -j REDIRECT --to-ports 8123\n"
-			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp --dport 443 -j REDIRECT --to-ports 8124\n"
-			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p udp --dport 53 -j REDIRECT --to-ports 8153\n";
+			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp --dport 443 -j REDIRECT --to-ports 8124\n"
+			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p udp --dport 53 -j REDIRECT --to-ports 8153\n";
 
 	final static String CMD_IPTABLES_DNAT_DEL_G1 = "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp --dport 80 -j DNAT --to-destination 127.0.0.1:8123\n"
 			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp --dport 443 -j DNAT --to-destination 127.0.0.1:8124\n"
@@ -462,17 +462,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 			runRootCommand("/data/data/org.sshtunnel/proxy.sh start "
 					+ localPort);
+			
 			if (isAutoSetProxy) {
-
-				// XXX: Flush iptables first?
-				if (isARMv6()) {
-
-					runRootCommand(hasRedirectSupport ? CMD_IPTABLES_REDIRECT_DEL_G1
-							: CMD_IPTABLES_DNAT_DEL_G1);
-				} else {
-					runRootCommand(hasRedirectSupport ? CMD_IPTABLES_REDIRECT_DEL_N1
-							: CMD_IPTABLES_DNAT_DEL_N1);
-				}
 
 				if (isARMv6()) {
 					runRootCommand(hasRedirectSupport ? CMD_IPTABLES_REDIRECT_ADD_G1
@@ -485,41 +476,22 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 				// for proxy specified apps
 				ProxyedApp[] apps = AppManager.getApps(this);
 				StringBuffer cmd = new StringBuffer();
-				
-				if (isARMv6()) {
-					cmd.append((hasRedirectSupport ? CMD_IPTABLES_REDIRECT_DEL_G1
-							: CMD_IPTABLES_DNAT_DEL_G1).replace("-t nat",
-							"-t nat -m owner --uid-owner root"));
-					cmd.append((hasRedirectSupport ? CMD_IPTABLES_REDIRECT_ADD_G1
-							: CMD_IPTABLES_DNAT_DEL_G1).replace("-t nat",
-							"-t nat -m owner --uid-owner root"));
+				if (hasRedirectSupport) {
+					if (isARMv6()) {
+						cmd.append("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p udp --dport 53 -j REDIRECT --to-ports 8153\n");
+					} else {
+						cmd.append("/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p udp --dport 53 -j REDIRECT --to-ports 8153\n");
+					}
 				} else {
-					cmd.append((hasRedirectSupport ? CMD_IPTABLES_REDIRECT_DEL_N1
-							: CMD_IPTABLES_DNAT_DEL_N1).replace("-t nat",
-							"-t nat -m owner --uid-owner root"));
-					cmd.append((hasRedirectSupport ? CMD_IPTABLES_REDIRECT_ADD_N1
-							: CMD_IPTABLES_DNAT_DEL_N1).replace("-t nat",
-							"-t nat -m owner --uid-owner root"));
+					if (isARMv6()) {
+						cmd.append("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:8153\n");
+					} else {
+						cmd.append("/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:8153\n");
+					}
 				}
 
 				for (int i = 0; i < apps.length; i++) {
 					if (apps[i].isProxyed()) {
-						// XXX: Flush iptables first?
-						if (apps[i].isProxyed()) {
-							if (isARMv6()) {
-								cmd.append((hasRedirectSupport ? CMD_IPTABLES_REDIRECT_DEL_G1
-										: CMD_IPTABLES_DNAT_DEL_G1).replace(
-										"-t nat",
-										"-t nat -m owner --uid-owner "
-												+ apps[i].getUid()));
-							} else {
-								cmd.append((hasRedirectSupport ? CMD_IPTABLES_REDIRECT_DEL_N1
-										: CMD_IPTABLES_DNAT_DEL_N1).replace(
-										"-t nat",
-										"-t nat -m owner --uid-owner "
-												+ apps[i].getUid()));
-							}
-						}
 
 						if (apps[i].isProxyed()) {
 							if (isARMv6()) {
@@ -538,6 +510,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 						}
 					}
 				}
+				Log.d(TAG, cmd.toString());
 				runRootCommand(cmd.toString());
 
 			}
@@ -699,15 +672,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			// for proxy specified apps
 			ProxyedApp[] apps = AppManager.getApps(this);
 			StringBuffer cmd = new StringBuffer();
-			if (isARMv6()) {
-				cmd.append((hasRedirectSupport ? CMD_IPTABLES_REDIRECT_DEL_G1
-						: CMD_IPTABLES_DNAT_DEL_G1).replace("-t nat",
-						"-t nat -m owner --uid-owner root"));
-			} else {
-				cmd.append((hasRedirectSupport ? CMD_IPTABLES_REDIRECT_DEL_N1
-						: CMD_IPTABLES_DNAT_DEL_N1).replace("-t nat",
-						"-t nat -m owner --uid-owner root"));
-			}
+
 			for (int i = 0; i < apps.length; i++) {
 				if (apps[i].isProxyed()) {
 					if (isARMv6()) {
