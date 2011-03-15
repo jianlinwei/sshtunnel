@@ -51,5 +51,5 @@
 <string name="recovery">清除连接状态</string>
 <string name="number_alert">请检查端口号设置，必须为数字</string>
 <string name="proxyed_apps">为应用分别设置代理</string>
-
+<string name="proxyed_help">选择使用SSHTunnel的应用:</string>
 </resources>
