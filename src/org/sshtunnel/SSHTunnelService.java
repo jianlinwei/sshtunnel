@@ -26,6 +26,7 @@ import android.util.Log;
 
 import com.trilead.ssh2.Connection;
 import com.trilead.ssh2.ConnectionMonitor;
+import com.trilead.ssh2.DynamicPortForwarder;
 import com.trilead.ssh2.LocalPortForwarder;
 
 public class SSHTunnelService extends Service implements ConnectionMonitor {
@@ -46,8 +47,9 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	private String password;
 	private boolean isAutoReconnect = false;
 	private boolean isAutoSetProxy = false;
-	private LocalPortForwarder lpf1 = null;
-	// private LocalPortForwarder lpf2 = null;
+	private boolean isSocks = false;
+	private LocalPortForwarder lpf = null;
+	private DynamicPortForwarder dpf = null;
 	private DNSServer dnsServer = null;
 
 	private final static int AUTH_TRIES = 2;
@@ -408,8 +410,13 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 		// LocalPortForwarder lpf1 = null;
 		try {
-			lpf1 = connection.createLocalPortForwarder(localPort, "127.0.0.1",
-					remotePort);
+			if (isSocks) {
+				dpf = connection.createDynamicPortForwarder(localPort);
+			} else {
+				lpf = connection.createLocalPortForwarder(localPort,
+						"127.0.0.1", remotePort);
+			}
+
 			// lpf2 = connection.createLocalPortForwarder(5353, "8.8.8.8", 53);
 		} catch (Exception e) {
 			Log.e(TAG, "Could not create local port forward", e);
@@ -420,36 +427,36 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	}
 
 	final static String CMD_IPTABLES_REDIRECT_DEL_G1 = "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp --dport 80 -j REDIRECT --to-ports 8123\n"
-			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp --dport 443 -j REDIRECT --to-ports 8124\n"
-			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p udp --dport 53 -j REDIRECT --to-ports 8153\n";
+			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp --dport 443 -j REDIRECT --to-ports 8124\n";
+//			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p udp --dport 53 -j REDIRECT --to-ports 8153\n";
 
 	final static String CMD_IPTABLES_REDIRECT_ADD_G1 = "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp --dport 80 -j REDIRECT --to-ports 8123\n"
-			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp --dport 443 -j REDIRECT --to-ports 8124\n"
-			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p udp --dport 53 -j REDIRECT --to-ports 8153\n";
+			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp --dport 443 -j REDIRECT --to-ports 8124\n";
+//			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p udp --dport 53 -j REDIRECT --to-ports 8153\n";
 
 	final static String CMD_IPTABLES_REDIRECT_DEL_N1 = "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p tcp --dport 80 -j REDIRECT --to-ports 8123\n"
-			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp --dport 443 -j REDIRECT --to-ports 8124\n"
-			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p udp --dport 53 -j REDIRECT --to-ports 8153\n";
+			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp --dport 443 -j REDIRECT --to-ports 8124\n";
+//			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p udp --dport 53 -j REDIRECT --to-ports 8153\n";
 
 	final static String CMD_IPTABLES_REDIRECT_ADD_N1 = "/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp --dport 80 -j REDIRECT --to-ports 8123\n"
-			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp --dport 443 -j REDIRECT --to-ports 8124\n"
-			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p udp --dport 53 -j REDIRECT --to-ports 8153\n";
+			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp --dport 443 -j REDIRECT --to-ports 8124\n";
+//			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p udp --dport 53 -j REDIRECT --to-ports 8153\n";
 
 	final static String CMD_IPTABLES_DNAT_DEL_G1 = "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp --dport 80 -j DNAT --to-destination 127.0.0.1:8123\n"
-			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp --dport 443 -j DNAT --to-destination 127.0.0.1:8124\n"
-			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:8153\n";
+			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp --dport 443 -j DNAT --to-destination 127.0.0.1:8124\n";
+//			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:8153\n";
 
 	final static String CMD_IPTABLES_DNAT_ADD_G1 = "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp --dport 80 -j DNAT --to-destination 127.0.0.1:8123\n"
-			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp --dport 443 -j DNAT --to-destination 127.0.0.1:8124\n"
-			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:8153\n";
+			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp --dport 443 -j DNAT --to-destination 127.0.0.1:8124\n";
+//			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:8153\n";
 
 	final static String CMD_IPTABLES_DNAT_DEL_N1 = "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p tcp --dport 80 -j DNAT --to-destination 127.0.0.1:8123\n"
-			+ "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p tcp --dport 443 -j DNAT --to-destination 127.0.0.1:8124\n"
-			+ "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:8153\n";
+			+ "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p tcp --dport 443 -j DNAT --to-destination 127.0.0.1:8124\n";
+//			+ "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:8153\n";
 
 	final static String CMD_IPTABLES_DNAT_ADD_N1 = "/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp --dport 80 -j DNAT --to-destination 127.0.0.1:8123\n"
-			+ "/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp --dport 443 -j DNAT --to-destination 127.0.0.1:8124\n"
-			+ "/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:8153\n";
+			+ "/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp --dport 443 -j DNAT --to-destination 127.0.0.1:8124\n";
+//			+ "/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:8153\n";
 
 	/**
 	 * Internal method to request actual PTY terminal once we've finished
@@ -460,9 +467,13 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		if (enablePortForward()) {
 			Log.e(TAG, "Forward Successful");
 
-			runRootCommand("/data/data/org.sshtunnel/proxy.sh start "
-					+ localPort);
-			
+			if (isSocks)
+				runRootCommand("/data/data/org.sshtunnel/proxy_socks.sh start "
+						+ localPort);
+			else
+				runRootCommand("/data/data/org.sshtunnel/proxy_http.sh start "
+						+ localPort);
+
 			if (isAutoSetProxy) {
 
 				if (isARMv6()) {
@@ -492,25 +503,23 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 				for (int i = 0; i < apps.length; i++) {
 					if (apps[i].isProxyed()) {
-
-						if (apps[i].isProxyed()) {
-							if (isARMv6()) {
-								cmd.append((hasRedirectSupport ? CMD_IPTABLES_REDIRECT_ADD_G1
-										: CMD_IPTABLES_DNAT_DEL_G1).replace(
-										"-t nat",
-										"-t nat -m owner --uid-owner "
-												+ apps[i].getUid()));
-							} else {
-								cmd.append((hasRedirectSupport ? CMD_IPTABLES_REDIRECT_ADD_N1
-										: CMD_IPTABLES_DNAT_DEL_N1).replace(
-										"-t nat",
-										"-t nat -m owner --uid-owner "
-												+ apps[i].getUid()));
-							}
+						if (isARMv6()) {
+							cmd.append((hasRedirectSupport ? CMD_IPTABLES_REDIRECT_ADD_G1
+									: CMD_IPTABLES_DNAT_DEL_G1).replace(
+									"-t nat", "-t nat -m owner --uid-owner "
+											+ apps[i].getUid()));
+						} else {
+							cmd.append((hasRedirectSupport ? CMD_IPTABLES_REDIRECT_ADD_N1
+									: CMD_IPTABLES_DNAT_DEL_N1).replace(
+									"-t nat", "-t nat -m owner --uid-owner "
+											+ apps[i].getUid()));
 						}
 					}
 				}
-				runRootCommand(cmd.toString());
+				if (isSocks)
+					runRootCommand(cmd.toString().replace("8124", "8123"));
+				else
+					runRootCommand(cmd.toString());
 
 			}
 
@@ -539,6 +548,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		remotePort = bundle.getInt("remotePort");
 		isAutoReconnect = bundle.getBoolean("isAutoReconnect");
 		isAutoSetProxy = bundle.getBoolean("isAutoSetProxy");
+		isSocks = bundle.getBoolean("isSocks");
 
 		// dnsServer = new DNSServer("DNS Server", 8153, "208.67.222.222",
 		// 5353);
@@ -641,14 +651,14 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		connected = false;
 
 		try {
-			if (lpf1 != null) {
-				lpf1.close();
-				lpf1 = null;
+			if (lpf != null) {
+				lpf.close();
+				lpf = null;
 			}
-			// if (lpf2 != null) {
-			// lpf2.close();
-			// lpf2 = null;
-			// }
+			if (dpf != null) {
+				dpf.close();
+				dpf = null;
+			}
 		} catch (Exception ignore) {
 			// Nothing
 		}
@@ -671,7 +681,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			// for proxy specified apps
 			ProxyedApp[] apps = AppManager.getApps(this);
 			StringBuffer cmd = new StringBuffer();
-			
+
 			if (hasRedirectSupport) {
 				if (isARMv6()) {
 					cmd.append("/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p udp --dport 53 -j REDIRECT --to-ports 8153\n");
@@ -703,9 +713,15 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 					}
 				}
 			}
-			runRootCommand(cmd.toString());
+			if (isSocks)
+				runRootCommand(cmd.toString().replace("8124", "8123"));
+			else
+				runRootCommand(cmd.toString());
 		}
-		runRootCommand("/data/data/org.sshtunnel/proxy.sh stop");
+		if (isSocks)
+			runRootCommand("/data/data/org.sshtunnel/proxy_socks.sh stop");
+		else
+			runRootCommand("/data/data/org.sshtunnel/proxy_http.sh stop");
 
 	}
 

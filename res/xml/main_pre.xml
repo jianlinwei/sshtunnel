@@ -18,10 +18,11 @@
 			android:password="true" android:key="password" android:summary="@string/password_summary"></EditTextPreference>
 	</PreferenceCategory>
 	<PreferenceCategory android:title="@string/port_cat">
-		<EditTextPreference android:title="@string/local_port"
+		<CheckBoxPreference android:summary="@string/socks_summary" android:title="@string/socks" android:key="isSocks"></CheckBoxPreference><EditTextPreference android:title="@string/local_port"
 			android:key="localPort" android:summary="@string/local_port_summary"></EditTextPreference>
 		<EditTextPreference android:title="@string/remote_port"
 			android:key="remotePort" android:summary="@string/remote_port_summary"></EditTextPreference>
+		
 	</PreferenceCategory>
 	<PreferenceCategory android:title="@string/fearute_cat">
 		<CheckBoxPreference android:key="isAutoConnect"

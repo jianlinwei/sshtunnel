@@ -55,5 +55,7 @@
 	<string name="recovery">Recover the connection status</string>
 	<string name="number_alert">Please check your port number</string>
 	<string name="proxyed_apps">Choose Apps through proxy</string>
-	<string name="proxyed_help">Select apps to use with SSHTunnel:</string>
+	<string name="proxyed_help">Select Apps to use with SSHTunnel:</string>
+	<string name="socks">Use socks proxy</string>
+	<string name="socks_summary">Enable dynamic port forwarding (Warning: More Battery Use)</string>
 </resources>

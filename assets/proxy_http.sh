@@ -31,7 +31,7 @@ redsocks {
  ip = 127.0.0.1;
  port = $2;
  type = http-connect;
-} 
+}
 " >>$DIR/redsocks.conf
 
   $DIR/redsocks -p $DIR/redsocks.pid -c $DIR/redsocks.conf

@@ -45,11 +45,14 @@ public class SSHTunnel extends PreferenceActivity implements
 	public static boolean isAutoConnect = false;
 	public static boolean isAutoReconnect = false;
 	public static boolean isAutoSetProxy = false;
+	public static boolean isSocks = false;
 	public static boolean isRoot = false;
 
 	private CheckBoxPreference isAutoConnectCheck;
 	private CheckBoxPreference isAutoReconnectCheck;
 	private CheckBoxPreference isAutoSetProxyCheck;
+	private CheckBoxPreference isSocksCheck;
+
 	private EditTextPreference hostText;
 	private EditTextPreference portText;
 	private EditTextPreference userText;
@@ -179,6 +182,7 @@ public class SSHTunnel extends PreferenceActivity implements
 
 		isRunningCheck = (CheckBoxPreference) findPreference("isRunning");
 		isAutoSetProxyCheck = (CheckBoxPreference) findPreference("isAutoSetProxy");
+		isSocksCheck = (CheckBoxPreference) findPreference("isSocks");
 		isAutoConnectCheck = (CheckBoxPreference) findPreference("isAutoConnect");
 		isAutoReconnectCheck = (CheckBoxPreference) findPreference("isAutoReconnect");
 
@@ -220,7 +224,8 @@ public class SSHTunnel extends PreferenceActivity implements
 			runCommand("chmod 777 /data/data/org.sshtunnel/iptables_g1");
 			runCommand("chmod 777 /data/data/org.sshtunnel/iptables_n1");
 			runCommand("chmod 777 /data/data/org.sshtunnel/redsocks");
-			runCommand("chmod 777 /data/data/org.sshtunnel/proxy.sh");
+			runCommand("chmod 777 /data/data/org.sshtunnel/proxy_http.sh");
+			runCommand("chmod 777 /data/data/org.sshtunnel/proxy_socks.sh");
 		}
 
 	}
@@ -247,6 +252,11 @@ public class SSHTunnel extends PreferenceActivity implements
 		SharedPreferences settings = PreferenceManager
 				.getDefaultSharedPreferences(this);
 
+		isAutoConnect = settings.getBoolean("isAutoConnect", false);
+		isAutoSetProxy = settings.getBoolean("isAutoSetProxy", false);
+		isAutoReconnect = settings.getBoolean("isAutoReconnect", false);
+		isSocks = settings.getBoolean("isSocks", false);
+
 		host = settings.getString("host", "");
 		if (isTextEmpty(host, getString(R.string.host_empty)))
 			return false;
@@ -270,20 +280,20 @@ public class SSHTunnel extends PreferenceActivity implements
 			if (localPort <= 1024)
 				this.showAToast(getString(R.string.port_alert));
 
-			String remotePortText = settings.getString("remotePort", "");
-			if (isTextEmpty(remotePortText,
-					getString(R.string.remote_port_empty)))
-				return false;
-			remotePort = Integer.valueOf(remotePortText);
+			if (!isSocks) {
+				String remotePortText = settings.getString("remotePort", "");
+				if (isTextEmpty(remotePortText,
+						getString(R.string.remote_port_empty)))
+					return false;
+				remotePort = Integer.valueOf(remotePortText);
+			} else {
+				remotePort = 0;
+			}
 		} catch (NumberFormatException e) {
 			showAToast(getString(R.string.number_alert));
 			Log.e(TAG, "wrong number", e);
 			return false;
 		}
-
-		isAutoConnect = settings.getBoolean("isAutoConnect", false);
-		isAutoSetProxy = settings.getBoolean("isAutoSetProxy", false);
-		isAutoReconnect = settings.getBoolean("isAutoReconnect", false);
 
 		try {
 
@@ -297,6 +307,7 @@ public class SSHTunnel extends PreferenceActivity implements
 			bundle.putInt("remotePort", remotePort);
 			bundle.putBoolean("isAutoReconnect", isAutoReconnect);
 			bundle.putBoolean("isAutoSetProxy", isAutoSetProxy);
+			bundle.putBoolean("isSocks", isSocks);
 
 			it.putExtras(bundle);
 			startService(it);
@@ -331,6 +342,7 @@ public class SSHTunnel extends PreferenceActivity implements
 		remotePortText.setEnabled(false);
 		proxyedApps.setEnabled(false);
 
+		isSocksCheck.setEnabled(false);
 		isAutoSetProxyCheck.setEnabled(false);
 		isAutoConnectCheck.setEnabled(false);
 		isAutoReconnectCheck.setEnabled(false);
@@ -347,6 +359,7 @@ public class SSHTunnel extends PreferenceActivity implements
 			proxyedApps.setEnabled(true);
 
 		isAutoSetProxyCheck.setEnabled(true);
+		isSocksCheck.setEnabled(true);
 		isAutoConnectCheck.setEnabled(true);
 		isAutoReconnectCheck.setEnabled(true);
 	}
@@ -447,6 +460,13 @@ public class SSHTunnel extends PreferenceActivity implements
 		// Let's do something a preference value changes
 		SharedPreferences settings = PreferenceManager
 				.getDefaultSharedPreferences(this);
+
+		if (key.equals("isSocks")) {
+			if (settings.getBoolean("isSocks", false))
+				remotePortText.setEnabled(false);
+			else
+				remotePortText.setEnabled(true);
+		}
 
 		if (key.equals("isAutoSetProxy")) {
 			if (settings.getBoolean("isAutoSetProxy", false))
@@ -549,7 +569,7 @@ public class SSHTunnel extends PreferenceActivity implements
 					+ "iptables_n1 -t nat -F OUTPUT");
 		}
 
-		runRootCommand(SSHTunnelService.BASE + "proxy.sh stop");
+		runRootCommand(SSHTunnelService.BASE + "proxy_http.sh stop");
 	}
 
 	@Override
