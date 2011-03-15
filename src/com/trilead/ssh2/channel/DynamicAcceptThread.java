@@ -274,9 +274,9 @@ public class DynamicAcceptThread extends Thread implements IChannelWorkerThread 
 			DynamicAcceptRunnable dar = new DynamicAcceptRunnable(
 					new ServerAuthenticatorNone(), sock);
 			Thread t = new Thread(dar);
-//			t.setDaemon(true);
-//			t.start();
-			t.run();
+			t.setDaemon(true);
+			t.start();
+//			t.run();
 		}
 	}
 
