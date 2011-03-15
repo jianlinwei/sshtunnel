@@ -354,7 +354,8 @@ public class SSHTunnel extends PreferenceActivity implements
 		userText.setEnabled(true);
 		passwordText.setEnabled(true);
 		localPortText.setEnabled(true);
-		remotePortText.setEnabled(true);
+		if (!isSocksCheck.isChecked())
+			remotePortText.setEnabled(true);
 		if (!isAutoSetProxyCheck.isChecked())
 			proxyedApps.setEnabled(true);
 
