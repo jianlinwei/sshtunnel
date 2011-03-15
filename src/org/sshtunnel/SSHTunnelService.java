@@ -475,14 +475,18 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 						+ localPort);
 
 			if (isAutoSetProxy) {
-
+				StringBuffer cmd = new StringBuffer();
 				if (isARMv6()) {
-					runRootCommand(hasRedirectSupport ? CMD_IPTABLES_REDIRECT_ADD_G1
+					cmd.append(hasRedirectSupport ? CMD_IPTABLES_REDIRECT_ADD_G1
 							: CMD_IPTABLES_DNAT_ADD_G1);
 				} else {
-					runRootCommand(hasRedirectSupport ? CMD_IPTABLES_REDIRECT_ADD_N1
+					cmd.append(hasRedirectSupport ? CMD_IPTABLES_REDIRECT_ADD_N1
 							: CMD_IPTABLES_DNAT_ADD_N1);
 				}
+				if (isSocks)
+					runRootCommand(cmd.toString().replace("8124", "8123"));
+				else
+					runRootCommand(cmd.toString());
 			} else {
 				// for proxy specified apps
 				ProxyedApp[] apps = AppManager.getApps(this);
@@ -669,14 +673,19 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		}
 
 		if (isAutoSetProxy) {
+			StringBuffer cmd = new StringBuffer();
 			if (isARMv6()) {
-				runRootCommand(hasRedirectSupport ? CMD_IPTABLES_REDIRECT_DEL_G1
+				cmd.append(hasRedirectSupport ? CMD_IPTABLES_REDIRECT_DEL_G1
 						: CMD_IPTABLES_DNAT_DEL_G1);
 			} else {
 
-				runRootCommand(hasRedirectSupport ? CMD_IPTABLES_REDIRECT_DEL_N1
+				cmd.append(hasRedirectSupport ? CMD_IPTABLES_REDIRECT_DEL_N1
 						: CMD_IPTABLES_DNAT_DEL_N1);
 			}
+			if (isSocks)
+				runRootCommand(cmd.toString().replace("8124", "8123"));
+			else
+				runRootCommand(cmd.toString());
 		} else {
 			// for proxy specified apps
 			ProxyedApp[] apps = AppManager.getApps(this);
