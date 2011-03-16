@@ -41,7 +41,7 @@
 	<string name="port_empty">Port should not be empty</string>
 	<string name="host_empty">Host should not be empty</string>
 	<string name="local_port_summary">Listening Port, default 1984</string>
-	<string name="local_port_empty">The local port should be empty</string>
+	<string name="local_port_empty">Local port should not be empty</string>
 	<string name="remote_port_summary">Remote forwarding port，default 3128</string>
 	<string name="remote_port_empty">Remote port should not be empty</string>
 	<string name="port_cat">Local Port Forwarding</string>
