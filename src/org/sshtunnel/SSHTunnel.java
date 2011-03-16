@@ -406,6 +406,11 @@ public class SSHTunnel extends PreferenceActivity implements
 			proxyedApps.setEnabled(false);
 		else
 			proxyedApps.setEnabled(true);
+		
+		if (settings.getBoolean("isSocks", false))
+			remotePortText.setEnabled(false);
+		else
+			remotePortText.setEnabled(true);
 
 		if (this.isWorked(SERVICE_NAME)) {
 			edit.putBoolean("isRunning", true);
