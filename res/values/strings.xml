@@ -57,5 +57,14 @@
 	<string name="proxyed_apps">Choose Apps through proxy</string>
 	<string name="proxyed_help">Select Apps to use with SSHTunnel:</string>
 	<string name="socks">Use socks proxy</string>
-	<string name="socks_summary">Enable dynamic port forwarding (Warning: More Battery Use)</string>
+	<string name="socks_summary">Enable dynamic port forwarding (Warning: More
+		Battery Use)</string>
+
+	<!-- settings notification category -->
+	<string name="notif_cat">Notification settings</string>
+	<string name="notif_ringtone_title">Select ringtone</string>
+	<string name="notif_vibrate_title">Vibrate</string>
+	<string name="notif_vibrate_summary">Also vibrate when connection status changes
+	</string>
+
 </resources>

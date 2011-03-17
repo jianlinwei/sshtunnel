@@ -54,4 +54,11 @@
 	<string name="proxyed_help">选择使用安全隧道的应用:</string>
 	<string name="socks">使用SOCKS代理</string>
 	<string name="socks_summary">启用动态转口转发 (注意: 耗电量较大)</string>
+
+	<!-- settings notification category -->
+	<string name="notif_cat">通知设置</string>
+	<string name="notif_ringtone_title">选择铃声</string>
+	<string name="notif_vibrate_title">震动</string>
+	<string name="notif_vibrate_summary">在连接状态改变时震动</string>
+
 </resources>

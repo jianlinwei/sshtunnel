@@ -18,11 +18,13 @@
 			android:password="true" android:key="password" android:summary="@string/password_summary"></EditTextPreference>
 	</PreferenceCategory>
 	<PreferenceCategory android:title="@string/port_cat">
-		<CheckBoxPreference android:summary="@string/socks_summary" android:title="@string/socks" android:key="isSocks"></CheckBoxPreference><EditTextPreference android:title="@string/local_port"
+		<CheckBoxPreference android:summary="@string/socks_summary"
+			android:title="@string/socks" android:key="isSocks"></CheckBoxPreference>
+		<EditTextPreference android:title="@string/local_port"
 			android:key="localPort" android:summary="@string/local_port_summary"></EditTextPreference>
 		<EditTextPreference android:title="@string/remote_port"
 			android:key="remotePort" android:summary="@string/remote_port_summary"></EditTextPreference>
-		
+
 	</PreferenceCategory>
 	<PreferenceCategory android:title="@string/fearute_cat">
 		<CheckBoxPreference android:key="isAutoConnect"
@@ -35,6 +37,14 @@
 
 	</PreferenceCategory>
 
+	<PreferenceCategory android:title="@string/notif_cat">
+		<RingtonePreference android:key="settings_key_notif_ringtone"
+			android:title="@string/notif_ringtone_title" android:ringtoneType="notification"
+			android:showDefault="true" android:showSilent="true" />
+		<CheckBoxPreference android:key="settings_key_notif_vibrate"
+			android:title="@string/notif_vibrate_title" android:summary="@string/notif_vibrate_summary"
+			android:defaultValue="true" />
+	</PreferenceCategory>
 
 
 
