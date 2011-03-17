@@ -44,7 +44,7 @@
 	<string name="local_port_empty">Local port should not be empty</string>
 	<string name="remote_port_summary">Remote forwarding port，default 3128</string>
 	<string name="remote_port_empty">Remote port should not be empty</string>
-	<string name="port_cat">Local Port Forwarding</string>
+	<string name="port_cat">Port Forwarding</string>
 	<string name="user_cat">Account Information</string>
 	<string name="user_summary">SSH User name</string>
 	<string name="user_empty">User name should not be empty</string>
