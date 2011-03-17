@@ -574,7 +574,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		notification.icon = R.drawable.icon;
 		notification.tickerText = title;
 		notification.flags = Notification.FLAG_ONGOING_EVENT;
-		notification.defaults = Notification.DEFAULT_SOUND;
+//		notification.defaults = Notification.DEFAULT_SOUND;
 		notification.setLatestEventInfo(this, getString(R.string.app_name),
 				info, pendIntent);
 		startForegroundCompat(1, notification);
