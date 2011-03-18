@@ -62,6 +62,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 	private boolean connected = false;
 
+	private ProxyedApp apps[];
+
 	// Flag indicating if this is an ARMv6 device (-1: unknown, 0: no, 1: yes)
 	public static int isARMv6 = -1;
 	private boolean hasRedirectSupport = true;
@@ -512,7 +514,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 				}
 			} else {
 				// for proxy specified apps
-				ProxyedApp[] apps = AppManager.getApps(this);
+				if (apps == null || apps.length <= 0)
+					apps = AppManager.getApps(this);
 
 				for (int i = 0; i < apps.length; i++) {
 					if (apps[i].isProxyed()) {
@@ -572,32 +575,32 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 		return connect();
 	}
-	
-    private void initSoundVibrateLights(Notification notification) {
-        final String ringtone = settings.getString(
-                        "settings_key_notif_ringtone", null);
-        AudioManager audioManager = (AudioManager) this
-                        .getSystemService(Context.AUDIO_SERVICE);
-        if (audioManager.getStreamVolume(AudioManager.STREAM_RING) == 0) {
-                notification.sound = null;
-        } else if (ringtone != null)
-                notification.sound = Uri.parse(ringtone);
-        else
-                notification.defaults |= Notification.DEFAULT_SOUND;
 
-        if (settings.getBoolean("settings_key_notif_vibrate", false)) {
-                long[] vibrate = { 0, 1000, 500, 1000, 500, 1000 };
-                notification.vibrate = vibrate;
-        }
+	private void initSoundVibrateLights(Notification notification) {
+		final String ringtone = settings.getString(
+				"settings_key_notif_ringtone", null);
+		AudioManager audioManager = (AudioManager) this
+				.getSystemService(Context.AUDIO_SERVICE);
+		if (audioManager.getStreamVolume(AudioManager.STREAM_RING) == 0) {
+			notification.sound = null;
+		} else if (ringtone != null)
+			notification.sound = Uri.parse(ringtone);
+		else
+			notification.defaults |= Notification.DEFAULT_SOUND;
 
-        notification.defaults |= Notification.DEFAULT_LIGHTS;
-}
+		if (settings.getBoolean("settings_key_notif_vibrate", false)) {
+			long[] vibrate = { 0, 1000, 500, 1000, 500, 1000 };
+			notification.vibrate = vibrate;
+		}
+
+		notification.defaults |= Notification.DEFAULT_LIGHTS;
+	}
 
 	private void notifyAlert(String title, String info) {
 		notification.icon = R.drawable.icon;
 		notification.tickerText = title;
 		notification.flags = Notification.FLAG_ONGOING_EVENT;
-//		notification.defaults = Notification.DEFAULT_SOUND;
+		// notification.defaults = Notification.DEFAULT_SOUND;
 		initSoundVibrateLights(notification);
 		notification.setLatestEventInfo(this, getString(R.string.app_name),
 				info, pendIntent);
@@ -730,7 +733,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			}
 		} else {
 			// for proxy specified apps
-			ProxyedApp[] apps = AppManager.getApps(this);
+			if (apps == null || apps.length <= 0)
+				apps = AppManager.getApps(this);
 
 			for (int i = 0; i < apps.length; i++) {
 				if (apps[i].isProxyed()) {
