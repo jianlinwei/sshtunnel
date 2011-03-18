@@ -52,13 +52,20 @@
 	<string name="host_summary">The host name of SSH service</string>
 	<string name="auto_reconnect_summary">Try to reconnect the SSH service, when connection
 		closed unexpected</string>
-	<string name="recovery">Recover the connection status</string>
+	<string name="recovery">Recover the connection</string>
 	<string name="number_alert">Please check your port number</string>
 	<string name="proxyed_apps">Choose Apps through proxy</string>
 	<string name="proxyed_help">Select Apps to use with SSHTunnel:</string>
 	<string name="socks">Use socks proxy</string>
 	<string name="socks_summary">Enable dynamic port forwarding (Warning: More
 		Battery Use)</string>
+
+	<string name="crash_alert">You are recovering from a crash. \n\nplease report your
+		problem to the project page. \n\n(sshtunnel.googlecode.com) </string>
+	<string name="copy_rights">About:\n\nSSHTunnel is an open source project published under
+		the GPLV3. \n\nIf you have any question, please visit our project page on
+		googlecode. \n\n(sshtunnel.googlecode.com)</string>
+		<string name="about">About</string>
 
 	<!-- settings notification category -->
 	<string name="notif_cat">Notification settings</string>

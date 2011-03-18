@@ -55,6 +55,12 @@
 	<string name="socks">使用SOCKS代理</string>
 	<string name="socks_summary">启用动态转口转发 (注意: 耗电量较大)</string>
 
+	<string name="crash_alert">检测到本程序正在从一次崩溃中恢复。\n\n请将您的情况提交到项目网站，谢谢！
+		\n\n(sshtunnel.googlecode.com) </string>
+	<string name="copy_rights">关于：\n\n安全隧道是一款开源软件，基于 GPLV3 发布。\n\n如果您有任何问题，请前往项目网站进行反馈。
+		\n\n(sshtunnel.googlecode.com)</string>
+	<string name="about">关于</string>
+
 	<!-- settings notification category -->
 	<string name="notif_cat">通知设置</string>
 	<string name="notif_ringtone_title">选择铃声</string>

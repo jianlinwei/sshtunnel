@@ -194,6 +194,10 @@ public class SSHTunnel extends PreferenceActivity implements
 		if (this.isWorked(SERVICE_NAME)) {
 			edit.putBoolean("isRunning", true);
 		} else {
+			if (settings.getBoolean("isRunning", false)) {
+				showAToast(getString(R.string.crash_alert));
+				recovery();
+			}
 			edit.putBoolean("isRunning", false);
 		}
 
@@ -406,7 +410,7 @@ public class SSHTunnel extends PreferenceActivity implements
 			proxyedApps.setEnabled(false);
 		else
 			proxyedApps.setEnabled(true);
-		
+
 		if (settings.getBoolean("isSocks", false))
 			remotePortText.setEnabled(false);
 		else
@@ -415,6 +419,10 @@ public class SSHTunnel extends PreferenceActivity implements
 		if (this.isWorked(SERVICE_NAME)) {
 			edit.putBoolean("isRunning", true);
 		} else {
+			if (settings.getBoolean("isRunning", false)) {
+				showAToast(getString(R.string.crash_alert));
+				recovery();
+			}
 			edit.putBoolean("isRunning", false);
 		}
 
@@ -535,6 +543,8 @@ public class SSHTunnel extends PreferenceActivity implements
 		 */
 		menu.add(Menu.NONE, Menu.FIRST + 1, 1, getString(R.string.recovery))
 				.setIcon(android.R.drawable.ic_menu_delete);
+		menu.add(Menu.NONE, Menu.FIRST + 2, 2, getString(R.string.about))
+				.setIcon(android.R.drawable.ic_menu_info_details);
 		// return true才会起作用
 		return true;
 
@@ -546,6 +556,9 @@ public class SSHTunnel extends PreferenceActivity implements
 		switch (item.getItemId()) {
 		case Menu.FIRST + 1:
 			recovery();
+			break;
+		case Menu.FIRST + 2:
+			showAToast(getString(R.string.copy_rights));
 			break;
 		}
 
