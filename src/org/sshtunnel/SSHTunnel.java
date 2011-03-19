@@ -318,7 +318,7 @@ public class SSHTunnel extends PreferenceActivity implements
 					it.putExtras(bundle);
 					startService(it);
 				}
-			};
+			}.start();
 		} catch (Exception e) {
 			// Nothing
 			return false;
