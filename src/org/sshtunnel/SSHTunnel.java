@@ -298,23 +298,27 @@ public class SSHTunnel extends PreferenceActivity implements
 			Log.e(TAG, "wrong number", e);
 			return false;
 		}
-
 		try {
+			new Thread() {
+				public void run() {
 
-			Intent it = new Intent(this, SSHTunnelService.class);
-			Bundle bundle = new Bundle();
-			bundle.putString("host", host);
-			bundle.putString("user", user);
-			bundle.putString("password", password);
-			bundle.putInt("port", port);
-			bundle.putInt("localPort", localPort);
-			bundle.putInt("remotePort", remotePort);
-			bundle.putBoolean("isAutoReconnect", isAutoReconnect);
-			bundle.putBoolean("isAutoSetProxy", isAutoSetProxy);
-			bundle.putBoolean("isSocks", isSocks);
+					Intent it = new Intent(SSHTunnel.this,
+							SSHTunnelService.class);
+					Bundle bundle = new Bundle();
+					bundle.putString("host", host);
+					bundle.putString("user", user);
+					bundle.putString("password", password);
+					bundle.putInt("port", port);
+					bundle.putInt("localPort", localPort);
+					bundle.putInt("remotePort", remotePort);
+					bundle.putBoolean("isAutoReconnect", isAutoReconnect);
+					bundle.putBoolean("isAutoSetProxy", isAutoSetProxy);
+					bundle.putBoolean("isSocks", isSocks);
 
-			it.putExtras(bundle);
-			startService(it);
+					it.putExtras(bundle);
+					startService(it);
+				}
+			};
 		} catch (Exception e) {
 			// Nothing
 			return false;
