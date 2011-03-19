@@ -256,11 +256,13 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		} catch (Exception e) {
 			Log.d(TAG, "Host does not support 'none' authentication.");
 		}
-		
+
 		try {
-			if (connection.authenticateWithPublicKey(user, new File("/sdcard/sshtunnel/key"), password)) {
-				return;
-			}
+			File f = new File("/sdcard/sshtunnel/key");
+			if (f.exists())
+				if (connection.authenticateWithPublicKey(user, f, password)) {
+					return;
+				}
 		} catch (Exception e) {
 			Log.d(TAG, "Host does not support 'Public key' authentication.");
 		}
