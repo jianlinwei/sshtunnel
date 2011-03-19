@@ -819,23 +819,23 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		new Thread(new Runnable() {
 			public void run() {
 
-				handler.sendEmptyMessage(0);
+				handler.sendEmptyMessage(MSG_CONNECT_START);
 				if (isOnline() && handleCommand()) {
 					// Connection and forward successful
 					notifyAlert(getString(R.string.forward_success),
 							getString(R.string.service_running));
-					handler.sendEmptyMessage(2);
+					handler.sendEmptyMessage(MSG_CONNECT_SUCCESS);
 
 				} else {
 					// Connection or forward unsuccessful
 					notifyAlert(getString(R.string.forward_fail),
 							getString(R.string.service_failed),
 							Notification.FLAG_AUTO_CANCEL);
-					handler.sendEmptyMessage(3);
+					handler.sendEmptyMessage(MSG_CONNECT_FAIL);
 					connected = false;
 					stopSelf();
 				}
-				handler.sendEmptyMessage(1);
+				handler.sendEmptyMessage(MSG_CONNECT_FINISH);
 
 			}
 		}).start();
