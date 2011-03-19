@@ -108,6 +108,10 @@ public class AppManager extends Activity implements OnCheckedChangeListener, OnC
         		
         	
         		entry.icon.setImageDrawable(app.getIcon());
+        		entry.icon.setAdjustViewBounds(true);
+        		entry.icon.setMaxWidth(32);
+        		entry.icon.setMaxHeight(32);
+        		
         		entry.text.setText(app.getName());
         		
         		final CheckBox box = entry.box;
