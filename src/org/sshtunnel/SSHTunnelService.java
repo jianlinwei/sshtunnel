@@ -3,6 +3,7 @@ package org.sshtunnel;
 import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -254,6 +255,14 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			}
 		} catch (Exception e) {
 			Log.d(TAG, "Host does not support 'none' authentication.");
+		}
+		
+		try {
+			if (connection.authenticateWithPublicKey(user, new File("/sdcard/sshtunnel/key"), password)) {
+				return;
+			}
+		} catch (Exception e) {
+			Log.d(TAG, "Host does not support 'Public key' authentication.");
 		}
 
 		try {
