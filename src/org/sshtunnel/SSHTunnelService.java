@@ -24,7 +24,9 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Message;
 import android.preference.PreferenceManager;
 import android.util.Log;
 
@@ -41,6 +43,11 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	private PendingIntent pendIntent;
 
 	private static final String TAG = "SSHTunnel";
+	private static final int MSG_CONNECT_START = 0;
+	private static final int MSG_CONNECT_FINISH = 1;
+	private static final int MSG_CONNECT_SUCCESS = 2;
+	private static final int MSG_CONNECT_FAIL = 3;
+
 	private SharedPreferences settings = null;
 
 	private String host;
@@ -562,20 +569,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	}
 
 	/** Called when the activity is first created. */
-	public boolean handleCommand(Intent it) {
-
-		Log.e(TAG, "Service Start");
-
-		Bundle bundle = it.getExtras();
-		host = bundle.getString("host");
-		user = bundle.getString("user");
-		password = bundle.getString("password");
-		port = bundle.getInt("port");
-		localPort = bundle.getInt("localPort");
-		remotePort = bundle.getInt("remotePort");
-		isAutoReconnect = bundle.getBoolean("isAutoReconnect");
-		isAutoSetProxy = bundle.getBoolean("isAutoSetProxy");
-		isSocks = bundle.getBoolean("isSocks");
+	public boolean handleCommand() {
 
 		// dnsServer = new DNSServer("DNS Server", 8153, "208.67.222.222",
 		// 5353);
@@ -778,32 +772,73 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 	}
 
+	final Handler handler = new Handler() {
+		@Override
+		public void handleMessage(Message msg) {
+			Editor ed = settings.edit();
+			switch (msg.what) {
+			case MSG_CONNECT_START:
+				ed.putBoolean("isConnecting", true);
+				break;
+			case MSG_CONNECT_FINISH:
+				ed.putBoolean("isConnecting", false);
+				break;
+			case MSG_CONNECT_SUCCESS:
+				ed.putBoolean("isRunning", true);
+				break;
+			case MSG_CONNECT_FAIL:
+				ed.putBoolean("isRunning", false);
+				break;
+			}
+			ed.commit();
+			super.handleMessage(msg);
+		}
+	};
+
 	// This is the old onStart method that will be called on the pre-2.0
 	// platform. On 2.0 or later we override onStartCommand() so this
 	// method will not be called.
 	@Override
 	public void onStart(Intent intent, int startId) {
-		if (isOnline() && handleCommand(intent)) {
-			// Connection and forward successful
-			notifyAlert(getString(R.string.forward_success),
-					getString(R.string.service_running));
 
-			Editor ed = settings.edit();
-			ed.putBoolean("isRunning", true);
-			ed.commit();
-			super.onStart(intent, startId);
+		super.onStart(intent, startId);
 
-		} else {
-			// Connection or forward unsuccessful
-			notifyAlert(getString(R.string.forward_fail),
-					getString(R.string.service_failed),
-					Notification.FLAG_AUTO_CANCEL);
-			connected = false;
-			Editor ed = settings.edit();
-			ed.putBoolean("isRunning", false);
-			ed.commit();
-			stopSelf();
-		}
+		Log.e(TAG, "Service Start");
+
+		Bundle bundle = intent.getExtras();
+		host = bundle.getString("host");
+		user = bundle.getString("user");
+		password = bundle.getString("password");
+		port = bundle.getInt("port");
+		localPort = bundle.getInt("localPort");
+		remotePort = bundle.getInt("remotePort");
+		isAutoReconnect = bundle.getBoolean("isAutoReconnect");
+		isAutoSetProxy = bundle.getBoolean("isAutoSetProxy");
+		isSocks = bundle.getBoolean("isSocks");
+
+		new Thread(new Runnable() {
+			public void run() {
+
+				handler.sendEmptyMessage(0);
+				if (isOnline() && handleCommand()) {
+					// Connection and forward successful
+					notifyAlert(getString(R.string.forward_success),
+							getString(R.string.service_running));
+					handler.sendEmptyMessage(2);
+
+				} else {
+					// Connection or forward unsuccessful
+					notifyAlert(getString(R.string.forward_fail),
+							getString(R.string.service_failed),
+							Notification.FLAG_AUTO_CANCEL);
+					handler.sendEmptyMessage(3);
+					connected = false;
+					stopSelf();
+				}
+				handler.sendEmptyMessage(1);
+
+			}
+		}).start();
 	}
 
 	public boolean isOnline() {

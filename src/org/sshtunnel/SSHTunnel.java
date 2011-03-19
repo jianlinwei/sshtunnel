@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import android.app.ActivityManager;
 import android.app.ActivityManager.RunningServiceInfo;
 import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -36,6 +37,7 @@ public class SSHTunnel extends PreferenceActivity implements
 	private static final String TAG = "SSHTunnel";
 	private static final String SERVICE_NAME = "org.sshtunnel.SSHTunnelService";
 
+	private ProgressDialog pd = null;
 	private String host;
 	private int port;
 	private int localPort;
@@ -245,11 +247,13 @@ public class SSHTunnel extends PreferenceActivity implements
 	public boolean serviceStart() {
 
 		if (isWorked(SERVICE_NAME)) {
+
 			try {
-				stopService(new Intent(this, SSHTunnelService.class));
+				stopService(new Intent(SSHTunnel.this, SSHTunnelService.class));
 			} catch (Exception e) {
 				// Nothing
 			}
+
 			return false;
 		}
 
@@ -298,28 +302,25 @@ public class SSHTunnel extends PreferenceActivity implements
 			Log.e(TAG, "wrong number", e);
 			return false;
 		}
+
 		try {
-			new Thread() {
-				public void run() {
 
-					Intent it = new Intent(SSHTunnel.this,
-							SSHTunnelService.class);
-					Bundle bundle = new Bundle();
-					bundle.putString("host", host);
-					bundle.putString("user", user);
-					bundle.putString("password", password);
-					bundle.putInt("port", port);
-					bundle.putInt("localPort", localPort);
-					bundle.putInt("remotePort", remotePort);
-					bundle.putBoolean("isAutoReconnect", isAutoReconnect);
-					bundle.putBoolean("isAutoSetProxy", isAutoSetProxy);
-					bundle.putBoolean("isSocks", isSocks);
+			Intent it = new Intent(SSHTunnel.this, SSHTunnelService.class);
+			Bundle bundle = new Bundle();
+			bundle.putString("host", host);
+			bundle.putString("user", user);
+			bundle.putString("password", password);
+			bundle.putInt("port", port);
+			bundle.putInt("localPort", localPort);
+			bundle.putInt("remotePort", remotePort);
+			bundle.putBoolean("isAutoReconnect", isAutoReconnect);
+			bundle.putBoolean("isAutoSetProxy", isAutoSetProxy);
+			bundle.putBoolean("isSocks", isSocks);
 
-					it.putExtras(bundle);
-					startService(it);
-				}
-			}.start();
-		} catch (Exception e) {
+			it.putExtras(bundle);
+			startService(it);
+
+		} catch (Exception ignore) {
 			// Nothing
 			return false;
 		}
@@ -385,8 +386,9 @@ public class SSHTunnel extends PreferenceActivity implements
 				&& preference.getKey().equals("isRunning")) {
 
 			if (!serviceStart()) {
+
 				SharedPreferences settings = PreferenceManager
-						.getDefaultSharedPreferences(this);
+						.getDefaultSharedPreferences(SSHTunnel.this);
 
 				Editor edit = settings.edit();
 
@@ -394,7 +396,6 @@ public class SSHTunnel extends PreferenceActivity implements
 
 				edit.commit();
 
-				isRunningCheck.setChecked(false);
 				enableAll();
 			}
 
@@ -408,8 +409,6 @@ public class SSHTunnel extends PreferenceActivity implements
 		SharedPreferences settings = PreferenceManager
 				.getDefaultSharedPreferences(this);
 
-		Editor edit = settings.edit();
-
 		if (settings.getBoolean("isAutoSetProxy", false))
 			proxyedApps.setEnabled(false);
 		else
@@ -419,6 +418,8 @@ public class SSHTunnel extends PreferenceActivity implements
 			remotePortText.setEnabled(false);
 		else
 			remotePortText.setEnabled(true);
+
+		Editor edit = settings.edit();
 
 		if (this.isWorked(SERVICE_NAME)) {
 			edit.putBoolean("isRunning", true);
@@ -473,11 +474,22 @@ public class SSHTunnel extends PreferenceActivity implements
 				.unregisterOnSharedPreferenceChangeListener(this);
 	}
 
-	public void onSharedPreferenceChanged(SharedPreferences sharedPreferences,
-			String key) {
+	public void onSharedPreferenceChanged(SharedPreferences settings, String key) {
 		// Let's do something a preference value changes
-		SharedPreferences settings = PreferenceManager
-				.getDefaultSharedPreferences(this);
+
+		if (key.equals("isConnecting")) {
+			if (settings.getBoolean("isConnecting", false)) {
+				Log.d(TAG, "Connecting start");
+				pd = ProgressDialog.show(this, "",
+						getString(R.string.connecting), true, false);
+			} else {
+				Log.d(TAG, "Connecting finish");
+				if (pd != null) {
+					pd.dismiss();
+					pd = null;
+				}
+			}
+		}
 
 		if (key.equals("isSocks")) {
 			if (settings.getBoolean("isSocks", false))

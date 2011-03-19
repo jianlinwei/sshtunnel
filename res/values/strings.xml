@@ -60,12 +60,18 @@
 	<string name="socks_summary">Enable dynamic port forwarding (Warning: More
 		Battery Use)</string>
 
-	<string name="crash_alert">You are recovering from a crash. \n\nplease report your
-		problem to the project page. \n\n(sshtunnel.googlecode.com) </string>
-	<string name="copy_rights">About:\n\nSSHTunnel is an open source project published under
-		the GPLV3. \n\nIf you have any question, please visit our project page on
+	<string name="connecting">Connecting</string>
+
+	<string name="crash_alert">You are recovering from a crash. \n\nplease report
+		your
+		problem to the project page. \n\n(sshtunnel.googlecode.com)
+	</string>
+	<string name="copy_rights">About:\n\nSSHTunnel is an open source project
+		published under
+		the GPLV3. \n\nIf you have any question, please visit
+		our project page on
 		googlecode. \n\n(sshtunnel.googlecode.com)</string>
-		<string name="about">About</string>
+	<string name="about">About</string>
 
 	<!-- settings notification category -->
 	<string name="notif_cat">Notification settings</string>
