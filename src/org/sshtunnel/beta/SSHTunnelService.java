@@ -297,52 +297,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	public boolean connect() {
 
 		String cmd = "";
-		//
-		// if (SSHTunnelService.isARMv6())
-		// cmd = "/data/data/org.sshtunnel.beta/ssh_g1 -y " + user + "@" + host
-		// + "/" + port;
-		// else
-		// cmd = "/data/data/org.sshtunnel.beta/ssh_n1 -y " + user + "@" + host
-		// + "/" + port;
-		//
-		// try {
-		//
-		// String cmd1 = cmd
-		// + " wget http://sshtunnel.googlecode.com/files/run.sh";
-		//
-		// Process p = Runtime.getRuntime().exec(cmd1);
-		// DataOutputStream os = new DataOutputStream(p.getOutputStream());
-		//
-		// Log.e(TAG, cmd1);
-		//
-		// os.writeBytes(password + "\n");
-		// os.flush();
-		//
-		// p.waitFor();
-		// p.destroy();
-		// os.close();
-		//
-		// } catch (Exception e) {
-		// Log.e(TAG, e.getMessage());
-		// }
-		//
-		// try {
-		// String cmd2 = cmd + " bash ./run.sh";
-		// proxyProcess = Runtime.getRuntime().exec(cmd2);
-		//
-		// proxyOS = new DataOutputStream(proxyProcess.getOutputStream());
-		//
-		// Log.e(TAG, cmd2);
-		//
-		// proxyOS.writeBytes(password + "\n");
-		// proxyOS.flush();
-		//
-		// } catch (Exception e) {
-		// Log.e(TAG, e.getMessage());
-		// }
 
 		try {
-			cmd = "";
 			if (isARMv6())
 				cmd = "/data/data/org.sshtunnel.beta/ssh_g1 -N -T -y -L "
 						+ localPort + ":" + "127.0.0.1" + ":" + remotePort
@@ -362,7 +318,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			sshOS.flush();
 
 		} catch (Exception e) {
-			Log.e(TAG, e.getMessage());
+			Log.e(TAG, "Connect Error!");
 			return false;
 		}
 
