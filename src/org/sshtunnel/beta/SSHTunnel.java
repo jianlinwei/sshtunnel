@@ -542,7 +542,7 @@ public class SSHTunnel extends PreferenceActivity implements
 				.setIcon(android.R.drawable.ic_menu_delete);
 		menu.add(Menu.NONE, Menu.FIRST + 2, 1, getString(R.string.setup))
 				.setIcon(android.R.drawable.ic_menu_add);
-		menu.add(Menu.NONE, Menu.FIRST + 2, 3, getString(R.string.about))
+		menu.add(Menu.NONE, Menu.FIRST + 3, 3, getString(R.string.about))
 				.setIcon(android.R.drawable.ic_menu_info_details);
 		// return true才会起作用
 		return true;
