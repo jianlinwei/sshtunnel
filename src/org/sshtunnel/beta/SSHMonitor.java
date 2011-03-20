@@ -1,4 +1,4 @@
-package org.sshtunnel;
+package org.sshtunnel.beta;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;

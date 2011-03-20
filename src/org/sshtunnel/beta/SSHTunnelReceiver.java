@@ -1,4 +1,4 @@
-package org.sshtunnel;
+package org.sshtunnel.beta;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;

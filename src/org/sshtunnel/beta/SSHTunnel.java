@@ -1,4 +1,4 @@
-package org.sshtunnel;
+package org.sshtunnel.beta;
 
 import java.io.DataOutputStream;
 import java.io.File;
@@ -8,9 +8,12 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 
+import org.sshtunnel.beta.R;
+
 import android.app.ActivityManager;
 import android.app.AlertDialog;
 import android.app.ActivityManager.RunningServiceInfo;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -26,6 +29,7 @@ import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 import android.preference.PreferenceScreen;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 
@@ -33,7 +37,9 @@ public class SSHTunnel extends PreferenceActivity implements
 		OnSharedPreferenceChangeListener {
 
 	private static final String TAG = "SSHTunnel";
-	private static final String SERVICE_NAME = "org.sshtunnel.SSHTunnelService";
+	private static final String SERVICE_NAME = "org.sshtunnel.beta.SSHTunnelService";
+
+	private ProgressDialog pd = null;
 
 	private String host;
 	private int port;
@@ -54,6 +60,7 @@ public class SSHTunnel extends PreferenceActivity implements
 	private EditTextPreference localPortText;
 	private EditTextPreference remotePortText;
 	private CheckBoxPreference isRunningCheck;
+	private Preference proxyedApps;
 
 	public static boolean runRootCommand(String command) {
 		Process process = null;
@@ -111,10 +118,10 @@ public class SSHTunnel extends PreferenceActivity implements
 			InputStream in = null;
 			OutputStream out = null;
 			try {
-				// if (!(new File("/data/data/org.sshtunnel/" +
+				// if (!(new File("/data/data/org.sshtunnel.beta/" +
 				// files[i])).exists()) {
 				in = assetManager.open(files[i]);
-				out = new FileOutputStream("/data/data/org.sshtunnel/"
+				out = new FileOutputStream("/data/data/org.sshtunnel.beta/"
 						+ files[i]);
 				copyFile(in, out);
 				in.close();
@@ -171,6 +178,7 @@ public class SSHTunnel extends PreferenceActivity implements
 		passwordText = (EditTextPreference) findPreference("password");
 		localPortText = (EditTextPreference) findPreference("localPort");
 		remotePortText = (EditTextPreference) findPreference("remotePort");
+		proxyedApps = (Preference) findPreference("proxyedApps");
 
 		isRunningCheck = (CheckBoxPreference) findPreference("isRunning");
 		isAutoSetProxyCheck = (CheckBoxPreference) findPreference("isAutoSetProxy");
@@ -184,6 +192,10 @@ public class SSHTunnel extends PreferenceActivity implements
 		if (this.isWorked(SERVICE_NAME)) {
 			edit.putBoolean("isRunning", true);
 		} else {
+			if (settings.getBoolean("isRunning", false)) {
+				showAToast(getString(R.string.crash_alert));
+				recovery();
+			}
 			edit.putBoolean("isRunning", false);
 		}
 
@@ -215,18 +227,18 @@ public class SSHTunnel extends PreferenceActivity implements
 
 			CopyAssets();
 
-			runCommand("chmod 777 /data/data/org.sshtunnel/iptables_g1");
-			runCommand("chmod 777 /data/data/org.sshtunnel/iptables_n1");
-			runCommand("chmod 777 /data/data/org.sshtunnel/redsocks");
-			runCommand("chmod 777 /data/data/org.sshtunnel/proxy.sh");
-			runCommand("chmod 777 /data/data/org.sshtunnel/ssh_g1");
-			runCommand("chmod 777 /data/data/org.sshtunnel/ssh_n1");
+			runCommand("chmod 777 /data/data/org.sshtunnel.beta/iptables_g1");
+			runCommand("chmod 777 /data/data/org.sshtunnel.beta/iptables_n1");
+			runCommand("chmod 777 /data/data/org.sshtunnel.beta/redsocks");
+			runCommand("chmod 777 /data/data/org.sshtunnel.beta/proxy.sh");
+			runCommand("chmod 777 /data/data/org.sshtunnel.beta/ssh_g1");
+			runCommand("chmod 777 /data/data/org.sshtunnel.beta/ssh_n1");
 		}
 
 	}
 
 	public boolean isCopied(String path) {
-		File f = new File("/data/data/org.sshtunnel/" + path);
+		File f = new File("/data/data/org.sshtunnel.beta/" + path);
 		return f.exists();
 	}
 
@@ -330,6 +342,7 @@ public class SSHTunnel extends PreferenceActivity implements
 		passwordText.setEnabled(false);
 		localPortText.setEnabled(false);
 		remotePortText.setEnabled(false);
+		proxyedApps.setEnabled(false);
 
 		isAutoSetProxyCheck.setEnabled(false);
 		isAutoConnectCheck.setEnabled(false);
@@ -342,6 +355,8 @@ public class SSHTunnel extends PreferenceActivity implements
 		passwordText.setEnabled(true);
 		localPortText.setEnabled(true);
 		remotePortText.setEnabled(true);
+		if (!isAutoSetProxyCheck.isChecked())
+			proxyedApps.setEnabled(true);
 
 		isAutoSetProxyCheck.setEnabled(true);
 		isAutoConnectCheck.setEnabled(true);
@@ -352,6 +367,12 @@ public class SSHTunnel extends PreferenceActivity implements
 			Preference preference) {
 
 		if (preference.getKey() != null
+				&& preference.getKey().equals("proxyedApps")) {
+
+			Intent intent = new Intent(this, AppManager.class);
+			startActivity(intent);
+
+		} else if (preference.getKey() != null
 				&& preference.getKey().equals("isRunning")) {
 
 			if (!serviceStart()) {
@@ -378,11 +399,20 @@ public class SSHTunnel extends PreferenceActivity implements
 		SharedPreferences settings = PreferenceManager
 				.getDefaultSharedPreferences(this);
 
+		if (settings.getBoolean("isAutoSetProxy", false))
+			proxyedApps.setEnabled(false);
+		else
+			proxyedApps.setEnabled(true);
+
 		Editor edit = settings.edit();
 
 		if (this.isWorked(SERVICE_NAME)) {
 			edit.putBoolean("isRunning", true);
 		} else {
+			if (settings.getBoolean("isRunning", false)) {
+				showAToast(getString(R.string.crash_alert));
+				recovery();
+			}
 			edit.putBoolean("isRunning", false);
 		}
 
@@ -434,6 +464,27 @@ public class SSHTunnel extends PreferenceActivity implements
 		// Let's do something a preference value changes
 		SharedPreferences settings = PreferenceManager
 				.getDefaultSharedPreferences(this);
+
+		if (key.equals("isConnecting")) {
+			if (settings.getBoolean("isConnecting", false)) {
+				Log.d(TAG, "Connecting start");
+				pd = ProgressDialog.show(this, "",
+						getString(R.string.connecting), true, false);
+			} else {
+				Log.d(TAG, "Connecting finish");
+				if (pd != null) {
+					pd.dismiss();
+					pd = null;
+				}
+			}
+		}
+
+		if (key.equals("isAutoSetProxy")) {
+			if (settings.getBoolean("isAutoSetProxy", false))
+				proxyedApps.setEnabled(false);
+			else
+				proxyedApps.setEnabled(true);
+		}
 
 		if (key.equals("isRunning")) {
 			if (settings.getBoolean("isRunning", false)) {
@@ -491,6 +542,8 @@ public class SSHTunnel extends PreferenceActivity implements
 				.setIcon(android.R.drawable.ic_menu_delete);
 		menu.add(Menu.NONE, Menu.FIRST + 2, 1, getString(R.string.setup))
 				.setIcon(android.R.drawable.ic_menu_add);
+		menu.add(Menu.NONE, Menu.FIRST + 2, 3, getString(R.string.about))
+				.setIcon(android.R.drawable.ic_menu_info_details);
 		// return true才会起作用
 		return true;
 
@@ -534,10 +587,10 @@ public class SSHTunnel extends PreferenceActivity implements
 					// recovery();
 					String cmd = "";
 					if (SSHTunnelService.isARMv6())
-						cmd = "/data/data/org.sshtunnel/ssh_g1 -y " + user
+						cmd = "/data/data/org.sshtunnel.beta/ssh_g1 -y " + user
 								+ "@" + host + "/" + port;
 					else
-						cmd = "/data/data/org.sshtunnel/ssh_n1 -y " + user
+						cmd = "/data/data/org.sshtunnel.beta/ssh_n1 -y " + user
 								+ "@" + host + "/" + port;
 
 					String cmd1 = cmd
@@ -552,19 +605,19 @@ public class SSHTunnel extends PreferenceActivity implements
 					os.flush();
 
 					p.waitFor();
-					
+
 					String cmd2 = cmd + " bash ./setup.sh";
 					p = Runtime.getRuntime().exec(cmd2);
-					
+
 					os = new DataOutputStream(p.getOutputStream());
 
 					Log.e(TAG, cmd2);
 
 					os.writeBytes(password + "\n");
 					os.flush();
-					
+
 					p.waitFor();
-					
+
 					showAToast(getString(R.string.setup_alert));
 
 				} catch (Exception e) {
@@ -581,6 +634,9 @@ public class SSHTunnel extends PreferenceActivity implements
 				}
 			}
 			break;
+		case Menu.FIRST + 3:
+			showAToast(getString(R.string.copy_rights));
+			break;
 		}
 
 		return true;
@@ -593,6 +649,14 @@ public class SSHTunnel extends PreferenceActivity implements
 			// Nothing
 		}
 
+		try {
+			File cache = new File(SSHTunnelService.BASE + "cache/dnscache");
+			if (cache.exists())
+				cache.delete();
+		} catch (Exception ignore) {
+			// Nothing
+		}
+
 		if (SSHTunnelService.isARMv6()) {
 			runRootCommand(SSHTunnelService.BASE
 					+ "iptables_g1 -t nat -F OUTPUT");
@@ -602,6 +666,19 @@ public class SSHTunnel extends PreferenceActivity implements
 		}
 
 		runRootCommand(SSHTunnelService.BASE + "proxy.sh stop");
+	}
+
+	@Override
+	public boolean onKeyDown(int keyCode, KeyEvent event) {
+		if (keyCode == KeyEvent.KEYCODE_BACK && event.getRepeatCount() == 0) { // 按下的如果是BACK，同时没有重复
+			try {
+				finish();
+			} catch (Exception ignore) {
+				// Nothing
+			}
+			return true;
+		}
+		return super.onKeyDown(keyCode, event);
 	}
 
 }

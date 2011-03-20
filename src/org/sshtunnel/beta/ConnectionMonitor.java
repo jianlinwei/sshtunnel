@@ -1,4 +1,4 @@
-package org.sshtunnel;
+package org.sshtunnel.beta;
 
 public interface ConnectionMonitor {
 	public void connectionLost(boolean isReconnect);
