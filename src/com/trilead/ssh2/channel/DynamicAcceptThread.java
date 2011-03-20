@@ -29,6 +29,8 @@ import java.net.NoRouteToHostException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
+import android.util.Log;
+
 import net.sourceforge.jsocks.Proxy;
 import net.sourceforge.jsocks.ProxyMessage;
 import net.sourceforge.jsocks.Socks4Message;
@@ -45,7 +47,7 @@ import net.sourceforge.jsocks.server.ServerAuthenticatorNone;
  */
 public class DynamicAcceptThread extends Thread implements IChannelWorkerThread {
 	class DynamicAcceptRunnable implements Runnable {
-		private static final int idleTimeout = 180000; // 3 minutes
+		private static final int idleTimeout = 60000; // 3 minutes
 
 		private ServerAuthenticator auth;
 		private Socket sock;
@@ -227,6 +229,7 @@ public class DynamicAcceptThread extends Thread implements IChannelWorkerThread 
 		}
 	}
 	private ChannelManager cm;
+	private final static int GC_MAX_COUNT = 20;
 
 	private ServerSocket ss;
 
@@ -256,6 +259,7 @@ public class DynamicAcceptThread extends Thread implements IChannelWorkerThread 
 			return;
 		}
 
+		int gcCount = 0;
 		while (true) {
 			Socket sock = null;
 
@@ -271,6 +275,14 @@ public class DynamicAcceptThread extends Thread implements IChannelWorkerThread 
 			Thread t = new Thread(dar);
 			t.setDaemon(true);
 			t.start();
+			
+			// Force to GC
+			if (gcCount > GC_MAX_COUNT) {
+				Log.d("Dynamic Forward", "force to GC");
+				System.gc();
+				gcCount = 0;
+			}
+			gcCount++;
 		}
 	}
 
