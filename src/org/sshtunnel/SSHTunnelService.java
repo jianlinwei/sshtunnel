@@ -838,6 +838,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 					notifyAlert(getString(R.string.forward_success),
 							getString(R.string.service_running));
 					handler.sendEmptyMessage(MSG_CONNECT_SUCCESS);
+					handler.sendEmptyMessage(MSG_CONNECT_FINISH);
 
 				} else {
 					// Connection or forward unsuccessful
@@ -845,10 +846,11 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 							getString(R.string.service_failed),
 							Notification.FLAG_AUTO_CANCEL);
 					handler.sendEmptyMessage(MSG_CONNECT_FAIL);
+					handler.sendEmptyMessage(MSG_CONNECT_FINISH);
 					connected = false;
 					stopSelf();
 				}
-				handler.sendEmptyMessage(MSG_CONNECT_FINISH);
+				
 
 			}
 		}).start();
