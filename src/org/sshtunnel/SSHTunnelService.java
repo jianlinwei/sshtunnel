@@ -33,6 +33,7 @@ import android.util.Log;
 import com.trilead.ssh2.Connection;
 import com.trilead.ssh2.ConnectionMonitor;
 import com.trilead.ssh2.DynamicPortForwarder;
+import com.trilead.ssh2.InteractiveCallback;
 import com.trilead.ssh2.LocalPortForwarder;
 
 public class SSHTunnelService extends Service implements ConnectionMonitor {
@@ -273,6 +274,13 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		} catch (Exception e) {
 			Log.d(TAG, "Host does not support 'Public key' authentication.");
 		}
+		
+//		try {
+//			if (connection.authenticateWithKeyboardInteractive(user, this))
+//				return;
+//		} catch (Exception e) {
+//			Log.d(TAG, "Host does not support 'Keyboard-Interactive' authentication.");
+//		}
 
 		try {
 
@@ -855,5 +863,16 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			return false;
 		return true;
 	}
+
+//	@Override
+//	public String[] replyToChallenge(String name, String instruction,
+//			int numPrompts, String[] prompt, boolean[] echo) throws Exception {
+//		String[] responses = new String[numPrompts];
+//		for(int i = 0; i < numPrompts; i++) {
+//			// request response from user for each prompt
+//			responses[i] = ;
+//		}
+//		return responses;
+//	}
 
 }
