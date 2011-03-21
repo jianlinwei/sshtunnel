@@ -346,8 +346,13 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			return false;
 		}
 
-		if (connection.isAuthenticationComplete())
-			return finishConnection();
+		try {
+			if (connection.isAuthenticationComplete())
+				return finishConnection();
+		} catch (Exception ignore) {
+			//Nothing
+			return false;
+		}
 
 		return false;
 
