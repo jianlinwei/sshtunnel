@@ -65,7 +65,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	private DNSServer dnsServer = null;
 
 	private final static int AUTH_TRIES = 2;
-	private final static int RECONNECT_TRIES = 3;
+	private final static int RECONNECT_TRIES = 2;
 
 	private Connection connection;
 
@@ -412,7 +412,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 				if (!connect()) {
 
 					try {
-						Thread.sleep(5000 * reconNum);
+						Thread.sleep(2000 * reconNum);
 					} catch (Exception ignore) {
 						// Nothing
 					}
