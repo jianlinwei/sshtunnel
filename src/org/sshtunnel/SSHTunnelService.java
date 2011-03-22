@@ -69,7 +69,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 	private Connection connection;
 
-	private boolean connected = false;
+	private volatile boolean connected = false;
 
 	private ProxyedApp apps[];
 
@@ -299,92 +299,105 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 	public boolean connect() {
 
-		synchronized (this) {
+		connection = new Connection(host, port);
+		connection.addConnectionMonitor(this);
 
-			connection = new Connection(host, port);
-			connection.addConnectionMonitor(this);
+		try {
 
-			try {
+			connection.setCompression(true);
+			connection.setTCPNoDelay(true);
 
-				connection.setCompression(true);
-				connection.setTCPNoDelay(true);
+		} catch (IOException e) {
+			Log.e(TAG, "Could not enable compression!", e);
+		}
 
-			} catch (IOException e) {
-				Log.e(TAG, "Could not enable compression!", e);
-			}
+		try {
+			/*
+			 * Uncomment when debugging SSH protocol:
+			 */
 
-			try {
-				/*
-				 * Uncomment when debugging SSH protocol:
-				 */
+			/*
+			 * DebugLogger logger = new DebugLogger() {
+			 * 
+			 * public void log(int level, String className, String message) {
+			 * Log.d("SSH", message); }
+			 * 
+			 * };
+			 * 
+			 * Logger.enabled = true; Logger.logger = logger;
+			 */
 
-				/*
-				 * DebugLogger logger = new DebugLogger() {
-				 * 
-				 * public void log(int level, String className, String message)
-				 * { Log.d("SSH", message); }
-				 * 
-				 * };
-				 * 
-				 * Logger.enabled = true; Logger.logger = logger;
-				 */
+			connection.connect(null, 10 * 1000, 20 * 1000);
+			connected = true;
 
-				connection.connect(null, 10 * 1000, 20 * 1000);
-				connected = true;
+		} catch (Exception e) {
+			Log.e(TAG,
+					"Problem in SSH connection thread during authentication", e);
 
-			} catch (Exception e) {
-				Log.e(TAG,
-						"Problem in SSH connection thread during authentication",
-						e);
-
-				// Display the reason in the text.
-
-				return false;
-			}
-
-			try {
-				// enter a loop to keep trying until authentication
-				int tries = 0;
-				while (connected && !connection.isAuthenticationComplete()
-						&& tries++ < AUTH_TRIES) {
-					authenticate();
-
-					// sleep to make sure we dont kill system
-					Thread.sleep(1000);
-				}
-			} catch (Exception e) {
-				Log.e(TAG,
-						"Problem in SSH connection thread during authentication",
-						e);
-				return false;
-			}
-
-			try {
-				if (connection.isAuthenticationComplete())
-					return finishConnection();
-			} catch (Exception ignore) {
-				// Nothing
-				return false;
-			}
+			// Display the reason in the text.
 
 			return false;
 		}
 
+		try {
+			// enter a loop to keep trying until authentication
+			int tries = 0;
+			while (connected && !connection.isAuthenticationComplete()
+					&& tries++ < AUTH_TRIES) {
+				authenticate();
+
+				// sleep to make sure we dont kill system
+				Thread.sleep(1000);
+			}
+		} catch (Exception e) {
+			Log.e(TAG,
+					"Problem in SSH connection thread during authentication", e);
+			return false;
+		}
+
+		try {
+			if (connection.isAuthenticationComplete())
+				return finishConnection();
+		} catch (Exception ignore) {
+			// Nothing
+			return false;
+		}
+
+		return false;
+
+	}
+
+	public void stopReconnect(SimpleDateFormat df) {
+		connected = false;
+		notifyAlert(
+				getString(R.string.auto_reconnected) + " "
+						+ df.format(new Date()),
+				getString(R.string.reconnect_fail),
+				Notification.FLAG_AUTO_CANCEL);
+		stopSelf();
 	}
 
 	public void connectionLost(Throwable reason) {
 
 		SimpleDateFormat df = new SimpleDateFormat("HH:mm:ss");
 
+		if (!isOnline()) {
+			stopReconnect(df);
+			return;
+		}
+
 		if (reason != null) {
 			if (reason.getMessage().contains(
 					"There was a problem during connect")) {
 				Log.e(TAG, "connection lost", reason);
-				if (settings.getBoolean("isConnecting", false))
-					return;
+				return;
 			} else if (reason.getMessage().contains(
 					"Closed due to user request")) {
 				Log.e(TAG, "connection lost", reason);
+				return;
+			} else if (reason.getMessage().contains(
+					"The connect timeout expired")) {
+				stopReconnect(df);
 				return;
 			}
 			Log.e(TAG, "connection lost: " + reason.getMessage());
@@ -394,18 +407,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 		if (isAutoReconnect && connected) {
 			for (int reconNum = 1; reconNum <= RECONNECT_TRIES; reconNum++) {
-
-				if (!isOnline()) {
-
-					connected = false;
-					notifyAlert(
-							getString(R.string.auto_reconnected) + " "
-									+ df.format(new Date()),
-							getString(R.string.reconnect_fail),
-							Notification.FLAG_AUTO_CANCEL);
-					stopSelf();
-					return;
-				}
 
 				onDisconnect();
 
@@ -426,18 +427,9 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 						getString(R.string.reconnect_success));
 				return;
 			}
+		}
 
-			connected = false;
-			notifyAlert(
-					getString(R.string.auto_reconnected) + " "
-							+ df.format(new Date()),
-					getString(R.string.reconnect_fail),
-					Notification.FLAG_AUTO_CANCEL);
-			stopSelf();
-
-		} else
-
-			stopSelf();
+		stopReconnect(df);
 	}
 
 	public boolean enablePortForward() {
@@ -709,85 +701,86 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		super.onDestroy();
 	}
 
-	private void onDisconnect() {
-		synchronized (this) {
-			connected = false;
+	private synchronized void onDisconnect() {
 
-			try {
-				if (lpf != null) {
-					lpf.close();
-					lpf = null;
-				}
-				if (dpf != null) {
-					dpf.close();
-					dpf = null;
-				}
-			} catch (Exception ignore) {
-				// Nothing
+		connected = false;
+
+		try {
+			if (lpf != null) {
+				lpf.close();
+				lpf = null;
 			}
-
-			if (connection != null) {
-				connection.close();
-				connection = null;
+			if (dpf != null) {
+				dpf.close();
+				dpf = null;
 			}
+		} catch (Exception ignore) {
+			// Nothing
+		}
 
-			StringBuffer cmd = new StringBuffer();
+		if (connection != null) {
+			connection.close();
+			connection = null;
+		}
 
-			if (hasRedirectSupport) {
-				if (isARMv6()) {
-					cmd.append("/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p udp --dport 53 -j REDIRECT --to-ports 8153\n");
-				} else {
-					cmd.append("/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p udp --dport 53 -j REDIRECT --to-ports 8153\n");
-				}
+		StringBuffer cmd = new StringBuffer();
+
+		if (hasRedirectSupport) {
+			if (isARMv6()) {
+				cmd.append("/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p udp --dport 53 -j REDIRECT --to-ports 8153\n");
 			} else {
-				if (isARMv6()) {
-					cmd.append("/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:8153\n");
-				} else {
-					cmd.append("/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:8153\n");
-				}
+				cmd.append("/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p udp --dport 53 -j REDIRECT --to-ports 8153\n");
 			}
-
-			if (isAutoSetProxy) {
-				if (isARMv6()) {
-					cmd.append(hasRedirectSupport ? CMD_IPTABLES_REDIRECT_DEL_G1
-							: CMD_IPTABLES_DNAT_DEL_G1);
-				} else {
-
-					cmd.append(hasRedirectSupport ? CMD_IPTABLES_REDIRECT_DEL_N1
-							: CMD_IPTABLES_DNAT_DEL_N1);
-				}
+		} else {
+			if (isARMv6()) {
+				cmd.append("/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:8153\n");
 			} else {
-				// for proxy specified apps
-				if (apps == null || apps.length <= 0)
-					apps = AppManager.getApps(this);
+				cmd.append("/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:8153\n");
+			}
+		}
 
-				for (int i = 0; i < apps.length; i++) {
-					if (apps[i].isProxyed()) {
-						if (isARMv6()) {
-							cmd.append((hasRedirectSupport ? CMD_IPTABLES_REDIRECT_DEL_G1
-									: CMD_IPTABLES_DNAT_DEL_G1).replace(
-									"-t nat", "-t nat -m owner --uid-owner "
-											+ apps[i].getUid()));
-						} else {
-							cmd.append((hasRedirectSupport ? CMD_IPTABLES_REDIRECT_DEL_N1
-									: CMD_IPTABLES_DNAT_DEL_N1).replace(
-									"-t nat", "-t nat -m owner --uid-owner "
-											+ apps[i].getUid()));
-						}
+		if (isAutoSetProxy) {
+			if (isARMv6()) {
+				cmd.append(hasRedirectSupport ? CMD_IPTABLES_REDIRECT_DEL_G1
+						: CMD_IPTABLES_DNAT_DEL_G1);
+			} else {
+
+				cmd.append(hasRedirectSupport ? CMD_IPTABLES_REDIRECT_DEL_N1
+						: CMD_IPTABLES_DNAT_DEL_N1);
+			}
+		} else {
+			// for proxy specified apps
+			if (apps == null || apps.length <= 0)
+				apps = AppManager.getApps(this);
+
+			for (int i = 0; i < apps.length; i++) {
+				if (apps[i].isProxyed()) {
+					if (isARMv6()) {
+						cmd.append((hasRedirectSupport ? CMD_IPTABLES_REDIRECT_DEL_G1
+								: CMD_IPTABLES_DNAT_DEL_G1).replace(
+								"-t nat",
+								"-t nat -m owner --uid-owner "
+										+ apps[i].getUid()));
+					} else {
+						cmd.append((hasRedirectSupport ? CMD_IPTABLES_REDIRECT_DEL_N1
+								: CMD_IPTABLES_DNAT_DEL_N1).replace(
+								"-t nat",
+								"-t nat -m owner --uid-owner "
+										+ apps[i].getUid()));
 					}
 				}
 			}
-
-			if (isSocks)
-				runRootCommand(cmd.toString().replace("8124", "8123"));
-			else
-				runRootCommand(cmd.toString());
-
-			if (isSocks)
-				runRootCommand("/data/data/org.sshtunnel/proxy_socks.sh stop");
-			else
-				runRootCommand("/data/data/org.sshtunnel/proxy_http.sh stop");
 		}
+
+		if (isSocks)
+			runRootCommand(cmd.toString().replace("8124", "8123"));
+		else
+			runRootCommand(cmd.toString());
+
+		if (isSocks)
+			runRootCommand("/data/data/org.sshtunnel/proxy_socks.sh stop");
+		else
+			runRootCommand("/data/data/org.sshtunnel/proxy_http.sh stop");
 
 	}
 
@@ -844,18 +837,16 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 					notifyAlert(getString(R.string.forward_success),
 							getString(R.string.service_running));
 					handler.sendEmptyMessage(MSG_CONNECT_SUCCESS);
-					handler.sendEmptyMessage(MSG_CONNECT_FINISH);
-
 				} else {
 					// Connection or forward unsuccessful
 					notifyAlert(getString(R.string.forward_fail),
 							getString(R.string.service_failed),
 							Notification.FLAG_AUTO_CANCEL);
-					handler.sendEmptyMessage(MSG_CONNECT_FAIL);
-					handler.sendEmptyMessage(MSG_CONNECT_FINISH);
 					connected = false;
 					stopSelf();
+					handler.sendEmptyMessage(MSG_CONNECT_FAIL);
 				}
+				handler.sendEmptyMessage(MSG_CONNECT_FINISH);
 
 			}
 		}).start();
