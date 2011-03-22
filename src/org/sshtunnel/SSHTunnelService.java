@@ -386,7 +386,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		SimpleDateFormat df = new SimpleDateFormat("HH:mm:ss");
 
 		if (!isOnline()) {
-			stopReconnect(df);
 			return;
 		}
 
