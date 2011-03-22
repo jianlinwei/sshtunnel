@@ -40,7 +40,7 @@ import com.trilead.ssh2.LocalPortForwarder;
 
 public class SSHTunnelService extends Service implements ConnectionMonitor {
 
-	WifiStateReceiver stateChanged;
+	ConnectivityBroadcastReceiver stateChanged;
 
 	private Notification notification;
 	private NotificationManager notificationManager;
@@ -668,9 +668,9 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			mStartForeground = mStopForeground = null;
 		}
 
-		stateChanged = new WifiStateReceiver();
+		stateChanged = new ConnectivityBroadcastReceiver();
 		registerReceiver(stateChanged, new IntentFilter(
-				WifiManager.WIFI_STATE_CHANGED_ACTION));
+				ConnectivityManager.CONNECTIVITY_ACTION));
 	}
 
 	/** Called when the activity is closed. */
