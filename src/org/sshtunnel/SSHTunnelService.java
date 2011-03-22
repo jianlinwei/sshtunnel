@@ -274,13 +274,14 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		} catch (Exception e) {
 			Log.d(TAG, "Host does not support 'Public key' authentication.");
 		}
-		
-//		try {
-//			if (connection.authenticateWithKeyboardInteractive(user, this))
-//				return;
-//		} catch (Exception e) {
-//			Log.d(TAG, "Host does not support 'Keyboard-Interactive' authentication.");
-//		}
+
+		// try {
+		// if (connection.authenticateWithKeyboardInteractive(user, this))
+		// return;
+		// } catch (Exception e) {
+		// Log.d(TAG,
+		// "Host does not support 'Keyboard-Interactive' authentication.");
+		// }
 
 		try {
 
@@ -298,71 +299,76 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 	public boolean connect() {
 
-		connection = new Connection(host, port);
-		connection.addConnectionMonitor(this);
+		synchronized (this) {
 
-		try {
+			connection = new Connection(host, port);
+			connection.addConnectionMonitor(this);
 
-			connection.setCompression(true);
-			connection.setTCPNoDelay(true);
+			try {
 
-		} catch (IOException e) {
-			Log.e(TAG, "Could not enable compression!", e);
-		}
+				connection.setCompression(true);
+				connection.setTCPNoDelay(true);
 
-		try {
-			/*
-			 * Uncomment when debugging SSH protocol:
-			 */
-
-			/*
-			 * DebugLogger logger = new DebugLogger() {
-			 * 
-			 * public void log(int level, String className, String message) {
-			 * Log.d("SSH", message); }
-			 * 
-			 * };
-			 * 
-			 * Logger.enabled = true; Logger.logger = logger;
-			 */
-
-			connection.connect(null, 10 * 1000, 20 * 1000);
-			connected = true;
-
-		} catch (Exception e) {
-			Log.e(TAG,
-					"Problem in SSH connection thread during authentication", e);
-
-			// Display the reason in the text.
-
-			return false;
-		}
-
-		try {
-			// enter a loop to keep trying until authentication
-			int tries = 0;
-			while (connected && !connection.isAuthenticationComplete()
-					&& tries++ < AUTH_TRIES) {
-				authenticate();
-
-				// sleep to make sure we dont kill system
-				Thread.sleep(1000);
+			} catch (IOException e) {
+				Log.e(TAG, "Could not enable compression!", e);
 			}
-		} catch (Exception e) {
-			Log.e(TAG,
-					"Problem in SSH connection thread during authentication", e);
+
+			try {
+				/*
+				 * Uncomment when debugging SSH protocol:
+				 */
+
+				/*
+				 * DebugLogger logger = new DebugLogger() {
+				 * 
+				 * public void log(int level, String className, String message)
+				 * { Log.d("SSH", message); }
+				 * 
+				 * };
+				 * 
+				 * Logger.enabled = true; Logger.logger = logger;
+				 */
+
+				connection.connect(null, 10 * 1000, 20 * 1000);
+				connected = true;
+
+			} catch (Exception e) {
+				Log.e(TAG,
+						"Problem in SSH connection thread during authentication",
+						e);
+
+				// Display the reason in the text.
+
+				return false;
+			}
+
+			try {
+				// enter a loop to keep trying until authentication
+				int tries = 0;
+				while (connected && !connection.isAuthenticationComplete()
+						&& tries++ < AUTH_TRIES) {
+					authenticate();
+
+					// sleep to make sure we dont kill system
+					Thread.sleep(1000);
+				}
+			} catch (Exception e) {
+				Log.e(TAG,
+						"Problem in SSH connection thread during authentication",
+						e);
+				return false;
+			}
+
+			try {
+				if (connection.isAuthenticationComplete())
+					return finishConnection();
+			} catch (Exception ignore) {
+				// Nothing
+				return false;
+			}
+
 			return false;
 		}
-
-		try {
-			if (connection.isAuthenticationComplete())
-				return finishConnection();
-		} catch (Exception ignore) {
-			//Nothing
-			return false;
-		}
-
-		return false;
 
 	}
 
@@ -702,86 +708,85 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		super.onDestroy();
 	}
 
-	private synchronized void onDisconnect() {
+	private void onDisconnect() {
+		synchronized (this) {
+			connected = false;
 
-		connected = false;
-
-		try {
-			if (lpf != null) {
-				lpf.close();
-				lpf = null;
+			try {
+				if (lpf != null) {
+					lpf.close();
+					lpf = null;
+				}
+				if (dpf != null) {
+					dpf.close();
+					dpf = null;
+				}
+			} catch (Exception ignore) {
+				// Nothing
 			}
-			if (dpf != null) {
-				dpf.close();
-				dpf = null;
+
+			if (connection != null) {
+				connection.close();
+				connection = null;
 			}
-		} catch (Exception ignore) {
-			// Nothing
-		}
 
-		if (connection != null) {
-			connection.close();
-			connection = null;
-		}
+			StringBuffer cmd = new StringBuffer();
 
-		StringBuffer cmd = new StringBuffer();
-
-		if (hasRedirectSupport) {
-			if (isARMv6()) {
-				cmd.append("/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p udp --dport 53 -j REDIRECT --to-ports 8153\n");
+			if (hasRedirectSupport) {
+				if (isARMv6()) {
+					cmd.append("/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p udp --dport 53 -j REDIRECT --to-ports 8153\n");
+				} else {
+					cmd.append("/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p udp --dport 53 -j REDIRECT --to-ports 8153\n");
+				}
 			} else {
-				cmd.append("/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p udp --dport 53 -j REDIRECT --to-ports 8153\n");
+				if (isARMv6()) {
+					cmd.append("/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:8153\n");
+				} else {
+					cmd.append("/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:8153\n");
+				}
 			}
-		} else {
-			if (isARMv6()) {
-				cmd.append("/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:8153\n");
+
+			if (isAutoSetProxy) {
+				if (isARMv6()) {
+					cmd.append(hasRedirectSupport ? CMD_IPTABLES_REDIRECT_DEL_G1
+							: CMD_IPTABLES_DNAT_DEL_G1);
+				} else {
+
+					cmd.append(hasRedirectSupport ? CMD_IPTABLES_REDIRECT_DEL_N1
+							: CMD_IPTABLES_DNAT_DEL_N1);
+				}
 			} else {
-				cmd.append("/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:8153\n");
-			}
-		}
+				// for proxy specified apps
+				if (apps == null || apps.length <= 0)
+					apps = AppManager.getApps(this);
 
-		if (isAutoSetProxy) {
-			if (isARMv6()) {
-				cmd.append(hasRedirectSupport ? CMD_IPTABLES_REDIRECT_DEL_G1
-						: CMD_IPTABLES_DNAT_DEL_G1);
-			} else {
-
-				cmd.append(hasRedirectSupport ? CMD_IPTABLES_REDIRECT_DEL_N1
-						: CMD_IPTABLES_DNAT_DEL_N1);
-			}
-		} else {
-			// for proxy specified apps
-			if (apps == null || apps.length <= 0)
-				apps = AppManager.getApps(this);
-
-			for (int i = 0; i < apps.length; i++) {
-				if (apps[i].isProxyed()) {
-					if (isARMv6()) {
-						cmd.append((hasRedirectSupport ? CMD_IPTABLES_REDIRECT_DEL_G1
-								: CMD_IPTABLES_DNAT_DEL_G1).replace(
-								"-t nat",
-								"-t nat -m owner --uid-owner "
-										+ apps[i].getUid()));
-					} else {
-						cmd.append((hasRedirectSupport ? CMD_IPTABLES_REDIRECT_DEL_N1
-								: CMD_IPTABLES_DNAT_DEL_N1).replace(
-								"-t nat",
-								"-t nat -m owner --uid-owner "
-										+ apps[i].getUid()));
+				for (int i = 0; i < apps.length; i++) {
+					if (apps[i].isProxyed()) {
+						if (isARMv6()) {
+							cmd.append((hasRedirectSupport ? CMD_IPTABLES_REDIRECT_DEL_G1
+									: CMD_IPTABLES_DNAT_DEL_G1).replace(
+									"-t nat", "-t nat -m owner --uid-owner "
+											+ apps[i].getUid()));
+						} else {
+							cmd.append((hasRedirectSupport ? CMD_IPTABLES_REDIRECT_DEL_N1
+									: CMD_IPTABLES_DNAT_DEL_N1).replace(
+									"-t nat", "-t nat -m owner --uid-owner "
+											+ apps[i].getUid()));
+						}
 					}
 				}
 			}
+
+			if (isSocks)
+				runRootCommand(cmd.toString().replace("8124", "8123"));
+			else
+				runRootCommand(cmd.toString());
+
+			if (isSocks)
+				runRootCommand("/data/data/org.sshtunnel/proxy_socks.sh stop");
+			else
+				runRootCommand("/data/data/org.sshtunnel/proxy_http.sh stop");
 		}
-
-		if (isSocks)
-			runRootCommand(cmd.toString().replace("8124", "8123"));
-		else
-			runRootCommand(cmd.toString());
-
-		if (isSocks)
-			runRootCommand("/data/data/org.sshtunnel/proxy_socks.sh stop");
-		else
-			runRootCommand("/data/data/org.sshtunnel/proxy_http.sh stop");
 
 	}
 
@@ -850,7 +855,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 					connected = false;
 					stopSelf();
 				}
-				
 
 			}
 		}).start();
@@ -866,15 +870,15 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		return true;
 	}
 
-//	@Override
-//	public String[] replyToChallenge(String name, String instruction,
-//			int numPrompts, String[] prompt, boolean[] echo) throws Exception {
-//		String[] responses = new String[numPrompts];
-//		for(int i = 0; i < numPrompts; i++) {
-//			// request response from user for each prompt
-//			responses[i] = ;
-//		}
-//		return responses;
-//	}
+	// @Override
+	// public String[] replyToChallenge(String name, String instruction,
+	// int numPrompts, String[] prompt, boolean[] echo) throws Exception {
+	// String[] responses = new String[numPrompts];
+	// for(int i = 0; i < numPrompts; i++) {
+	// // request response from user for each prompt
+	// responses[i] = ;
+	// }
+	// return responses;
+	// }
 
 }
