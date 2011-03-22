@@ -380,6 +380,15 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			if (reason.getMessage().contains(
 					"There was a problem during connect")) {
 				Log.e(TAG, "connection lost", reason);
+				if (!settings.getBoolean("isConnecting", false)) {
+					connected = false;
+					notifyAlert(
+							getString(R.string.auto_reconnected) + " "
+									+ df.format(new Date()),
+							getString(R.string.reconnect_fail),
+							Notification.FLAG_AUTO_CANCEL);
+					stopSelf();
+				}
 				return;
 			} else if (reason.getMessage().contains(
 					"Closed due to user request")) {
