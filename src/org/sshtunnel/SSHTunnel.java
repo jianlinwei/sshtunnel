@@ -12,6 +12,7 @@ import android.app.ActivityManager;
 import android.app.ActivityManager.RunningServiceInfo;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -35,7 +36,7 @@ public class SSHTunnel extends PreferenceActivity implements
 		OnSharedPreferenceChangeListener {
 
 	private static final String TAG = "SSHTunnel";
-	private static final String SERVICE_NAME = "org.sshtunnel.SSHTunnelService";
+	public static final String SERVICE_NAME = "org.sshtunnel.SSHTunnelService";
 
 	private ProgressDialog pd = null;
 	private String host;

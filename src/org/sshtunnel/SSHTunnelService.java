@@ -17,12 +17,14 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.media.AudioManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -37,6 +39,8 @@ import com.trilead.ssh2.InteractiveCallback;
 import com.trilead.ssh2.LocalPortForwarder;
 
 public class SSHTunnelService extends Service implements ConnectionMonitor {
+
+	WifiStateReceiver stateChanged;
 
 	private Notification notification;
 	private NotificationManager notificationManager;
@@ -663,6 +667,10 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			// Running on an older platform.
 			mStartForeground = mStopForeground = null;
 		}
+
+		stateChanged = new WifiStateReceiver();
+		registerReceiver(stateChanged, new IntentFilter(
+				WifiManager.WIFI_STATE_CHANGED_ACTION));
 	}
 
 	/** Called when the activity is closed. */
@@ -670,6 +678,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	public void onDestroy() {
 
 		stopForegroundCompat(1);
+		unregisterReceiver(stateChanged);
 
 		if (connected) {
 
