@@ -38,10 +38,9 @@ public class ConnectivityBroadcastReceiver extends BroadcastReceiver {
 			return;
 		}
 
-		boolean noConnectivity = intent.getBooleanExtra(
-				ConnectivityManager.EXTRA_NO_CONNECTIVITY, false);
-
-		if (noConnectivity && !isOnline(context)) {
+		Log.e(TAG, "Connection Test");
+		
+		if (!isOnline(context)) {
 			if (isWorked(context, SSHTunnel.SERVICE_NAME)) {
 				try {
 					context.stopService(new Intent(context,

@@ -40,7 +40,7 @@ import com.trilead.ssh2.LocalPortForwarder;
 
 public class SSHTunnelService extends Service implements ConnectionMonitor {
 
-	ConnectivityBroadcastReceiver stateChanged;
+	ConnectivityBroadcastReceiver stateChanged = null;
 
 	private Notification notification;
 	private NotificationManager notificationManager;
@@ -374,7 +374,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	public void stopReconnect(SimpleDateFormat df) {
 		connected = false;
 		notifyAlert(
-				getString(R.string.auto_reconnected) + " "
+				getString(R.string.reconnect_fail) + " "
 						+ df.format(new Date()),
 				getString(R.string.reconnect_fail),
 				Notification.FLAG_AUTO_CANCEL);
@@ -426,7 +426,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 				}
 
 				notifyAlert(
-						getString(R.string.auto_reconnected) + " "
+						getString(R.string.reconnect_success) + " "
 								+ df.format(new Date()),
 						getString(R.string.reconnect_success));
 				return;
@@ -667,10 +667,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			// Running on an older platform.
 			mStartForeground = mStopForeground = null;
 		}
-
-		stateChanged = new ConnectivityBroadcastReceiver();
-		registerReceiver(stateChanged, new IntentFilter(
-				ConnectivityManager.CONNECTIVITY_ACTION));
 	}
 
 	/** Called when the activity is closed. */
@@ -678,7 +674,11 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	public void onDestroy() {
 
 		stopForegroundCompat(1);
-		unregisterReceiver(stateChanged);
+		
+		if (stateChanged != null) {
+			unregisterReceiver(stateChanged);
+			stateChanged = null;
+		}
 
 		if (connected) {
 
@@ -806,6 +806,9 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 				break;
 			case MSG_CONNECT_SUCCESS:
 				ed.putBoolean("isRunning", true);
+				stateChanged = new ConnectivityBroadcastReceiver();
+				registerReceiver(stateChanged, new IntentFilter(
+						ConnectivityManager.CONNECTIVITY_ACTION));
 				break;
 			case MSG_CONNECT_FAIL:
 				ed.putBoolean("isRunning", false);
