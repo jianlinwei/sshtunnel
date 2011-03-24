@@ -184,6 +184,7 @@ public class PUFF extends PreferenceActivity implements
 	    layout.addView(adView);
 	    // Initiate a generic request to load it with an ad
 	    AdRequest aq = new AdRequest();
+//	    aq.setTesting(true);
 	    adView.loadAd(aq);
 
 		hostText = (EditTextPreference) findPreference("host");
@@ -284,26 +285,9 @@ public class PUFF extends PreferenceActivity implements
 				return false;
 
 			password = settings.getString("password", "");
-
-			String portText = settings.getString("port", "");
-			if (isTextEmpty(portText, getString(R.string.port_empty)))
-				return false;
-			port = Integer.valueOf(portText);
-
-			String localPortText = settings.getString("localPort", "");
-			if (isTextEmpty(localPortText, getString(R.string.local_port_empty)))
-				return false;
-			localPort = Integer.valueOf(localPortText);
-			if (localPort <= 1024) {
-				this.showAToast(getString(R.string.port_alert));
-				return false;
-			}
-
-			String remotePortText = settings.getString("remotePort", "");
-			if (isTextEmpty(remotePortText,
-					getString(R.string.remote_port_empty)))
-				return false;
-			remotePort = Integer.valueOf(remotePortText);
+			port = 443;
+			localPort = 1984;
+			remotePort = 3128;
 
 			isAutoConnect = settings.getBoolean("isAutoConnect", false);
 			isAutoSetProxy = settings.getBoolean("isAutoSetProxy", false);
@@ -517,9 +501,9 @@ public class PUFF extends PreferenceActivity implements
 		 * 2、Id，这个很重要，Android根据这个Id来确定不同的菜单 3、顺序，那个菜单现在在前面由这个参数的大小决定
 		 * 4、文本，菜单的显示文本
 		 */
-		menu.add(Menu.NONE, Menu.FIRST + 1, 2, getString(R.string.recovery))
+		menu.add(Menu.NONE, Menu.FIRST + 1, 1, getString(R.string.recovery))
 				.setIcon(android.R.drawable.ic_menu_delete);
-		menu.add(Menu.NONE, Menu.FIRST + 3, 3, getString(R.string.about))
+		menu.add(Menu.NONE, Menu.FIRST + 2, 2, getString(R.string.about))
 				.setIcon(android.R.drawable.ic_menu_info_details);
 		// return true才会起作用
 		return true;
@@ -533,7 +517,7 @@ public class PUFF extends PreferenceActivity implements
 		case Menu.FIRST + 1:
 			recovery();
 			break;
-		case Menu.FIRST + 3:
+		case Menu.FIRST + 2:
 			showAToast(getString(R.string.copy_rights));
 			break;
 		}

@@ -33,11 +33,9 @@ public class PUFFReceiver extends BroadcastReceiver {
 				host = settings.getString("host", "");
 				user = settings.getString("user", "");
 				password = settings.getString("password", "");
-				port = Integer.valueOf(settings.getString("port", "22"));
-				localPort = Integer
-						.valueOf(settings.getString("localPort", "1984"));
-				remotePort = Integer.valueOf(settings.getString("remotePort",
-						"3128"));
+				port = 443;
+				localPort = 1984;
+				remotePort = 3128;
 				isAutoSetProxy = settings.getBoolean("isAutoSetProxy", false);
 			} catch (Exception e) {
 				Log.e(TAG, "Exception when get preferences");
