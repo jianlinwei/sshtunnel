@@ -1,6 +1,6 @@
 #!/system/bin/sh
 
-DIR=/data/data/org.sshtunnel.beta
+DIR=/data/data/org.puff
 
 PATH=$DIR:$PATH
 

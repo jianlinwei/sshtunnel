@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-	<string name="service_running">正通过安全隧道连接到互联网</string>
-	<string name="app_name">安全隧道(BETA)</string>
-	<string name="forward_success">安全隧道连接成功</string>
-	<string name="forward_fail">安全隧道连接失败</string>
-	<string name="service_stopped">安全隧道服务已停止</string>
+	<string name="service_running">正通过PUFF连接到互联网</string>
+	<string name="app_name">PUFF</string>
+	<string name="forward_success">PUFF连接成功</string>
+	<string name="forward_fail">PUFF连接失败</string>
+	<string name="service_stopped">PUFF服务已停止</string>
 	<string name="auto_reconnected">恢复连接中</string>
 	<string name="reconnect_success">恢复连接成功</string>
 	<string name="already_stopped">服务已关闭</string>
 	<string name="already_running">服务已启动</string>
-	<string name="forward_stop">安全隧道连接已关闭</string>
+	<string name="forward_stop">PUFF连接已关闭</string>
 	<string name="service_failed">请检查你的网络状况或者账户信息</string>
 	<string name="reconnect_fail">恢复连接失败，服务已停止</string>
 	<string name="ok_iknow">我知道了</string>
@@ -25,10 +25,10 @@
 	<string name="disconnect">关闭服务</string>
 	<string name="connect">启动服务</string>
 	<string name="feedback">反馈 @ofmax</string>
-	<string name="proxy_cat">安全隧道地址</string>
+	<string name="proxy_cat">PUFF地址</string>
 	<string name="fearute_cat">功能设置</string>
 	<string name="function_cat">后台服务</string>
-	<string name="service_controller">安全隧道开关</string>
+	<string name="service_controller">PUFF开关</string>
 	<string name="service_summary">开启 / 关闭后台服务</string>
 	<string name="proxy_summary">SSH服务地址</string>
 	<string name="port_summary">SSH服务端口</string>
@@ -53,13 +53,13 @@
 	<string name="setup_alert">远程服务配置完毕，请将远程端口更改为 3128，并尝试连接。</string>
 
 	<string name="proxyed_apps">为应用分别设置代理</string>
-	<string name="proxyed_help">选择使用安全隧道的应用:</string>
+	<string name="proxyed_help">选择使用PUFF的应用:</string>
 
 	<string name="crash_alert">检测到本程序正从一次崩溃中恢复。\n\n请将您的情况提交到项目网站，谢谢！
-		\n\n(sshtunnel.googlecode.com) </string>
-	<string name="copy_rights">关于：\n\n安全隧道（Beta）是一款开源软件，基于 GPLV3
+		\n\n(puff.googlecode.com) </string>
+	<string name="copy_rights">关于：\n\nPUFF（Beta）是一款开源软件，基于 GPLV3
 		发布。\n\n如果您有任何问题，请前往项目网站进行反馈。
-		\n\n(sshtunnel.googlecode.com)</string>
+		\n\n(puff.googlecode.com)</string>
 	<string name="about">关于</string>
 
 	<string name="connecting">正在连接...</string>

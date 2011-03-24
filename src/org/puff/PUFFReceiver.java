@@ -1,4 +1,4 @@
-package org.sshtunnel.beta;
+package org.puff;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -8,7 +8,7 @@ import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.util.Log;
 
-public class SSHTunnelReceiver extends BroadcastReceiver {
+public class PUFFReceiver extends BroadcastReceiver {
 
 	private String host;
 	private int port;
@@ -18,7 +18,7 @@ public class SSHTunnelReceiver extends BroadcastReceiver {
 	private String password;
 	private boolean isAutoConnect = false;
 	private boolean isAutoSetProxy = false;
-	private static final String TAG = "SSHTunnelReceiver";
+	private static final String TAG = "PUFFReceiver";
 
 	@Override
 	public void onReceive(Context context, Intent intent) {
@@ -43,7 +43,7 @@ public class SSHTunnelReceiver extends BroadcastReceiver {
 				Log.e(TAG, "Exception when get preferences");
 			}
 
-			Intent it = new Intent(context, SSHTunnelService.class);
+			Intent it = new Intent(context, PUFFService.class);
 			Bundle bundle = new Bundle();
 			bundle.putString("host", host);
 			bundle.putString("user", user);

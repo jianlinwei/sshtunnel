@@ -1,4 +1,4 @@
-package org.sshtunnel.beta;
+package org.puff;
 
 public interface ConnectionMonitor {
 	public void connectionLost(boolean isReconnect);

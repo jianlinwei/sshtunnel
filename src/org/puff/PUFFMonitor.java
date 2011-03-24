@@ -1,13 +1,13 @@
-package org.sshtunnel.beta;
+package org.puff;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 
 import android.util.Log;
 
-public class SSHMonitor implements Runnable {
+public class PUFFMonitor implements Runnable {
 
-	private static final String TAG = "SSHMonitor";
+	private static final String TAG = "PUFFMonitor";
 	private static final int RECONNECT_TRIES = 3;
 
 	private ConnectionMonitor cm = null;

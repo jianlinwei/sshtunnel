@@ -1,4 +1,4 @@
-package org.sshtunnel.beta;
+package org.puff;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
@@ -330,7 +330,7 @@ public class DNSServer implements WrapServer {
 			String line = reader.readLine();
 			if (line == null)
 				return;
-			if (!line.startsWith("#SSHTunnel"))
+			if (!line.startsWith("#PUFF"))
 				return;
 			while (true) {
 				line = reader.readLine();

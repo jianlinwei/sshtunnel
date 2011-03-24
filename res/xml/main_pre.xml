@@ -7,8 +7,6 @@
 	<PreferenceCategory android:title="@string/proxy_cat">
 		<EditTextPreference android:key="host"
 			android:summary="@string/host_summary" android:title="@string/host"></EditTextPreference>
-		<EditTextPreference android:title="@string/port"
-			android:summary="@string/port_summary" android:key="port"></EditTextPreference>
 	</PreferenceCategory>
 
 	<PreferenceCategory android:title="@string/user_cat">
@@ -16,12 +14,6 @@
 			android:key="user" android:summary="@string/user_summary"></EditTextPreference>
 		<EditTextPreference android:title="@string/password" android:password="true"
 			android:key="password" android:summary="@string/password_summary"></EditTextPreference>
-	</PreferenceCategory>
-	<PreferenceCategory android:title="@string/port_cat">
-		<EditTextPreference android:title="@string/local_port"
-			android:key="localPort" android:summary="@string/local_port_summary" android:defaultValue="1984"></EditTextPreference>
-		<EditTextPreference android:title="@string/remote_port"
-			android:key="remotePort" android:summary="@string/remote_port_summary" android:defaultValue="3128"></EditTextPreference>
 	</PreferenceCategory>
 	<PreferenceCategory android:title="@string/fearute_cat">
 		<CheckBoxPreference android:key="isAutoConnect"

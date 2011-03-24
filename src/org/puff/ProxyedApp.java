@@ -1,4 +1,4 @@
-package org.sshtunnel.beta;
+package org.puff;
 
 import android.graphics.drawable.Drawable;
 

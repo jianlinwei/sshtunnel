@@ -1,7 +1,7 @@
 /* Copyright (c) 2009, Nathan Freitas, Orbot / The Guardian Project - http://openideals.com/guardian */
 /* See LICENSE for licensing information */
 
-package org.sshtunnel.beta;
+package org.puff;
 
 import java.util.Arrays;
 import java.util.Comparator;
@@ -9,7 +9,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.StringTokenizer;
 
-import org.sshtunnel.beta.R;
+import org.puff.R;
 
 import android.app.Activity;
 import android.content.Context;

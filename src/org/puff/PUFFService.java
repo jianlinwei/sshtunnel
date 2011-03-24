@@ -1,4 +1,4 @@
-package org.sshtunnel.beta;
+package org.puff;
 
 import java.io.BufferedReader;
 import java.io.DataInputStream;
@@ -11,7 +11,7 @@ import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-import org.sshtunnel.beta.R;
+import org.puff.R;
 
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -32,14 +32,14 @@ import android.os.Message;
 import android.preference.PreferenceManager;
 import android.util.Log;
 
-public class SSHTunnelService extends Service implements ConnectionMonitor {
+public class PUFFService extends Service implements ConnectionMonitor {
 
 	private NotificationManager notificationManager;
 	private Intent intent;
 	private PendingIntent pendIntent;
-	private SSHMonitor sm;
+	private PUFFMonitor sm;
 
-	private static final String TAG = "SSHTunnel";
+	private static final String TAG = "PUFF";
 
 	private static final int MSG_CONNECT_START = 0;
 	private static final int MSG_CONNECT_FINISH = 1;
@@ -69,7 +69,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 	private boolean connected = false;
 
-	public static final String BASE = "/data/data/org.sshtunnel.beta/";
+	public static final String BASE = "/data/data/org.puff/";
 
 	final static String CMD_IPTABLES_REDIRECT_DEL_G1 = BASE
 			+ "iptables_g1 -t nat -D OUTPUT -p tcp --dport 80 -j REDIRECT --to-ports 8123\n"
@@ -300,12 +300,12 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 		try {
 			if (isARMv6())
-				cmd = "/data/data/org.sshtunnel.beta/ssh_g1 -N -T -y -L "
+				cmd = "/data/data/org.puff/ssh_g1 -N -T -y -L "
 						+ localPort + ":" + "127.0.0.1" + ":" + remotePort
 						+ " -L " + "5353:8.8.8.8:53 " + user + "@" + hostIP
 						+ "/" + port;
 			else
-				cmd = "/data/data/org.sshtunnel.beta/ssh_n1 -N -T -y -L "
+				cmd = "/data/data/org.puff/ssh_n1 -N -T -y -L "
 						+ localPort + ":" + "127.0.0.1" + ":" + remotePort
 						+ " -L " + "5353:8.8.8.8:53 " + user + "@" + hostIP
 						+ "/" + port;
@@ -336,7 +336,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 		StringBuffer cmd = new StringBuffer();
 
-		runRootCommand("/data/data/org.sshtunnel.beta/proxy.sh start " + localPort);
+		runRootCommand("/data/data/org.puff/proxy.sh start " + localPort);
 
 		if (hasRedirectSupport) {
 			if (isARMv6()) {
@@ -420,7 +420,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		// dnsServer = new DNSServer("DNS Server", 8153, "208.67.222.222",
 		// 5353);
 		dnsServer = new DNSServer("DNS Server", 8153, "127.0.0.1", 5353);
-		dnsServer.setBasePath("/data/data/org.sshtunnel.beta");
+		dnsServer.setBasePath("/data/data/org.puff");
 		new Thread(dnsServer).start();
 
 		return connect();
@@ -484,7 +484,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 		initHasRedirectSupported();
 
-		intent = new Intent(this, SSHTunnel.class);
+		intent = new Intent(this, PUFF.class);
 		pendIntent = PendingIntent.getActivity(this, 0, intent, 0);
 
 		try {
@@ -612,7 +612,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 			runRootCommand(cmd.toString());
 
-			runRootCommand("/data/data/org.sshtunnel.beta/proxy.sh stop");
+			runRootCommand("/data/data/org.puff/proxy.sh stop");
 		}
 
 	}
@@ -668,8 +668,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 							getString(R.string.service_running));
 					connected = true;
 					handler.sendEmptyMessage(MSG_CONNECT_SUCCESS);
-					sm = new SSHMonitor();
-					sm.setMonitor(SSHTunnelService.this);
+					sm = new PUFFMonitor();
+					sm.setMonitor(PUFFService.this);
 					new Thread(sm).start();
 
 				} else {

@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-	<string name="service_running">SSHTunnel service is running now</string>
-	<string name="app_name">SSHTunnel(BETA)</string>
+	<string name="service_running">PUFF service is running now</string>
+	<string name="app_name">PUFF</string>
 	<string name="forward_success">Connected</string>
 	<string name="forward_fail">Fail to connect</string>
-	<string name="service_stopped">SSHTunnel service stopped</string>
+	<string name="service_stopped">PUFF service stopped</string>
 	<string name="auto_reconnected">Reconnecting</string>
 	<string name="reconnect_success">Reconnected</string>
 	<string name="already_stopped">Service has been stopped already</string>
@@ -58,17 +58,17 @@
 		remote port to 3128 and have a try.</string>
 
 	<string name="proxyed_apps">Choose apps through proxy</string>
-	<string name="proxyed_help">Select apps to use with SSHTunnel:</string>
+	<string name="proxyed_help">Select apps to use with PUFF:</string>
 
 	<string name="crash_alert">You are recovering from a crash. \n\nplease report
 		your
-		problem to the project page. \n\n(sshtunnel.googlecode.com)
+		problem to the project page. \n\n(puff.googlecode.com)
 	</string>
-	<string name="copy_rights">About:\n\nSSHTunnel(beta) is an open source project
+	<string name="copy_rights">About:\n\nPUFF(beta) is an open source project
 		published under
 		the GPLV3. \n\nIf you have any question, please visit
 		our project page on
-		googlecode. \n\n(sshtunnel.googlecode.com)</string>
+		googlecode. \n\n(puff.googlecode.com)</string>
 	<string name="about">About</string>
 	
 	<string name="connecting">Connecting...</string>
