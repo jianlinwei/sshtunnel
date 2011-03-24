@@ -15,8 +15,14 @@
 				<category android:name="android.intent.category.LAUNCHER" />
 			</intent-filter>
 		</activity>
+
+		<activity android:name="com.google.ads.AdActivity"
+			android:configChanges="keyboard|keyboardHidden|orientation" />
+
 		<activity android:name=".AppManager" android:label="@string/app_name" />
+		
 		<service android:enabled="true" android:name=".SSHTunnelService" />
+		
 		<receiver android:name=".SSHTunnelReceiver">
 			<intent-filter>
 				<action android:name="android.intent.action.BOOT_COMPLETED" />

@@ -1,6 +1,7 @@
 package org.sshtunnel.beta;
 
 import java.io.DataOutputStream;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -9,6 +10,10 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 
 import org.sshtunnel.beta.R;
+
+import com.google.ads.AdRequest;
+import com.google.ads.AdSize;
+import com.google.ads.AdView;
 
 import android.app.ActivityManager;
 import android.app.AlertDialog;
@@ -32,6 +37,7 @@ import android.util.Log;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.LinearLayout;
 
 public class SSHTunnel extends PreferenceActivity implements
 		OnSharedPreferenceChangeListener {
@@ -170,7 +176,18 @@ public class SSHTunnel extends PreferenceActivity implements
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
+		setContentView(R.layout.main);
 		addPreferencesFromResource(R.xml.main_pre);
+	    // Create the adView
+	    AdView adView = new AdView(this, AdSize.BANNER, "a14d8ab36e1b444");
+	    // Lookup your LinearLayout assuming it’s been given
+	    // the attribute android:id="@+id/mainLayout"
+	    LinearLayout layout = (LinearLayout)findViewById(R.id.ad);
+	    // Add the adView to it
+	    layout.addView(adView);
+	    // Initiate a generic request to load it with an ad
+	    AdRequest aq = new AdRequest();
+	    adView.loadAd(aq);
 
 		hostText = (EditTextPreference) findPreference("host");
 		portText = (EditTextPreference) findPreference("port");
