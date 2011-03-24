@@ -7,6 +7,10 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 
+import com.google.ads.AdRequest;
+import com.google.ads.AdSize;
+import com.google.ads.AdView;
+
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.ActivityManager.RunningServiceInfo;
@@ -23,6 +27,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 public class PUFF extends Activity {
@@ -134,6 +139,16 @@ public class PUFF extends Activity {
 		super.onCreate(savedInstanceState);
 
 		setContentView(R.layout.main);
+		
+	    // Create the adView
+	    AdView adView = new AdView(this, AdSize.BANNER, "a14d8ab8a69307b");
+	    // Lookup your LinearLayout assuming it’s been given
+	    // the attribute android:id="@+id/mainLayout"
+	    LinearLayout layout = (LinearLayout)findViewById(R.id.mainLayout);
+	    // Add the adView to it
+	    layout.addView(adView);
+	    // Initiate a generic request to load it with an ad
+	    adView.loadAd(new AdRequest());
 		
 		final TextView feedback = (TextView) findViewById(R.id.Feedback);
 		feedback.setMovementMethod(LinkMovementMethod.getInstance());
