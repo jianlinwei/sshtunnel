@@ -321,7 +321,7 @@ public class PUFFService extends Service implements ConnectionMonitor {
 		}
 
 		try {
-			Thread.sleep(2000);
+			Thread.sleep(4000);
 		} catch (InterruptedException ignore) {
 			// Nothing
 		}
