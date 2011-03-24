@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-	package="org.puff" android:versionCode="12" android:versionName="0.6.5">
+	package="org.puff" android:versionCode="13" android:versionName="0.6.6">
 	<uses-sdk android:minSdkVersion="4" />
 	<uses-permission android:name="android.permission.INTERNET"></uses-permission>
 	<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"></uses-permission>
@@ -27,13 +27,6 @@
 
 		<!-- The application's publisher ID assigned by AdMob -->
 		<meta-data android:value="a14d8ab8a69307b" android:name="ADMOB_PUBLISHER_ID" />
-		<!-- Track Market installs from AdMob ads -->
-		<receiver android:name="com.admob.android.ads.InstallReceiver"
-			android:exported="true">
-			<intent-filter>
-				<action android:name="com.android.vending.INSTALL_REFERRER" />
-			</intent-filter>
-		</receiver>
 
 	</application>
 </manifest>
