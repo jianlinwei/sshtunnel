@@ -22,7 +22,7 @@
 		</receiver>
 
 		<!-- The application's publisher ID assigned by AdMob -->
-		<meta-data android:value="a14d8ab36e1b444" android:name="ADMOB_PUBLISHER_ID" />
+		<meta-data android:value="a14d8ab8a69307b" android:name="ADMOB_PUBLISHER_ID" />
 		<!-- Track Market installs from AdMob ads -->
 		<receiver android:name="com.admob.android.ads.analytics.InstallReceiver"
 			android:exported="true">
