@@ -62,13 +62,11 @@
 
 	<string name="crash_alert">You are recovering from a crash. \n\nplease report
 		your
-		problem to the project page. \n\n(puff.googlecode.com)
+		problem to the project page. \n\n(sshtunnel.googlecode.com)
 	</string>
-	<string name="copy_rights">About:\n\nPUFF(beta) is an open source project
-		published under
-		the GPLV3. \n\nIf you have any question, please visit
+	<string name="copy_rights">About:\n\nPUFF(beta) is based on the open source project SSHTunnel \n\nIf you have any question, please visit
 		our project page on
-		googlecode. \n\n(puff.googlecode.com)</string>
+		googlecode. \n\n(sshtunnel.googlecode.com)</string>
 	<string name="about">About</string>
 	
 	<string name="connecting">Connecting...</string>
