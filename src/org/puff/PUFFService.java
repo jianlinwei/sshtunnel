@@ -300,15 +300,13 @@ public class PUFFService extends Service implements ConnectionMonitor {
 
 		try {
 			if (isARMv6())
-				cmd = "/data/data/org.puff/ssh_g1 -N -T -y -L "
-						+ localPort + ":" + "127.0.0.1" + ":" + remotePort
-						+ " -L " + "5353:8.8.8.8:53 " + user + "@" + hostIP
-						+ "/" + port;
+				cmd = "/data/data/org.puff/ssh_g1 -N -T -y -L " + localPort
+						+ ":" + "127.0.0.1" + ":" + remotePort + " -L "
+						+ "5353:8.8.8.8:53 " + user + "@" + hostIP + "/" + port;
 			else
-				cmd = "/data/data/org.puff/ssh_n1 -N -T -y -L "
-						+ localPort + ":" + "127.0.0.1" + ":" + remotePort
-						+ " -L " + "5353:8.8.8.8:53 " + user + "@" + hostIP
-						+ "/" + port;
+				cmd = "/data/data/org.puff/ssh_n1 -N -T -y -L " + localPort
+						+ ":" + "127.0.0.1" + ":" + remotePort + " -L "
+						+ "5353:8.8.8.8:53 " + user + "@" + hostIP + "/" + port;
 
 			Log.e(TAG, cmd);
 
@@ -320,6 +318,12 @@ public class PUFFService extends Service implements ConnectionMonitor {
 		} catch (Exception e) {
 			Log.e(TAG, "Connect Error!");
 			return false;
+		}
+
+		try {
+			Thread.sleep(2000);
+		} catch (InterruptedException ignore) {
+			// Nothing
 		}
 
 		finishConnection();
@@ -533,7 +537,7 @@ public class PUFFService extends Service implements ConnectionMonitor {
 		Editor ed = settings.edit();
 		ed.putBoolean("isRunning", false);
 		ed.commit();
-		
+
 		notificationManager.cancel(0);
 
 		super.onDestroy();
