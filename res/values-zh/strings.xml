@@ -56,6 +56,10 @@
 	<string name="socks_summary">启用动态转口转发 (注意: 耗电量较大)</string>
 	<string name="connecting">正在连接</string>
 
+	<string name="remote_address">远程地址</string>
+	<string name="remote_address_summary">远程转发地址，默认 127.0.0.1
+	</string>
+
 	<string name="crash_alert">检测到本程序正在从一次崩溃中恢复。\n\n请将您的情况提交到项目网站，谢谢！
 		\n\n(sshtunnel.googlecode.com) </string>
 	<string name="copy_rights">关于：\n\n安全隧道是一款开源软件，基于 GPLV3

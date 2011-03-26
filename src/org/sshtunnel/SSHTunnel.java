@@ -43,6 +43,7 @@ public class SSHTunnel extends PreferenceActivity implements
 	private int port;
 	private int localPort;
 	private int remotePort;
+	private String remoteAddress = "127.0.0.1";
 	private String user;
 	private String password;
 	public static boolean isAutoConnect = false;
@@ -62,6 +63,7 @@ public class SSHTunnel extends PreferenceActivity implements
 	private EditTextPreference passwordText;
 	private EditTextPreference localPortText;
 	private EditTextPreference remotePortText;
+	private EditTextPreference remoteAddressText;
 	private CheckBoxPreference isRunningCheck;
 	private Preference proxyedApps;
 
@@ -181,6 +183,7 @@ public class SSHTunnel extends PreferenceActivity implements
 		passwordText = (EditTextPreference) findPreference("password");
 		localPortText = (EditTextPreference) findPreference("localPort");
 		remotePortText = (EditTextPreference) findPreference("remotePort");
+		remoteAddressText = (EditTextPreference) findPreference("remoteAddress");
 		proxyedApps = (Preference) findPreference("proxyedApps");
 
 		isRunningCheck = (CheckBoxPreference) findPreference("isRunning");
@@ -277,26 +280,31 @@ public class SSHTunnel extends PreferenceActivity implements
 		password = settings.getString("password", "");
 
 		try {
-			String portText = settings.getString("port", "");
-			if (isTextEmpty(portText, getString(R.string.port_empty)))
+			String portString = settings.getString("port", "");
+			if (isTextEmpty(portString, getString(R.string.port_empty)))
 				return false;
-			port = Integer.valueOf(portText);
+			port = Integer.valueOf(portString);
 
-			String localPortText = settings.getString("localPort", "");
-			if (isTextEmpty(localPortText, getString(R.string.local_port_empty)))
+			String localPortString = settings.getString("localPort", "");
+			if (isTextEmpty(localPortString,
+					getString(R.string.local_port_empty)))
 				return false;
-			localPort = Integer.valueOf(localPortText);
+			localPort = Integer.valueOf(localPortString);
 			if (localPort <= 1024)
 				this.showAToast(getString(R.string.port_alert));
 
 			if (!isSocks) {
-				String remotePortText = settings.getString("remotePort", "");
-				if (isTextEmpty(remotePortText,
+				String remotePortString = settings.getString("remotePort", "");
+				if (isTextEmpty(remotePortString,
 						getString(R.string.remote_port_empty)))
 					return false;
-				remotePort = Integer.valueOf(remotePortText);
+				remotePort = Integer.valueOf(remotePortString);
+				remoteAddress = settings
+						.getString("remoteAddress", "127.0.0.1");
 			} else {
+				remoteAddress = "";
 				remotePort = 0;
+
 			}
 		} catch (NumberFormatException e) {
 			showAToast(getString(R.string.number_alert));
@@ -314,6 +322,7 @@ public class SSHTunnel extends PreferenceActivity implements
 			bundle.putInt("port", port);
 			bundle.putInt("localPort", localPort);
 			bundle.putInt("remotePort", remotePort);
+			bundle.putString("remoteAddress", remoteAddress);
 			bundle.putBoolean("isAutoReconnect", isAutoReconnect);
 			bundle.putBoolean("isAutoSetProxy", isAutoSetProxy);
 			bundle.putBoolean("isSocks", isSocks);
@@ -350,6 +359,7 @@ public class SSHTunnel extends PreferenceActivity implements
 		passwordText.setEnabled(false);
 		localPortText.setEnabled(false);
 		remotePortText.setEnabled(false);
+		remoteAddressText.setEnabled(false);
 		proxyedApps.setEnabled(false);
 
 		isSocksCheck.setEnabled(false);
@@ -364,8 +374,10 @@ public class SSHTunnel extends PreferenceActivity implements
 		userText.setEnabled(true);
 		passwordText.setEnabled(true);
 		localPortText.setEnabled(true);
-		if (!isSocksCheck.isChecked())
+		if (!isSocksCheck.isChecked()) {
 			remotePortText.setEnabled(true);
+			remoteAddressText.setEnabled(true);
+		}
 		if (!isAutoSetProxyCheck.isChecked())
 			proxyedApps.setEnabled(true);
 
@@ -415,10 +427,13 @@ public class SSHTunnel extends PreferenceActivity implements
 		else
 			proxyedApps.setEnabled(true);
 
-		if (settings.getBoolean("isSocks", false))
+		if (settings.getBoolean("isSocks", false)) {
 			remotePortText.setEnabled(false);
-		else
+			remoteAddressText.setEnabled(false);
+		} else {
 			remotePortText.setEnabled(true);
+			remoteAddressText.setEnabled(true);
+		}
 
 		Editor edit = settings.edit();
 
@@ -493,10 +508,13 @@ public class SSHTunnel extends PreferenceActivity implements
 		}
 
 		if (key.equals("isSocks")) {
-			if (settings.getBoolean("isSocks", false))
+			if (settings.getBoolean("isSocks", false)) {
 				remotePortText.setEnabled(false);
-			else
+				remoteAddressText.setEnabled(false);
+			} else {
 				remotePortText.setEnabled(true);
+				remoteAddressText.setEnabled(true);
+			}
 		}
 
 		if (key.equals("isAutoSetProxy")) {
@@ -543,6 +561,12 @@ public class SSHTunnel extends PreferenceActivity implements
 						.setSummary(getString(R.string.remote_port_summary));
 			else
 				remotePortText.setSummary(settings.getString("remotePort", ""));
+		else if (key.equals("remoteAddress"))
+			if (settings.getString("remoteAddress", "").equals(""))
+				remoteAddressText
+						.setSummary(getString(R.string.remote_port_summary));
+			else
+				remoteAddressText.setSummary(settings.getString("remoteAddress", ""));
 		else if (key.equals("password"))
 			if (!settings.getString("password", "").equals(""))
 				passwordText.setSummary("*********");
