@@ -475,6 +475,9 @@ public class SSHTunnel extends PreferenceActivity implements
 		if (!settings.getString("remotePort", "").equals(""))
 			remotePortText.setSummary(settings.getString("remotePort",
 					getString(R.string.remote_port_summary)));
+		if (!settings.getString("remoteAddress", "").equals(""))
+			remoteAddressText.setSummary(settings.getString("remoteAddress",
+					getString(R.string.remote_port_summary)));
 
 		// Set up a listener whenever a key changes
 		getPreferenceScreen().getSharedPreferences()
