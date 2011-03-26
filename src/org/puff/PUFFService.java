@@ -613,11 +613,11 @@ public class PUFFService extends Service implements ConnectionMonitor {
 					}
 				}
 			}
-
-			runRootCommand(cmd.toString());
-
-			runRootCommand("/data/data/org.puff/proxy.sh stop");
 		}
+
+		runRootCommand(cmd.toString());
+
+		runRootCommand("/data/data/org.puff/proxy.sh stop");
 
 	}
 
