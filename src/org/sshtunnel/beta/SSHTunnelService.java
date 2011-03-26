@@ -609,11 +609,11 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 					}
 				}
 			}
-
-			runRootCommand(cmd.toString());
-
-			runRootCommand("/data/data/org.sshtunnel.beta/proxy.sh stop");
 		}
+
+		runRootCommand(cmd.toString());
+
+		runRootCommand("/data/data/org.sshtunnel.beta/proxy.sh stop");
 
 	}
 

@@ -178,16 +178,6 @@ public class SSHTunnel extends PreferenceActivity implements
 
 		setContentView(R.layout.main);
 		addPreferencesFromResource(R.xml.main_pre);
-	    // Create the adView
-	    AdView adView = new AdView(this, AdSize.BANNER, "a14d8ab36e1b444");
-	    // Lookup your LinearLayout assuming it’s been given
-	    // the attribute android:id="@+id/mainLayout"
-	    LinearLayout layout = (LinearLayout)findViewById(R.id.ad);
-	    // Add the adView to it
-	    layout.addView(adView);
-	    // Initiate a generic request to load it with an ad
-	    AdRequest aq = new AdRequest();
-	    adView.loadAd(aq);
 
 		hostText = (EditTextPreference) findPreference("host");
 		portText = (EditTextPreference) findPreference("port");
