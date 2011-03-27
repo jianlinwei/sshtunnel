@@ -427,7 +427,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	}
 
 	private void notifyAlert(String title, String info) {
-		Notification notification = new Notification(R.drawable.icon, title,
+		Notification notification = new Notification(R.drawable.ic_stat, title,
 				System.currentTimeMillis());
 
 		initSoundVibrateLights(notification);
@@ -458,7 +458,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	}
 
 	private void notifyAlert(String title, String info, int flags) {
-		Notification notification = new Notification(R.drawable.icon, title,
+		Notification notification = new Notification(R.drawable.ic_stat, title,
 				System.currentTimeMillis());
 		notification.flags = flags;
 
