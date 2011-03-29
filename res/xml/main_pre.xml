@@ -22,8 +22,9 @@
 			android:title="@string/socks" android:key="isSocks"></CheckBoxPreference>
 		<EditTextPreference android:title="@string/local_port"
 			android:key="localPort" android:summary="@string/local_port_summary" android:defaultValue="1984"></EditTextPreference>
-		<EditTextPreference android:title="@string/remote_port"
+		<EditTextPreference android:key="remoteAddress" android:title="@string/remote_address" android:summary="@string/remote_address_summary" android:defaultValue="127.0.0.1"></EditTextPreference><EditTextPreference android:title="@string/remote_port"
 			android:key="remotePort" android:summary="@string/remote_port_summary" android:defaultValue="3128"></EditTextPreference>
+		
 
 	</PreferenceCategory>
 	<PreferenceCategory android:title="@string/fearute_cat">

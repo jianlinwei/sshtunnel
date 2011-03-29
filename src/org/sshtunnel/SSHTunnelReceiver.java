@@ -14,6 +14,7 @@ public class SSHTunnelReceiver extends BroadcastReceiver {
 	private int port;
 	private int localPort;
 	private int remotePort;
+	private String remoteAddress;
 	private String user;
 	private String password;
 	private boolean isAutoConnect = false;
@@ -36,10 +37,12 @@ public class SSHTunnelReceiver extends BroadcastReceiver {
 				user = settings.getString("user", "");
 				password = settings.getString("password", "");
 				port = Integer.valueOf(settings.getString("port", "22"));
-				localPort = Integer
-						.valueOf(settings.getString("localPort", "1984"));
+				localPort = Integer.valueOf(settings.getString("localPort",
+						"1984"));
 				remotePort = Integer.valueOf(settings.getString("remotePort",
 						"3128"));
+				remoteAddress = settings
+						.getString("remoteAddress", "127.0.0.1");
 				isAutoReconnect = settings.getBoolean("isAutoReconnect", false);
 				isAutoSetProxy = settings.getBoolean("isAutoSetProxy", false);
 				isSocks = settings.getBoolean("isSocks", false);
@@ -55,6 +58,7 @@ public class SSHTunnelReceiver extends BroadcastReceiver {
 			bundle.putInt("port", port);
 			bundle.putInt("localPort", localPort);
 			bundle.putInt("remotePort", remotePort);
+			bundle.putString("remoteAddress", remoteAddress);
 			bundle.putBoolean("isAutoConnect", isAutoReconnect);
 			bundle.putBoolean("isAutoSetProxy", isAutoSetProxy);
 			bundle.putBoolean("isSocks", isSocks);

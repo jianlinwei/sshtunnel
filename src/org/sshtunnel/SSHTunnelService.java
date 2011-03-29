@@ -59,6 +59,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	private int port;
 	private int localPort;
 	private int remotePort;
+	private String remoteAddress = "127.0.0.1";
 	private String user;
 	private String password;
 	private boolean isAutoReconnect = false;
@@ -452,7 +453,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 				dpf = connection.createDynamicPortForwarder(localPort);
 			} else {
 				lpf = connection.createLocalPortForwarder(localPort,
-						"127.0.0.1", remotePort);
+						remoteAddress, remotePort);
 			}
 
 			// lpf2 = connection.createLocalPortForwarder(5353, "8.8.8.8", 53);
@@ -835,6 +836,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		port = bundle.getInt("port");
 		localPort = bundle.getInt("localPort");
 		remotePort = bundle.getInt("remotePort");
+		remoteAddress = bundle.getString("remoteAddress");
 		isAutoReconnect = bundle.getBoolean("isAutoReconnect");
 		isAutoSetProxy = bundle.getBoolean("isAutoSetProxy");
 		isSocks = bundle.getBoolean("isSocks");
