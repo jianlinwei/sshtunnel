@@ -192,6 +192,9 @@ public class AppManager extends Activity implements OnCheckedChangeListener, OnC
 			apps[appIdx].setName(pMgr.getApplicationLabel(aInfo).toString());
 			apps[appIdx].setIcon(pMgr.getApplicationIcon(aInfo));
 			
+			if (apps[appIdx].getUsername() == null)
+				apps[appIdx].setUsername("null");
+			
 			// check if this application is allowed
 			if (Arrays.binarySearch(tordApps, apps[appIdx].getUsername()) >= 0) {
 				apps[appIdx].setProxyed(true);
