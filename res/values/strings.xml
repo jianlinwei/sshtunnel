@@ -101,4 +101,10 @@
 	<string name="notif_vibrate_summary">Also vibrate when connection status changes
 	</string>
 
+	<!-- profile switcher -->
+	<string name="profile">Choose one profile</string>
+	<string name="profile_default">Default Profile</string>
+	<string name="profile_new">New Profile</string>
+	<string name="profile_base">Profile </string>
+
 </resources>
