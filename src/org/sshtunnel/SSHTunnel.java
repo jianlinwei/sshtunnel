@@ -455,8 +455,8 @@ public class SSHTunnel extends PreferenceActivity implements
 		ed = settings.edit();
 		ed.putString("host", host.equals("null") ? "" : host);
 		ed.putString("port", Integer.toString(port));
-		ed.putString("user", user.equals("null") ? "" : host);
-		ed.putString("password", password.equals("null") ? "" : host);
+		ed.putString("user", user.equals("null") ? "" : user);
+		ed.putString("password", password.equals("null") ? "" : password);
 		ed.putBoolean("isSocks", isSocks);
 		ed.putString("localPort", Integer.toString(localPort));
 		ed.putString("remoteAddress", remoteAddress);
@@ -550,7 +550,7 @@ public class SSHTunnel extends PreferenceActivity implements
 		super.onResume();
 		SharedPreferences settings = PreferenceManager
 				.getDefaultSharedPreferences(this);
-
+		
 		if (settings.getBoolean("isAutoSetProxy", false))
 			proxyedApps.setEnabled(false);
 		else
@@ -589,6 +589,8 @@ public class SSHTunnel extends PreferenceActivity implements
 		// Setup the initial values
 		profile = settings.getString("profile", "1");
 		profileList.setValue(profile);
+
+		profileList.setSummary(getString(R.string.profile_base) + " " + settings.getString("profile", ""));
 
 		if (!settings.getString("user", "").equals(""))
 			userText.setSummary(settings.getString("user",
@@ -645,25 +647,26 @@ public class SSHTunnel extends PreferenceActivity implements
 					profileEntriesBuffer.append(profileEntries[i] + "|");
 					profileValuesBuffer.append(profileValues[i] + "|");
 				}
-				profileEntriesBuffer.append(getString(R.string.profile_base)
+				profileEntriesBuffer.append(getString(R.string.profile_base) + " "
 						+ newProfileValue + "|");
 				profileValuesBuffer.append(newProfileValue + "|");
 				profileEntriesBuffer.append(getString(R.string.profile_new));
 				profileValuesBuffer.append("0");
-
-				loadProfileList();
 
 				Editor ed = settings.edit();
 				ed.putString("profileEntries", profileEntriesBuffer.toString());
 				ed.putString("profileValues", profileValuesBuffer.toString());
 				ed.putString("profile", Integer.toString(newProfileValue));
 				ed.commit();
+				
+				loadProfileList();
 
 			} else {
 				String oldProfile = profile;
 				profile = profileString;
 				profileList.setValue(profile);
 				onProfileChange(oldProfile);
+				profileList.setSummary(getString(R.string.profile_base) + " " + profileString);
 			}
 		}
 
