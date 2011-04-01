@@ -73,4 +73,10 @@
 	<string name="notif_vibrate_title">震动</string>
 	<string name="notif_vibrate_summary">在连接状态改变时震动</string>
 
+	<!-- profile switcher -->
+	<string name="profile">切换账号</string>
+	<string name="profile_default">默认账号</string>
+	<string name="profile_new">新建账号</string>
+	<string name="profile_base">账号 </string>
+
 </resources>

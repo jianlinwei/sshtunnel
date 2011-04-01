@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.StringTokenizer;
 
 import android.app.ActivityManager;
 import android.app.ActivityManager.RunningServiceInfo;
@@ -23,6 +24,7 @@ import android.content.res.AssetManager;
 import android.os.Bundle;
 import android.preference.CheckBoxPreference;
 import android.preference.EditTextPreference;
+import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
@@ -46,6 +48,7 @@ public class SSHTunnel extends PreferenceActivity implements
 	private String remoteAddress = "127.0.0.1";
 	private String user;
 	private String password;
+	private String profile;
 	public static boolean isAutoConnect = false;
 	public static boolean isAutoReconnect = false;
 	public static boolean isAutoSetProxy = false;
@@ -56,6 +59,7 @@ public class SSHTunnel extends PreferenceActivity implements
 	private CheckBoxPreference isAutoReconnectCheck;
 	private CheckBoxPreference isAutoSetProxyCheck;
 	private CheckBoxPreference isSocksCheck;
+	private ListPreference profileList;
 
 	private EditTextPreference hostText;
 	private EditTextPreference portText;
@@ -185,6 +189,7 @@ public class SSHTunnel extends PreferenceActivity implements
 		remotePortText = (EditTextPreference) findPreference("remotePort");
 		remoteAddressText = (EditTextPreference) findPreference("remoteAddress");
 		proxyedApps = (Preference) findPreference("proxyedApps");
+		profileList = (ListPreference) findPreference("profile");
 
 		isRunningCheck = (CheckBoxPreference) findPreference("isRunning");
 		isAutoSetProxyCheck = (CheckBoxPreference) findPreference("isAutoSetProxy");
@@ -194,6 +199,30 @@ public class SSHTunnel extends PreferenceActivity implements
 
 		SharedPreferences settings = PreferenceManager
 				.getDefaultSharedPreferences(this);
+
+		String profileValuesString = settings.getString("profileValues", "");
+
+		if (profileValuesString.equals("")) {
+			Editor ed = settings.edit();
+			profile = "1";
+			ed.putString("profileValues", "1|0");
+			ed.putString("profileEntries", getString(R.string.profile_default)
+					+ "|" + getString(R.string.profile_new));
+			ed.putString("profile", "1");
+			ed.commit();
+		}
+
+		String[] profileEntries = settings.getString("profileEntries", "")
+				.split("\\|");
+		String[] profileValues = settings.getString("profileValues", "").split(
+				"\\|");
+
+		profileList.setEntries(profileEntries);
+		profileList.setEntryValues(profileValues);
+
+		if (profileValuesString.equals("")) {
+			profileList.setDefaultValue("1");
+		}
 
 		Editor edit = settings.edit();
 
@@ -338,6 +367,74 @@ public class SSHTunnel extends PreferenceActivity implements
 		return true;
 	}
 
+	private void onProfileChange(String oldProfile) {
+
+		SharedPreferences settings = PreferenceManager
+				.getDefaultSharedPreferences(SSHTunnel.this);
+
+		StringBuffer sb = new StringBuffer();
+
+		sb.append(host);
+		sb.append("|");
+		sb.append(port);
+		sb.append("|");
+		sb.append(user);
+		sb.append("|");
+		sb.append(password);
+		sb.append("|");
+		sb.append(isSocks ? "true" : "false");
+		sb.append("|");
+		sb.append(localPort);
+		sb.append("|");
+		sb.append(remoteAddress);
+		sb.append("|");
+		sb.append(remotePort);
+
+		Editor ed = settings.edit();
+		ed.putString(oldProfile, sb.toString());
+		ed.commit();
+
+		String profileString = settings.getString(profile, "");
+
+		if (profileString.equals("")) {
+
+			host = "";
+			port = 22;
+			user = "";
+			password = "";
+			isSocks = false;
+			localPort = 1984;
+			remoteAddress = "127.0.0.1";
+			remotePort = 3128;
+
+		} else {
+
+			StringTokenizer st = new StringTokenizer(profileString, "|");
+
+			host = st.nextToken();
+			port = Integer.valueOf(st.nextToken());
+			user = st.nextToken();
+			password = st.nextToken();
+			isSocks = st.nextElement().equals("true") ? true : false;
+			localPort = Integer.valueOf(st.nextToken());
+			remoteAddress = st.nextToken();
+			remotePort = Integer.valueOf(st.nextToken());
+
+		}
+
+		ed = settings.edit();
+		ed.putString("host", host);
+		ed.putInt("port", port);
+		ed.putString("user", user);
+		ed.putString("password", password);
+		ed.putBoolean("isSocks", isSocks);
+		ed.putInt("localPort", localPort);
+		ed.putString("remoteAddress", remoteAddress);
+		ed.putInt("remotePort", remotePort);
+		ed.commit();
+
+	}
+
 	private void showAToast(String msg) {
 		AlertDialog.Builder builder = new AlertDialog.Builder(this);
 		builder.setMessage(msg)
@@ -361,6 +458,7 @@ public class SSHTunnel extends PreferenceActivity implements
 		remotePortText.setEnabled(false);
 		remoteAddressText.setEnabled(false);
 		proxyedApps.setEnabled(false);
+		profileList.setEnabled(false);
 
 		isSocksCheck.setEnabled(false);
 		isAutoSetProxyCheck.setEnabled(false);
@@ -381,6 +479,7 @@ public class SSHTunnel extends PreferenceActivity implements
 		if (!isAutoSetProxyCheck.isChecked())
 			proxyedApps.setEnabled(true);
 
+		profileList.setEnabled(true);
 		isAutoSetProxyCheck.setEnabled(true);
 		isSocksCheck.setEnabled(true);
 		isAutoConnectCheck.setEnabled(true);
@@ -496,6 +595,43 @@ public class SSHTunnel extends PreferenceActivity implements
 	public void onSharedPreferenceChanged(SharedPreferences settings, String key) {
 		// Let's do something a preference value changes
 
+		if (key.equals("profile")) {
+			String profileString = settings.getString("profile", "");
+			if (profileString.equals("0")) {
+				String[] profileEntries = settings.getString("profileEntries",
+						"").split("\\|");
+				String[] profileValues = settings
+						.getString("profileValues", "").split("\\|");
+				int newProfileValue = Integer
+						.valueOf(profileValues[profileValues.length - 2]) + 1;
+
+				StringBuffer profileEntriesBuffer = new StringBuffer();
+				StringBuffer profileValuesBuffer = new StringBuffer();
+
+				for (int i = 0; i < profileValues.length - 1; i++) {
+					profileEntriesBuffer.append(profileEntries[i] + "|");
+					profileValuesBuffer.append(profileValues[i] + "|");
+				}
+				profileEntriesBuffer.append(getString(R.string.profile_base) + newProfileValue + "|");
+				profileValuesBuffer.append(newProfileValue + "|");
+				profileEntriesBuffer.append(getString(R.string.profile_new));
+				profileValuesBuffer.append("0");
+				
+				profileList.setEntries(profileEntries);
+				profileList.setEntryValues(profileValues);
+				
+				Editor ed = settings.edit();
+				ed.putString("profileEntries",profileEntriesBuffer.toString());
+				ed.putString("profileValues", profileValuesBuffer.toString());
+				ed.putString("profile", Integer.toString(newProfileValue));
+				ed.commit();
+			} else {
+				String oldProfile = profile;
+				profile = profileString;
+				profileList.setValue(profile);
+			}
+		}
+
 		if (key.equals("isConnecting")) {
 			if (settings.getBoolean("isConnecting", false)) {
 				Log.d(TAG, "Connecting start");
@@ -569,7 +705,8 @@ public class SSHTunnel extends PreferenceActivity implements
 				remoteAddressText
 						.setSummary(getString(R.string.remote_port_summary));
 			else
-				remoteAddressText.setSummary(settings.getString("remoteAddress", ""));
+				remoteAddressText.setSummary(settings.getString(
+						"remoteAddress", ""));
 		else if (key.equals("password"))
 			if (!settings.getString("password", "").equals(""))
 				passwordText.setSummary("*********");
