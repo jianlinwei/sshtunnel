@@ -103,8 +103,8 @@
 
 	<!-- profile switcher -->
 	<string name="profile">Choose one profile</string>
-	<string name="profile_default">Default Profile</string>
+	<string name="profile_default">Profile 1</string>
 	<string name="profile_new">New Profile</string>
-	<string name="profile_base">Profile </string>
+	<string name="profile_base">Profile</string>
 
 </resources>
