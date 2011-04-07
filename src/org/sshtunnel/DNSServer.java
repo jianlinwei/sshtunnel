@@ -24,6 +24,8 @@ import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.Hashtable;
 
+import android.content.Context;
+import android.content.Intent;
 import android.util.Log;
 
 /**
@@ -136,6 +138,8 @@ public class DNSServer implements WrapServer {
 	private String name;
 	protected String dnsHost;
 	protected int dnsPort;
+	protected Context context;
+	
 	final protected int DNS_PKG_HEADER_LEN = 12;
 	final private int[] DNS_HEADERS = { 0, 0, 0x81, 0x80, 0, 0, 0, 0, 0, 0, 0,
 			0 };
@@ -156,11 +160,12 @@ public class DNSServer implements WrapServer {
 
 	private String target = "8.8.8.8:53";
 
-	public DNSServer(String name, int port, String dnsHost, int dnsPort) {
+	public DNSServer(String name, int port, String dnsHost, int dnsPort, Context context) {
 		this.name = name;
 		this.srvPort = port;
 		this.dnsHost = dnsHost;
 		this.dnsPort = dnsPort;
+		this.context = context;
 
 		if (dnsHost != null && !dnsHost.equals(""))
 			target = dnsHost + ":" + dnsPort;
@@ -542,9 +547,14 @@ public class DNSServer implements WrapServer {
 
 			} catch (SocketException e) {
 				Log.e(TAG, e.getLocalizedMessage());
+				context.stopService(new Intent(context, SSHTunnelService.class));
 				break;
 			} catch (IOException e) {
 				Log.e(TAG, e.getLocalizedMessage());
+			} catch (Exception e) {
+				Log.e(TAG, "Unexpected error", e);
+				context.stopService(new Intent(context, SSHTunnelService.class));
+				break;
 			}
 		}
 
