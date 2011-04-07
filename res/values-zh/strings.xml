@@ -78,5 +78,6 @@
 	<string name="profile_default">账号 1</string>
 	<string name="profile_new">新建账号</string>
 	<string name="profile_base">账号</string>
+	<string name="profile_del">删除当前账号</string>
 
 </resources>
