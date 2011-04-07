@@ -450,6 +450,15 @@ public class SSHTunnel extends PreferenceActivity implements
 		Log.d(TAG, host + "|" + port + "|" + user + "|" + password + "|"
 				+ (isSocks ? "true" : "false") + "|" + localPort + "|"
 				+ remoteAddress + "|" + remotePort);
+		
+		hostText.setText(host);
+		portText.setText(Integer.toString(port));
+		userText.setText(user);
+		passwordText.setText(password);
+		isSocksCheck.setChecked(isSocks);
+		localPortText.setText(Integer.toString(localPort));
+		remoteAddressText.setText(remoteAddress);
+		remotePortText.setText(Integer.toString(remotePort));
 
 		ed = settings.edit();
 		ed.putString("host", host.equals("null") ? "" : host);
