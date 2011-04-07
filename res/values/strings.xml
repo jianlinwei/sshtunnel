@@ -106,5 +106,6 @@
 	<string name="profile_default">Profile 1</string>
 	<string name="profile_new">New Profile</string>
 	<string name="profile_base">Profile</string>
+	<string name="profile_del">Remove current profile</string>
 
 </resources>

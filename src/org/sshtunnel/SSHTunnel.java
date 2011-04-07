@@ -375,7 +375,7 @@ public class SSHTunnel extends PreferenceActivity implements
 
 		SharedPreferences settings = PreferenceManager
 				.getDefaultSharedPreferences(SSHTunnel.this);
-		
+
 		isAutoConnect = settings.getBoolean("isAutoConnect", false);
 		isAutoSetProxy = settings.getBoolean("isAutoSetProxy", false);
 		isAutoReconnect = settings.getBoolean("isAutoReconnect", false);
@@ -393,17 +393,16 @@ public class SSHTunnel extends PreferenceActivity implements
 		} catch (NumberFormatException e) {
 			port = 22;
 		}
-		
+
 		String localPortString = settings.getString("localPort", "");
 		try {
 			localPort = Integer.valueOf(localPortString);
 		} catch (NumberFormatException e) {
 			localPort = 1984;
 		}
-		
-		remoteAddress = settings
-		.getString("remoteAddress", "127.0.0.1");
-		
+
+		remoteAddress = settings.getString("remoteAddress", "127.0.0.1");
+
 		String remotePortString = settings.getString("remotePort", "");
 		try {
 			remotePort = Integer.valueOf(remotePortString);
@@ -434,7 +433,7 @@ public class SSHTunnel extends PreferenceActivity implements
 
 		} else {
 
-			String [] st = profileString.split("\\|");
+			String[] st = profileString.split("\\|");
 			Log.d(TAG, "Token size: " + st.length);
 
 			host = st[0];
@@ -462,7 +461,7 @@ public class SSHTunnel extends PreferenceActivity implements
 		ed.putString("remoteAddress", remoteAddress);
 		ed.putString("remotePort", Integer.toString(remotePort));
 		ed.commit();
-		
+
 	}
 
 	private void showAToast(String msg) {
@@ -550,7 +549,7 @@ public class SSHTunnel extends PreferenceActivity implements
 		super.onResume();
 		SharedPreferences settings = PreferenceManager
 				.getDefaultSharedPreferences(this);
-		
+
 		if (settings.getBoolean("isAutoSetProxy", false))
 			proxyedApps.setEnabled(false);
 		else
@@ -590,7 +589,8 @@ public class SSHTunnel extends PreferenceActivity implements
 		profile = settings.getString("profile", "1");
 		profileList.setValue(profile);
 
-		profileList.setSummary(getString(R.string.profile_base) + " " + settings.getString("profile", ""));
+		profileList.setSummary(getString(R.string.profile_base) + " "
+				+ settings.getString("profile", ""));
 
 		if (!settings.getString("user", "").equals(""))
 			userText.setSummary(settings.getString("user",
@@ -647,8 +647,8 @@ public class SSHTunnel extends PreferenceActivity implements
 					profileEntriesBuffer.append(profileEntries[i] + "|");
 					profileValuesBuffer.append(profileValues[i] + "|");
 				}
-				profileEntriesBuffer.append(getString(R.string.profile_base) + " "
-						+ newProfileValue + "|");
+				profileEntriesBuffer.append(getString(R.string.profile_base)
+						+ " " + newProfileValue + "|");
 				profileValuesBuffer.append(newProfileValue + "|");
 				profileEntriesBuffer.append(getString(R.string.profile_new));
 				profileValuesBuffer.append("0");
@@ -658,7 +658,7 @@ public class SSHTunnel extends PreferenceActivity implements
 				ed.putString("profileValues", profileValuesBuffer.toString());
 				ed.putString("profile", Integer.toString(newProfileValue));
 				ed.commit();
-				
+
 				loadProfileList();
 
 			} else {
@@ -666,7 +666,8 @@ public class SSHTunnel extends PreferenceActivity implements
 				profile = profileString;
 				profileList.setValue(profile);
 				onProfileChange(oldProfile);
-				profileList.setSummary(getString(R.string.profile_base) + " " + profileString);
+				profileList.setSummary(getString(R.string.profile_base) + " "
+						+ profileString);
 			}
 		}
 
@@ -761,9 +762,12 @@ public class SSHTunnel extends PreferenceActivity implements
 		 * 4、文本，菜单的显示文本
 		 */
 		menu.add(Menu.NONE, Menu.FIRST + 1, 1, getString(R.string.recovery))
+				.setIcon(android.R.drawable.ic_menu_close_clear_cancel);
+		menu.add(Menu.NONE, Menu.FIRST + 2, 2, getString(R.string.profile_del))
 				.setIcon(android.R.drawable.ic_menu_delete);
-		menu.add(Menu.NONE, Menu.FIRST + 2, 2, getString(R.string.about))
+		menu.add(Menu.NONE, Menu.FIRST + 3, 3, getString(R.string.about))
 				.setIcon(android.R.drawable.ic_menu_info_details);
+
 		// return true才会起作用
 		return true;
 
@@ -777,11 +781,49 @@ public class SSHTunnel extends PreferenceActivity implements
 			recovery();
 			break;
 		case Menu.FIRST + 2:
+			delProfile();
+			break;
+		case Menu.FIRST + 3:
 			showAToast(getString(R.string.copy_rights));
 			break;
 		}
 
 		return true;
+	}
+
+	private void delProfile() {
+		SharedPreferences settings = PreferenceManager
+				.getDefaultSharedPreferences(this);
+		String[] profileEntries = settings.getString("profileEntries", "")
+				.split("\\|");
+		String[] profileValues = settings.getString("profileValues", "").split(
+				"\\|");
+		
+		Log.d(TAG, "Profile :" + profile);
+		if (profileEntries.length > 2) {
+			StringBuffer profileEntriesBuffer = new StringBuffer();
+			StringBuffer profileValuesBuffer = new StringBuffer();
+
+			String newProfileValue = "1";
+
+			for (int i = 0; i < profileValues.length - 1; i++) {
+				if (!profile.equals(profileValues[i])) {
+					profileEntriesBuffer.append(profileEntries[i] + "|");
+					profileValuesBuffer.append(profileValues[i] + "|");
+					newProfileValue = profileValues[i];
+				}
+			}
+			profileEntriesBuffer.append(getString(R.string.profile_new));
+			profileValuesBuffer.append("0");
+
+			Editor ed = settings.edit();
+			ed.putString("profileEntries", profileEntriesBuffer.toString());
+			ed.putString("profileValues", profileValuesBuffer.toString());
+			ed.putString("profile", newProfileValue);
+			ed.commit();
+
+			loadProfileList();
+		}
 	}
 
 	private void recovery() {
