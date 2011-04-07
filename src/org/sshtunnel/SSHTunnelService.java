@@ -589,7 +589,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 		// dnsServer = new DNSServer("DNS Server", 8153, "208.67.222.222",
 		// 5353);
-		dnsServer = new DNSServer("DNS Server", 8153, "8.8.8.8", 53);
+		dnsServer = new DNSServer("DNS Server", 8153, "8.8.8.8", 53, this);
 		// dnsServer = new DNSServer("DNS Server", 8153, "127.0.0.1", 5353);
 		dnsServer.setBasePath("/data/data/org.sshtunnel");
 		new Thread(dnsServer).start();
