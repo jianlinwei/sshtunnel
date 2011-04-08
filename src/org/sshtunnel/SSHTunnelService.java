@@ -651,8 +651,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		notificationManager = (NotificationManager) this
 				.getSystemService(NOTIFICATION_SERVICE);
 
-		this.initHasRedirectSupported();
-
 		intent = new Intent(this, SSHTunnel.class);
 		intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
 		pendIntent = PendingIntent.getActivity(this, 0, intent, 0);
@@ -845,6 +843,10 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			public void run() {
 
 				handler.sendEmptyMessage(MSG_CONNECT_START);
+				
+				// Test for Redirect Support
+				initHasRedirectSupported();
+				
 				if (isOnline() && handleCommand()) {
 					// Connection and forward successful
 					notifyAlert(getString(R.string.forward_success),
