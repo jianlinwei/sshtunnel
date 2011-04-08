@@ -307,14 +307,14 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		connection = new Connection(host, port);
 		connection.addConnectionMonitor(this);
 
-		try {
-
-			connection.setCompression(true);
-			connection.setTCPNoDelay(true);
-
-		} catch (IOException e) {
-			Log.e(TAG, "Could not enable compression!", e);
-		}
+//		try {
+//
+//			connection.setCompression(true);
+//			connection.setTCPNoDelay(true);
+//
+//		} catch (IOException e) {
+//			Log.e(TAG, "Could not enable compression!", e);
+//		}
 
 		try {
 			/*
