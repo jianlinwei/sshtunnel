@@ -81,6 +81,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	// Flag indicating if this is an ARMv6 device (-1: unknown, 0: no, 1: yes)
 	public static int isARMv6 = -1;
 	private boolean hasRedirectSupport = true;
+	private boolean hasIPTABLESSupport = false;
 
 	public final static String BASE = "/data/data/org.sshtunnel/";
 
@@ -213,6 +214,52 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		return true;
 	}
 
+	private void initHasIPTABLESSupported() {
+		Process process = null;
+		DataOutputStream os = null;
+		DataInputStream es = null;
+
+		String command;
+		String line = null;
+
+		command = "iptables -V";
+
+		try {
+			process = Runtime.getRuntime().exec("su");
+			es = new DataInputStream(process.getInputStream());
+			os = new DataOutputStream(process.getOutputStream());
+			os.writeBytes(command + "\n");
+			os.writeBytes("exit\n");
+			os.flush();
+			process.waitFor();
+
+			while (null != (line = es.readLine())) {
+				Log.d(TAG, line);
+				if (line.toLowerCase().contains("iptables v")) {
+					Log.d(TAG, "IPTABLES SUPPORTED");
+					hasIPTABLESSupport = true;
+					break;
+				}
+			}
+		} catch (Exception e) {
+			Log.e(TAG, e.getMessage());
+		} finally {
+			try {
+				if (os != null) {
+					os.close();
+				}
+				if (es != null)
+					es.close();
+				process.destroy();
+			} catch (Exception e) {
+				// nothing
+			}
+		}
+
+		// flush the check command
+		runRootCommand(command.replace("-A", "-D"));
+	}
+
 	private void initHasRedirectSupported() {
 		Process process = null;
 		DataOutputStream os = null;
@@ -225,6 +272,14 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			command = "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p udp --dport 53 -j REDIRECT --to-ports 8153";
 		} else
 			command = "/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p udp --dport 53 -j REDIRECT --to-ports 8153";
+
+		if (hasIPTABLESSupport)
+			if (isARMv6())
+				command = command.replace("/data/data/org.sshtunnel/iptables_g1",
+						"iptables");
+			else
+				command = command.replace("/data/data/org.sshtunnel/iptables_n1",
+						"iptables");
 
 		try {
 			process = Runtime.getRuntime().exec("su");
@@ -307,14 +362,14 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		connection = new Connection(host, port);
 		connection.addConnectionMonitor(this);
 
-//		try {
-//
-//			connection.setCompression(true);
-//			connection.setTCPNoDelay(true);
-//
-//		} catch (IOException e) {
-//			Log.e(TAG, "Could not enable compression!", e);
-//		}
+		// try {
+		//
+		// connection.setCompression(true);
+		// connection.setTCPNoDelay(true);
+		//
+		// } catch (IOException e) {
+		// Log.e(TAG, "Could not enable compression!", e);
+		// }
 
 		try {
 			/*
@@ -568,10 +623,20 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 				}
 			}
 
+			String command = cmd.toString();
+
+			if (hasIPTABLESSupport)
+				if (isARMv6())
+					command = command.replace("/data/data/org.sshtunnel/iptables_g1",
+							"iptables");
+				else
+					command = command.replace("/data/data/org.sshtunnel/iptables_n1",
+							"iptables");
+
 			if (isSocks)
-				runRootCommand(cmd.toString().replace("8124", "8123"));
+				runRootCommand(command.replace("8124", "8123"));
 			else
-				runRootCommand(cmd.toString());
+				runRootCommand(command);
 
 			// Forward Successful
 			return true;
@@ -672,7 +737,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	public void onDestroy() {
 
 		stopForegroundCompat(1);
-		
+
 		if (stateChanged != null) {
 			unregisterReceiver(stateChanged);
 			stateChanged = null;
@@ -778,11 +843,21 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 				}
 			}
 		}
+		
+		String command = cmd.toString();
+
+		if (hasIPTABLESSupport)
+			if (isARMv6())
+				command = command.replace("/data/data/org.sshtunnel/iptables_g1",
+						"iptables");
+			else
+				command = command.replace("/data/data/org.sshtunnel/iptables_n1",
+						"iptables");
 
 		if (isSocks)
-			runRootCommand(cmd.toString().replace("8124", "8123"));
+			runRootCommand(command.replace("8124", "8123"));
 		else
-			runRootCommand(cmd.toString());
+			runRootCommand(command);
 
 		if (isSocks)
 			runRootCommand("/data/data/org.sshtunnel/proxy_socks.sh stop");
@@ -843,10 +918,13 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			public void run() {
 
 				handler.sendEmptyMessage(MSG_CONNECT_START);
+
+				// Test for IPTABLES Support
+				initHasIPTABLESSupported();
 				
 				// Test for Redirect Support
 				initHasRedirectSupported();
-				
+
 				if (isOnline() && handleCommand()) {
 					// Connection and forward successful
 					notifyAlert(getString(R.string.forward_success),
