@@ -386,6 +386,10 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 		SimpleDateFormat df = new SimpleDateFormat("HH:mm:ss");
 
+		if (settings.getBoolean("isConnecting", false)) {
+			return;
+		}
+		
 		if (!isOnline()) {
 			return;
 		}
