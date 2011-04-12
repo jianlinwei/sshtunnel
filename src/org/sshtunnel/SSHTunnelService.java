@@ -855,18 +855,26 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 					// Connection and forward successful
 					notifyAlert(getString(R.string.forward_success),
 							getString(R.string.service_running));
+					handler.sendEmptyMessage(MSG_CONNECT_FINISH);
 					handler.sendEmptyMessage(MSG_CONNECT_SUCCESS);
 				} else {
 					// Connection or forward unsuccessful
 					notifyAlert(getString(R.string.forward_fail),
 							getString(R.string.service_failed),
 							Notification.FLAG_AUTO_CANCEL);
+					
+					handler.sendEmptyMessage(MSG_CONNECT_FINISH);
+					handler.sendEmptyMessage(MSG_CONNECT_FAIL);
+					
+					try {
+						Thread.sleep(1000);
+					} catch (InterruptedException ignore) {
+						// Nothing
+					}
+					
 					connected = false;
 					stopSelf();
-					handler.sendEmptyMessage(MSG_CONNECT_FAIL);
 				}
-				handler.sendEmptyMessage(MSG_CONNECT_FINISH);
-
 			}
 		}).start();
 	}
