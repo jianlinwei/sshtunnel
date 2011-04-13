@@ -250,7 +250,7 @@ public class SSHTunnel extends PreferenceActivity implements
 			enableAll();
 		}
 
-		if (!runRootCommand("ls")) {
+		if (!runRootCommand("")) {
 			isRoot = false;
 		} else {
 			isRoot = true;
