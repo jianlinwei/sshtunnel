@@ -40,7 +40,7 @@ import com.trilead.ssh2.LocalPortForwarder;
 
 public class SSHTunnelService extends Service implements ConnectionMonitor {
 
-	ConnectivityBroadcastReceiver stateChanged = null;
+//	ConnectivityBroadcastReceiver stateChanged = null;
 
 	private Notification notification;
 	private NotificationManager notificationManager;
@@ -677,10 +677,10 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 		stopForegroundCompat(1);
 		
-		if (stateChanged != null) {
-			unregisterReceiver(stateChanged);
-			stateChanged = null;
-		}
+//		if (stateChanged != null) {
+//			unregisterReceiver(stateChanged);
+//			stateChanged = null;
+//		}
 
 		if (connected) {
 
@@ -808,9 +808,9 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 				break;
 			case MSG_CONNECT_SUCCESS:
 				ed.putBoolean("isRunning", true);
-				stateChanged = new ConnectivityBroadcastReceiver();
-				registerReceiver(stateChanged, new IntentFilter(
-						ConnectivityManager.CONNECTIVITY_ACTION));
+//				stateChanged = new ConnectivityBroadcastReceiver();
+//				registerReceiver(stateChanged, new IntentFilter(
+//						ConnectivityManager.CONNECTIVITY_ACTION));
 				break;
 			case MSG_CONNECT_FAIL:
 				ed.putBoolean("isRunning", false);
