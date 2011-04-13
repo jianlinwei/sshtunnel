@@ -53,6 +53,11 @@ public class ConnectivityBroadcastReceiver extends BroadcastReceiver {
 				}
 			}
 		} else {
+			try {
+				Thread.sleep(3000);
+			} catch (InterruptedException ignore) {
+				// Nothing
+			}
 			if (!isWorked(context, SSHTunnel.SERVICE_NAME)) {
                 Intent it = new Intent(SERVICE_START);           
                 context.sendBroadcast(it); 
