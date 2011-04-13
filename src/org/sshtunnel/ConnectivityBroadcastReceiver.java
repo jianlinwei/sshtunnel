@@ -17,7 +17,7 @@ public class ConnectivityBroadcastReceiver extends BroadcastReceiver {
 
 	private static final String TAG = "ConnectivityBroadcastReceiver";
 	public static final String SERVICE_START = "org.sshtunnel.SERVICE_START";
-
+	
 	public boolean isWorked(Context context, String service) {
 		ActivityManager myManager = (ActivityManager) context
 				.getSystemService(Context.ACTIVITY_SERVICE);
@@ -35,7 +35,7 @@ public class ConnectivityBroadcastReceiver extends BroadcastReceiver {
 	@Override
 	public void onReceive(Context context, Intent intent) {
 		String action = intent.getAction();
-
+		
 		if (!action.equals(ConnectivityManager.CONNECTIVITY_ACTION)) {
 			Log.w(TAG, "onReceived() called uncorrectly");
 			return;

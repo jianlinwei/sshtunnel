@@ -26,6 +26,8 @@ import java.util.Hashtable;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.preference.PreferenceManager;
 import android.util.Log;
 
 /**
@@ -488,11 +490,18 @@ public class DNSServer implements WrapServer {
 
 		byte[] qbuffer = new byte[576];
 		long starTime = System.currentTimeMillis();
+		
+		SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(context);
+		
+		
 
 		while (true) {
 			try {
 				DatagramPacket dnsq = new DatagramPacket(qbuffer,
 						qbuffer.length);
+				
+				if (!settings.getBoolean("isRunning", false))
+					break;
 
 				srvSocket.receive(dnsq);
 				// 连接外部DNS进行解析。
@@ -547,14 +556,10 @@ public class DNSServer implements WrapServer {
 
 			} catch (SocketException e) {
 				Log.e(TAG, e.getLocalizedMessage());
-				context.stopService(new Intent(context, SSHTunnelService.class));
 				break;
 			} catch (IOException e) {
 				Log.e(TAG, e.getLocalizedMessage());
 			} catch (Exception e) {
-				Log.e(TAG, "Unexpected error", e);
-				context.stopService(new Intent(context, SSHTunnelService.class));
-				break;
 			}
 		}
 

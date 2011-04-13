@@ -414,6 +414,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		}
 
 		if (isAutoReconnect && connected) {
+			
 			for (int reconNum = 1; reconNum <= RECONNECT_TRIES; reconNum++) {
 
 				onDisconnect();
