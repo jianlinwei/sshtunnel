@@ -16,7 +16,6 @@ import android.util.Log;
 public class ConnectivityBroadcastReceiver extends BroadcastReceiver {
 
 	private static final String TAG = "ConnectivityBroadcastReceiver";
-	public static final String SERVICE_START = "org.sshtunnel.SERVICE_START";
 	
 	public boolean isWorked(Context context, String service) {
 		ActivityManager myManager = (ActivityManager) context
@@ -59,8 +58,8 @@ public class ConnectivityBroadcastReceiver extends BroadcastReceiver {
 				// Nothing
 			}
 			if (!isWorked(context, SSHTunnel.SERVICE_NAME)) {
-                Intent it = new Intent(SERVICE_START);           
-                context.sendBroadcast(it); 
+                SSHTunnelReceiver sshr = new SSHTunnelReceiver();
+                sshr.onReceive(context, intent);
 			}
 		}
 

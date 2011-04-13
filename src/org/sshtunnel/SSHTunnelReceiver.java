@@ -1,6 +1,5 @@
 package org.sshtunnel;
 
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -8,7 +7,7 @@ import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.util.Log;
 
-public class SSHTunnelReceiver extends BroadcastReceiver {
+public class SSHTunnelReceiver {
 
 	private String host;
 	private int port;
@@ -23,7 +22,6 @@ public class SSHTunnelReceiver extends BroadcastReceiver {
 	private boolean isSocks = false;
 	private static final String TAG = "SSHTunnelReceiver";
 
-	@Override
 	public void onReceive(Context context, Intent intent) {
 
 		SharedPreferences settings = PreferenceManager

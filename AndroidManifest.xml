@@ -15,12 +15,9 @@
 			</intent-filter>
 		</activity>
 		<activity android:name=".AppManager" android:label="@string/app_name" />
+		
 		<service android:enabled="true" android:name=".SSHTunnelService" />
-		<receiver android:name=".SSHTunnelReceiver">
-			<intent-filter>
-				<action android:name="org.sshtunnel.SERVICE_START" />
-			</intent-filter>
-		</receiver>
+		
 		<receiver android:name=".ConnectivityBroadcastReceiver">
 			<intent-filter>
 				<action android:name="android.net.conn.CONNECTIVITY_CHANGE" />

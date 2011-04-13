@@ -68,6 +68,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	private LocalPortForwarder lpf = null;
 	private DynamicPortForwarder dpf = null;
 	private DNSServer dnsServer = null;
+	private volatile boolean isConnecting = false;
 
 	private final static int AUTH_TRIES = 2;
 	private final static int RECONNECT_TRIES = 2;
@@ -386,7 +387,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 		SimpleDateFormat df = new SimpleDateFormat("HH:mm:ss");
 
-		if (settings.getBoolean("isConnecting", false)) {
+		if (isConnecting) {
 			return;
 		}
 		
@@ -848,6 +849,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			public void run() {
 
 				handler.sendEmptyMessage(MSG_CONNECT_START);
+				isConnecting = true;
 				
 				// Test for Redirect Support
 				initHasRedirectSupported();
@@ -876,6 +878,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 					connected = false;
 					stopSelf();
 				}
+				
+				isConnecting = false;
 			}
 		}).start();
 	}
