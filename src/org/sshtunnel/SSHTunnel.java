@@ -450,7 +450,7 @@ public class SSHTunnel extends PreferenceActivity implements
 		Log.d(TAG, host + "|" + port + "|" + user + "|" + password + "|"
 				+ (isSocks ? "true" : "false") + "|" + localPort + "|"
 				+ remoteAddress + "|" + remotePort);
-		
+
 		hostText.setText(host);
 		portText.setText(Integer.toString(port));
 		userText.setText(user);
@@ -558,7 +558,7 @@ public class SSHTunnel extends PreferenceActivity implements
 		super.onResume();
 		SharedPreferences settings = PreferenceManager
 				.getDefaultSharedPreferences(this);
-		
+
 		if (settings.getBoolean("isAutoSetProxy", false))
 			proxyedApps.setEnabled(false);
 		else
@@ -575,7 +575,8 @@ public class SSHTunnel extends PreferenceActivity implements
 		Editor edit = settings.edit();
 
 		if (this.isWorked(SERVICE_NAME)) {
-			isRunningCheck.setEnabled(false);
+			if (settings.getBoolean("isConnecting", false))
+				isRunningCheck.setEnabled(false);
 			edit.putBoolean("isRunning", true);
 		} else {
 			if (settings.getBoolean("isRunning", false)) {
@@ -810,7 +811,7 @@ public class SSHTunnel extends PreferenceActivity implements
 				.split("\\|");
 		String[] profileValues = settings.getString("profileValues", "").split(
 				"\\|");
-		
+
 		Log.d(TAG, "Profile :" + profile);
 		if (profileEntries.length > 2) {
 			StringBuffer profileEntriesBuffer = new StringBuffer();
