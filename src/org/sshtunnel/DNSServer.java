@@ -492,6 +492,14 @@ public class DNSServer implements WrapServer {
 		long starTime = System.currentTimeMillis();
 		
 		SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(context);
+		
+		while (settings.getBoolean("isConnecting", false)) {
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException ignore) {
+				// Nothing
+			}
+		}
 
 		while (true) {
 			try {
@@ -553,11 +561,12 @@ public class DNSServer implements WrapServer {
 				 */
 
 			} catch (SocketException e) {
-				Log.e(TAG, e.getLocalizedMessage());
+				Log.e(TAG, "Socket Exception", e);
 				break;
 			} catch (IOException e) {
-				Log.e(TAG, e.getLocalizedMessage());
+				Log.e(TAG, "IO Exception", e);
 			} catch (Exception e) {
+				Log.e(TAG, "Unexpected Exception", e);
 			}
 		}
 

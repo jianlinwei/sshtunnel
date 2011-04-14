@@ -37,7 +37,7 @@ public class ConnectivityBroadcastReceiver extends BroadcastReceiver {
 	}
 
 	@Override
-	public void onReceive(Context context, Intent intent) {
+	public synchronized void onReceive(Context context, Intent intent) {
 		String action = intent.getAction();
 
 		if (!action.equals(ConnectivityManager.CONNECTIVITY_ACTION)) {
@@ -73,12 +73,12 @@ public class ConnectivityBroadcastReceiver extends BroadcastReceiver {
 					context.getString(R.string.auto_connecting), pendIntent);
 			notificationManager.notify(1, notification);
 			
-			// Wait for connection stable
-			try {
-				Thread.sleep(10000);
-			} catch (InterruptedException ignore) {
-				// Nothing
-			}
+//			// Wait for connection stable
+//			try {
+//				Thread.sleep();
+//			} catch (InterruptedException ignore) {
+//				// Nothing
+//			}
 			
 			if (!isWorked(context, SSHTunnel.SERVICE_NAME)) {
 				SSHTunnelReceiver sshr = new SSHTunnelReceiver();
