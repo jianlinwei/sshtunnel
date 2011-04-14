@@ -492,8 +492,6 @@ public class DNSServer implements WrapServer {
 		long starTime = System.currentTimeMillis();
 		
 		SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(context);
-		
-		
 
 		while (true) {
 			try {

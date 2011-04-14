@@ -34,6 +34,7 @@
 	</string>
 	<string name="reconnect_fail">Cannot reconnect, service stopped</string>
 	<string name="connecting">Connecting</string>
+	<string name="auto_connecting">Auto connecting...</string>
 
 	<!-- settings function category -->
 	<string name="function_cat">Service Controller</string>

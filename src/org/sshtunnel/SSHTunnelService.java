@@ -223,9 +223,9 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		String line = null;
 
 		if (isARMv6()) {
-			command = "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p udp --dport 53 -j REDIRECT --to 8153";
+			command = "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p udp --dport 54 -j REDIRECT --to 8154";
 		} else
-			command = "/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p udp --dport 53 -j REDIRECT --to 8153";
+			command = "/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p udp --dport 54 -j REDIRECT --to 8154";
 
 		try {
 			process = Runtime.getRuntime().exec("su");
@@ -598,7 +598,9 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		dnsServer = new DNSServer("DNS Server", 8153, "8.8.8.8", 53, this);
 		// dnsServer = new DNSServer("DNS Server", 8153, "127.0.0.1", 5353);
 		dnsServer.setBasePath("/data/data/org.sshtunnel");
-		new Thread(dnsServer).start();
+		Thread dnsServerThread = new Thread(dnsServer);
+		dnsServerThread.setDaemon(true);
+		dnsServerThread.start();
 
 		return connect();
 	}
@@ -631,6 +633,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		initSoundVibrateLights(notification);
 		notification.setLatestEventInfo(this, getString(R.string.app_name),
 				info, pendIntent);
+		notificationManager.cancel(1);
 		startForegroundCompat(1, notification);
 	}
 
@@ -641,6 +644,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		initSoundVibrateLights(notification);
 		notification.setLatestEventInfo(this, getString(R.string.app_name),
 				info, pendIntent);
+		notificationManager.cancel(0);
 		notificationManager.notify(0, notification);
 	}
 
@@ -707,6 +711,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 		try {
 			notificationManager.cancel(0);
+			notificationManager.cancel(1);
 		} catch (Exception ignore) {
 			// Nothing
 		}
