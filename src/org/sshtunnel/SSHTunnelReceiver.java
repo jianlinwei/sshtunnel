@@ -1,5 +1,8 @@
 package org.sshtunnel;
 
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -30,6 +33,22 @@ public class SSHTunnelReceiver {
 		isAutoConnect = settings.getBoolean("isAutoConnect", false);
 
 		if (isAutoConnect) {
+
+			NotificationManager notificationManager = (NotificationManager) context
+					.getSystemService(context.NOTIFICATION_SERVICE);
+			Notification notification = new Notification();
+			intent = new Intent(context, SSHTunnel.class);
+			intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+			PendingIntent pendIntent = PendingIntent.getActivity(context, 0, intent, 0);
+			
+			notification.icon = R.drawable.ic_stat;
+			notification.tickerText = context.getString(R.string.auto_connecting);
+			notification.flags = Notification.FLAG_ONGOING_EVENT;
+			
+			notification.setLatestEventInfo(context, context.getString(R.string.app_name),
+					context.getString(R.string.auto_connecting), pendIntent);
+			notificationManager.notify(1, notification);
+			
 			try {
 				host = settings.getString("host", "");
 				user = settings.getString("user", "");
