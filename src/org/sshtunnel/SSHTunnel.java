@@ -684,7 +684,7 @@ public class SSHTunnel extends PreferenceActivity implements
 			if (settings.getBoolean("isConnecting", false)) {
 				Log.d(TAG, "Connecting start");
 				pd = ProgressDialog.show(this, "",
-						getString(R.string.connecting), true, false);
+						getString(R.string.connecting), true, true);
 			} else {
 				Log.d(TAG, "Connecting finish");
 				if (pd != null) {
