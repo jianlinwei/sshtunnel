@@ -55,7 +55,7 @@
 	<string name="socks">使用SOCKS代理</string>
 	<string name="socks_summary">启用动态转口转发 (注意: 耗电量较大)</string>
 	<string name="connecting">正在连接</string>
-	<string name="auto_connecting">自动连接中...</string>
+	<string name="auto_connecting">连接中...</string>
 
 	<string name="remote_address">远程地址</string>
 	<string name="remote_address_summary">远程转发地址，默认 127.0.0.1
