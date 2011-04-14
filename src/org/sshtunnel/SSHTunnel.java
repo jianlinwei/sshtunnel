@@ -559,9 +559,6 @@ public class SSHTunnel extends PreferenceActivity implements
 		SharedPreferences settings = PreferenceManager
 				.getDefaultSharedPreferences(this);
 		
-		if (settings.getBoolean("isConnecting", false))
-			isRunningCheck.setEnabled(false);
-
 		if (settings.getBoolean("isAutoSetProxy", false))
 			proxyedApps.setEnabled(false);
 		else
@@ -578,6 +575,7 @@ public class SSHTunnel extends PreferenceActivity implements
 		Editor edit = settings.edit();
 
 		if (this.isWorked(SERVICE_NAME)) {
+			isRunningCheck.setEnabled(false);
 			edit.putBoolean("isRunning", true);
 		} else {
 			if (settings.getBoolean("isRunning", false)) {
