@@ -57,21 +57,6 @@ public class ConnectivityBroadcastReceiver extends BroadcastReceiver {
 				}
 			}
 		} else {
-
-			NotificationManager notificationManager = (NotificationManager) context
-					.getSystemService(context.NOTIFICATION_SERVICE);
-			Notification notification = new Notification();
-			intent = new Intent(context, SSHTunnel.class);
-			intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-			PendingIntent pendIntent = PendingIntent.getActivity(context, 0, intent, 0);
-			
-			notification.icon = R.drawable.ic_stat;
-			notification.tickerText = context.getString(R.string.auto_connecting);
-			notification.flags = Notification.FLAG_ONGOING_EVENT;
-			
-			notification.setLatestEventInfo(context, context.getString(R.string.app_name),
-					context.getString(R.string.auto_connecting), pendIntent);
-			notificationManager.notify(1, notification);
 			
 //			// Wait for connection stable
 //			try {
