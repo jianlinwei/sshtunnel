@@ -57,7 +57,7 @@ public class SSHTunnelReceiver {
 			bundle.putInt("localPort", localPort);
 			bundle.putInt("remotePort", remotePort);
 			bundle.putString("remoteAddress", remoteAddress);
-			bundle.putBoolean("isAutoConnect", isAutoReconnect);
+			bundle.putBoolean("isAutoReconnect", isAutoReconnect);
 			bundle.putBoolean("isAutoSetProxy", isAutoSetProxy);
 			bundle.putBoolean("isSocks", isSocks);
 
