@@ -67,7 +67,7 @@ public class ConnectivityBroadcastReceiver extends BroadcastReceiver {
 			
 			if (!isWorked(context, SSHTunnel.SERVICE_NAME)) {
 				SSHTunnelReceiver sshr = new SSHTunnelReceiver();
-				sshr.onReceive(context, intent);
+				sshr.onReceive(context, intent, false);
 			}
 		}
 

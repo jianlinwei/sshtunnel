@@ -25,14 +25,14 @@ public class SSHTunnelReceiver {
 	private boolean isSocks = false;
 	private static final String TAG = "SSHTunnelReceiver";
 
-	public void onReceive(Context context, Intent intent) {
+	public void onReceive(Context context, Intent intent, boolean enable) {
 
 		SharedPreferences settings = PreferenceManager
 				.getDefaultSharedPreferences(context);
 
 		isAutoConnect = settings.getBoolean("isAutoConnect", false);
 
-		if (isAutoConnect) {
+		if (isAutoConnect || enable) {
 
 			NotificationManager notificationManager = (NotificationManager) context
 					.getSystemService(context.NOTIFICATION_SERVICE);
