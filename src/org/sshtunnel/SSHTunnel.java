@@ -558,6 +558,9 @@ public class SSHTunnel extends PreferenceActivity implements
 		super.onResume();
 		SharedPreferences settings = PreferenceManager
 				.getDefaultSharedPreferences(this);
+		
+		if (settings.getBoolean("isConnecting", false))
+			isRunningCheck.setEnabled(false);
 
 		if (settings.getBoolean("isAutoSetProxy", false))
 			proxyedApps.setEnabled(false);
@@ -683,6 +686,7 @@ public class SSHTunnel extends PreferenceActivity implements
 		if (key.equals("isConnecting")) {
 			if (settings.getBoolean("isConnecting", false)) {
 				Log.d(TAG, "Connecting start");
+				isRunningCheck.setEnabled(false);
 				pd = ProgressDialog.show(this, "",
 						getString(R.string.connecting), true, true);
 			} else {
@@ -691,6 +695,7 @@ public class SSHTunnel extends PreferenceActivity implements
 					pd.dismiss();
 					pd = null;
 				}
+				isRunningCheck.setEnabled(true);
 			}
 		}
 
