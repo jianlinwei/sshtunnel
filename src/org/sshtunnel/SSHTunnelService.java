@@ -15,6 +15,8 @@ import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.appwidget.AppWidgetManager;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -31,6 +33,7 @@ import android.os.IBinder;
 import android.os.Message;
 import android.preference.PreferenceManager;
 import android.util.Log;
+import android.widget.RemoteViews;
 
 import com.trilead.ssh2.Connection;
 import com.trilead.ssh2.ConnectionMonitor;
@@ -52,7 +55,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	private static final int MSG_CONNECT_FINISH = 1;
 	private static final int MSG_CONNECT_SUCCESS = 2;
 	private static final int MSG_CONNECT_FAIL = 3;
-
+	
 	private SharedPreferences settings = null;
 
 	private String host;
@@ -715,6 +718,18 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		} catch (Exception ignore) {
 			// Nothing
 		}
+		
+		// for widget, maybe exception here
+		try {
+			RemoteViews views = new RemoteViews(getPackageName(),
+					R.layout.sshtunnel_appwidget);
+			views.setImageViewResource(R.id.serviceToggle, R.drawable.off);
+			AppWidgetManager awm = AppWidgetManager.getInstance(this);
+			awm.updateAppWidget(awm.getAppWidgetIds(new ComponentName(this,
+					SSHTunnelWidgetProvider.class)), views);
+		} catch (Exception ignore) {
+			// Nothing
+		}
 
 		super.onDestroy();
 	}
@@ -865,6 +880,23 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 							getString(R.string.service_running));
 					handler.sendEmptyMessage(MSG_CONNECT_FINISH);
 					handler.sendEmptyMessage(MSG_CONNECT_SUCCESS);
+					
+					// for widget, maybe exception here
+					try {
+						RemoteViews views = new RemoteViews(getPackageName(),
+								R.layout.sshtunnel_appwidget);
+						views.setImageViewResource(R.id.serviceToggle,
+								R.drawable.on);
+						AppWidgetManager awm = AppWidgetManager
+								.getInstance(SSHTunnelService.this);
+						awm.updateAppWidget(awm
+								.getAppWidgetIds(new ComponentName(
+										SSHTunnelService.this,
+										SSHTunnelWidgetProvider.class)), views);
+					} catch (Exception ignore) {
+						// Nothing
+					}
+					
 				} else {
 					// Connection or forward unsuccessful
 					notifyAlert(getString(R.string.forward_fail),
