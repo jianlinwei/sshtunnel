@@ -168,6 +168,8 @@ public class DNSServer implements WrapServer {
 		this.dnsHost = dnsHost;
 		this.dnsPort = dnsPort;
 		this.context = context;
+		
+		initOrgCache();
 
 		if (dnsHost != null && !dnsHost.equals(""))
 			target = dnsHost + ":" + dnsPort;
@@ -484,24 +486,12 @@ public class DNSServer implements WrapServer {
 
 	public void run() {
 		
-		initOrgCache();
-		
 		loadCache();
 
 		byte[] qbuffer = new byte[576];
 		long starTime = System.currentTimeMillis();
 		
 		SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(context);
-		
-		int tries = 0;
-		while (settings.getBoolean("isConnecting", false)) {
-			try {
-				Thread.sleep(1000);
-			} catch (InterruptedException ignore) {
-				// Nothing
-			}
-			if (tries++ > 60) break;
-		}
 
 		while (true) {
 			try {
