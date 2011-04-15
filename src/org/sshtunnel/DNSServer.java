@@ -387,8 +387,8 @@ public class DNSServer implements WrapServer {
 			Hashtable<String, DnsResponse> tmpCache = (Hashtable<String, DnsResponse>) dnsCache
 					.clone();
 			for (DnsResponse resp : dnsCache.values()) {
-				// 检查缓存时效(十天)
-				if ((System.currentTimeMillis() - resp.getTimestamp()) > 86400000L) {
+				// 检查缓存时效(五天)
+				if ((System.currentTimeMillis() - resp.getTimestamp()) > 432000000L) {
 					Log.d(TAG, "删除" + resp.getRequest() + "记录");
 					tmpCache.remove(resp.getRequest());
 				}
