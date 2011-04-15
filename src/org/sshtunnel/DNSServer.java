@@ -493,12 +493,14 @@ public class DNSServer implements WrapServer {
 		
 		SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(context);
 		
+		int tries = 0;
 		while (settings.getBoolean("isConnecting", false)) {
 			try {
 				Thread.sleep(1000);
 			} catch (InterruptedException ignore) {
 				// Nothing
 			}
+			if (tries++ > 10) break;
 		}
 
 		while (true) {
