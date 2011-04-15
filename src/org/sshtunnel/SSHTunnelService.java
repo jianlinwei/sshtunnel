@@ -366,8 +366,17 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		}
 
 		try {
-			if (connection.isAuthenticationComplete())
+			if (connection.isAuthenticationComplete()) {
+
+				// dnsServer = new DNSServer("DNS Server", 8153, "208.67.222.222",
+				// 5353);
+				dnsServer = new DNSServer("DNS Server", 8153, "8.8.8.8", 53, this);
+				// dnsServer = new DNSServer("DNS Server", 8153, "127.0.0.1", 5353);
+				dnsServer.setBasePath("/data/data/org.sshtunnel");
+				new Thread(dnsServer).start();
+				
 				return finishConnection();
+			}
 		} catch (Exception ignore) {
 			// Nothing
 			return false;
@@ -597,13 +606,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	/** Called when the activity is first created. */
 	public boolean handleCommand() {
 
-		// dnsServer = new DNSServer("DNS Server", 8153, "208.67.222.222",
-		// 5353);
-		dnsServer = new DNSServer("DNS Server", 8153, "8.8.8.8", 53, this);
-		// dnsServer = new DNSServer("DNS Server", 8153, "127.0.0.1", 5353);
-		dnsServer.setBasePath("/data/data/org.sshtunnel");
-		new Thread(dnsServer).start();
-
 		return connect();
 	}
 
@@ -702,13 +704,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		// Make sure the connection is closed, important here
 		onDisconnect();
 
-		try {
-			if (dnsServer != null)
-				dnsServer.close();
-		} catch (Exception e) {
-			Log.e(TAG, "DNS Server close unexpected");
-		}
-
 		Editor ed = settings.edit();
 		ed.putBoolean("isRunning", false);
 		ed.commit();
@@ -757,6 +752,13 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		if (connection != null) {
 			connection.close();
 			connection = null;
+		}
+
+		try {
+			if (dnsServer != null)
+				dnsServer.close();
+		} catch (Exception e) {
+			Log.e(TAG, "DNS Server close unexpected");
 		}
 
 		StringBuffer cmd = new StringBuffer();
