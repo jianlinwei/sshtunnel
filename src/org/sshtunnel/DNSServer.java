@@ -500,7 +500,7 @@ public class DNSServer implements WrapServer {
 			} catch (InterruptedException ignore) {
 				// Nothing
 			}
-			if (tries++ > 10) break;
+			if (tries++ > 60) break;
 		}
 
 		while (true) {
