@@ -367,14 +367,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 		try {
 			if (connection.isAuthenticationComplete()) {
-
-				// dnsServer = new DNSServer("DNS Server", 8153, "208.67.222.222",
-				// 5353);
-				dnsServer = new DNSServer("DNS Server", 8153, "8.8.8.8", 53, this);
-				// dnsServer = new DNSServer("DNS Server", 8153, "127.0.0.1", 5353);
-				dnsServer.setBasePath("/data/data/org.sshtunnel");
-				new Thread(dnsServer).start();
-				
 				return finishConnection();
 			}
 		} catch (Exception ignore) {
@@ -591,6 +583,13 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 				runRootCommand(cmd.toString().replace("8124", "8123"));
 			else
 				runRootCommand(cmd.toString());
+			
+			// dnsServer = new DNSServer("DNS Server", 8153, "208.67.222.222",
+			// 5353);
+			dnsServer = new DNSServer("DNS Server", 8153, "8.8.8.8", 53, this);
+			// dnsServer = new DNSServer("DNS Server", 8153, "127.0.0.1", 5353);
+			dnsServer.setBasePath("/data/data/org.sshtunnel");
+			new Thread(dnsServer).start();
 
 			// Forward Successful
 			return true;
