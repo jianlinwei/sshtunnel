@@ -72,6 +72,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	private DynamicPortForwarder dpf = null;
 	private DNSServer dnsServer = null;
 	private volatile boolean isConnecting = false;
+	private volatile boolean isStopping = false;
 
 	private final static int AUTH_TRIES = 2;
 	private final static int RECONNECT_TRIES = 2;
@@ -390,7 +391,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 		SimpleDateFormat df = new SimpleDateFormat("HH:mm:ss");
 
-		if (isConnecting) {
+		if (isConnecting || isStopping) {
 			return;
 		}
 		
@@ -601,9 +602,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		dnsServer = new DNSServer("DNS Server", 8153, "8.8.8.8", 53, this);
 		// dnsServer = new DNSServer("DNS Server", 8153, "127.0.0.1", 5353);
 		dnsServer.setBasePath("/data/data/org.sshtunnel");
-		Thread dnsServerThread = new Thread(dnsServer);
-		dnsServerThread.setDaemon(true);
-		dnsServerThread.start();
+		new Thread(dnsServer).start();
 
 		return connect();
 	}
@@ -683,6 +682,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	/** Called when the activity is closed. */
 	@Override
 	public void onDestroy() {
+		
+		isStopping = true;
 
 		stopForegroundCompat(1);
 		
@@ -730,6 +731,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		} catch (Exception ignore) {
 			// Nothing
 		}
+		
+		isStopping = false;
 
 		super.onDestroy();
 	}
