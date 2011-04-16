@@ -88,7 +88,7 @@
 
 	<!-- menu bar category -->
 	<string name="recovery">Recover the connection</string>
-	<string name="copy_rights">About:\n\nSSHTunnel is an open source project
+	<string name="copy_rights">:\n\nSSHTunnel is an open source project
 		published under
 		the GPLV3. \n\nIf you have any question, please visit
 		our project page on

@@ -20,6 +20,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
+import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.AssetManager;
 import android.os.Bundle;
 import android.preference.CheckBoxPreference;
@@ -797,7 +798,13 @@ public class SSHTunnel extends PreferenceActivity implements
 			delProfile();
 			break;
 		case Menu.FIRST + 3:
-			showAToast(getString(R.string.copy_rights));
+			String versionName = "";
+			try {
+				versionName = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+			} catch (NameNotFoundException e) {
+				versionName = "";
+			}
+			showAToast(getString(R.string.about) + " (" + versionName + ")" + getString(R.string.copy_rights));
 			break;
 		}
 

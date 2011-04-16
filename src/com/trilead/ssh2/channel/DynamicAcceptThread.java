@@ -186,9 +186,13 @@ public class DynamicAcceptThread extends Thread implements IChannelWorkerThread 
 				}
 
 				sendErrorMessage(error_code);
+			} catch (Error e) {
+				// Force to GC here
+				System.gc();
 			} finally {
 				if (auth != null)
 					auth.endSession();
+				thread_num--;
 			}
 		}
 
@@ -228,8 +232,9 @@ public class DynamicAcceptThread extends Thread implements IChannelWorkerThread 
 			handleRequest(msg);
 		}
 	}
+	private volatile int thread_num = 0;
 	private ChannelManager cm;
-	private final static int GC_MAX_COUNT = 20;
+	private final static int MAX_THREAD_COUNT = 2;
 
 	private ServerSocket ss;
 
@@ -259,7 +264,6 @@ public class DynamicAcceptThread extends Thread implements IChannelWorkerThread 
 			return;
 		}
 
-		int gcCount = 0;
 		while (true) {
 			Socket sock = null;
 
@@ -276,13 +280,17 @@ public class DynamicAcceptThread extends Thread implements IChannelWorkerThread 
 			t.setDaemon(true);
 			t.start();
 			
-			// Force to GC
-			if (gcCount > GC_MAX_COUNT) {
-				Log.d("Dynamic Forward", "force to GC");
+			thread_num++;
+			while (thread_num > MAX_THREAD_COUNT) {
+				Log.d("SOCKSProxy", "Max thread number exceeded");
 				System.gc();
-				gcCount = 0;
+				try {
+					Thread.sleep(2000);
+				} catch (InterruptedException ignore) {
+					// Nothing
+				}
 			}
-			gcCount++;
+
 		}
 	}
 
