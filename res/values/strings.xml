@@ -83,8 +83,8 @@
 		and IPTABLES support)</string>
 
 	<!-- settings proxyed apps category -->
-	<string name="proxyed_apps">Choose Apps through proxy</string>
-	<string name="proxyed_help">Select Apps to use with SSHTunnel:</string>
+	<string name="proxyed_apps">Choose apps through proxy</string>
+	<string name="proxyed_help">Select apps to use with SSHTunnel:</string>
 
 	<!-- menu bar category -->
 	<string name="recovery">Recover the connection</string>
@@ -103,7 +103,7 @@
 	</string>
 
 	<!-- profile switcher -->
-	<string name="profile">Choose one profile</string>
+	<string name="profile">Choose a profile</string>
 	<string name="profile_default">Profile 1</string>
 	<string name="profile_new">New Profile</string>
 	<string name="profile_base">Profile</string>
