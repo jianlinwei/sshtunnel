@@ -22,8 +22,11 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.Hashtable;
 
+import android.app.ActivityManager;
+import android.app.ActivityManager.RunningServiceInfo;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -141,7 +144,7 @@ public class DNSServer implements WrapServer {
 	protected String dnsHost;
 	protected int dnsPort;
 	protected Context context;
-	
+
 	final protected int DNS_PKG_HEADER_LEN = 12;
 	final private int[] DNS_HEADERS = { 0, 0, 0x81, 0x80, 0, 0, 0, 0, 0, 0, 0,
 			0 };
@@ -162,18 +165,19 @@ public class DNSServer implements WrapServer {
 
 	private String target = "8.8.8.8:53";
 
-	public DNSServer(String name, int port, String dnsHost, int dnsPort, Context context) {
+	public DNSServer(String name, int port, String dnsHost, int dnsPort,
+			Context context) {
 		this.name = name;
 		this.srvPort = port;
 		this.dnsHost = dnsHost;
 		this.dnsPort = dnsPort;
 		this.context = context;
-		
+
 		initOrgCache();
 
 		if (dnsHost != null && !dnsHost.equals(""))
 			target = dnsHost + ":" + dnsPort;
-		
+
 		try {
 			srvSocket = new DatagramSocket(srvPort,
 					InetAddress.getByName("127.0.0.1"));
@@ -485,19 +489,20 @@ public class DNSServer implements WrapServer {
 	}
 
 	public void run() {
-		
+
 		loadCache();
 
 		byte[] qbuffer = new byte[576];
 		long starTime = System.currentTimeMillis();
-		
-		SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(context);
+
+		SharedPreferences settings = PreferenceManager
+				.getDefaultSharedPreferences(context);
 
 		while (true) {
 			try {
 				DatagramPacket dnsq = new DatagramPacket(qbuffer,
 						qbuffer.length);
-				
+
 				if (!settings.getBoolean("isRunning", false))
 					break;
 
@@ -557,11 +562,36 @@ public class DNSServer implements WrapServer {
 				break;
 			} catch (IOException e) {
 				Log.e(TAG, "IO Exception", e);
+			} catch (NullPointerException e) {
+				Log.e(TAG, "Srvsocket wrong", e);
+				break;
 			} catch (Exception e) {
 				Log.e(TAG, "Unexpected Exception", e);
 			}
 		}
 
+		if (isWorked(SSHTunnel.SERVICE_NAME, context)) {
+			try {
+				context.stopService(new Intent(context, SSHTunnelService.class));
+			} catch (Exception e) {
+				// Nothing
+			}
+		}
+
+	}
+
+	public boolean isWorked(String service, Context context) {
+		ActivityManager myManager = (ActivityManager) context
+				.getSystemService(Context.ACTIVITY_SERVICE);
+		ArrayList<RunningServiceInfo> runningService = (ArrayList<RunningServiceInfo>) myManager
+				.getRunningServices(30);
+		for (int i = 0; i < runningService.size(); i++) {
+			if (runningService.get(i).service.getClassName().toString()
+					.equals(service)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
