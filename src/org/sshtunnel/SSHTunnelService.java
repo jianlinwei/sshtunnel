@@ -865,6 +865,12 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		isAutoSetProxy = bundle.getBoolean("isAutoSetProxy");
 		isSocks = bundle.getBoolean("isSocks");
 
+		if (dnsServer == null) {
+			dnsServer = new DNSServer("DNS Server", 8153, "8.8.8.8", 53,
+					SSHTunnelService.this);
+			dnsServer.setBasePath("/data/data/org.sshtunnel");
+		}
+
 		new Thread(new Runnable() {
 			public void run() {
 
@@ -881,17 +887,9 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 					handler.sendEmptyMessage(MSG_CONNECT_FINISH);
 					handler.sendEmptyMessage(MSG_CONNECT_SUCCESS);
 
-					// dnsServer = new DNSServer("DNS Server", 8153,
-					// "208.67.222.222",
-					// 5353);
-					if (dnsServer == null) {
-						dnsServer = new DNSServer("DNS Server", 8153,
-								"8.8.8.8", 53, SSHTunnelService.this);
-						// dnsServer = new DNSServer("DNS Server", 8153,
-						// "127.0.0.1", 5353);
-						dnsServer.setBasePath("/data/data/org.sshtunnel");
-						new Thread(dnsServer).start();
-					}
+					Thread dnsThread = new Thread(dnsServer);
+					dnsThread.setDaemon(true);
+					dnsThread.start();
 
 					// for widget, maybe exception here
 					try {
