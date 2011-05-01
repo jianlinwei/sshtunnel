@@ -43,7 +43,7 @@ import com.trilead.ssh2.LocalPortForwarder;
 
 public class SSHTunnelService extends Service implements ConnectionMonitor {
 
-//	ConnectivityBroadcastReceiver stateChanged = null;
+	// ConnectivityBroadcastReceiver stateChanged = null;
 
 	private Notification notification;
 	private NotificationManager notificationManager;
@@ -55,7 +55,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	private static final int MSG_CONNECT_FINISH = 1;
 	private static final int MSG_CONNECT_SUCCESS = 2;
 	private static final int MSG_CONNECT_FAIL = 3;
-	
+
 	private SharedPreferences settings = null;
 
 	private String host;
@@ -312,14 +312,14 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		connection = new Connection(host, port);
 		connection.addConnectionMonitor(this);
 
-//		try {
-//
-//			connection.setCompression(true);
-//			connection.setTCPNoDelay(true);
-//
-//		} catch (IOException e) {
-//			Log.e(TAG, "Could not enable compression!", e);
-//		}
+		// try {
+		//
+		// connection.setCompression(true);
+		// connection.setTCPNoDelay(true);
+		//
+		// } catch (IOException e) {
+		// Log.e(TAG, "Could not enable compression!", e);
+		// }
 
 		try {
 			/*
@@ -367,13 +367,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 		try {
 			if (connection.isAuthenticationComplete()) {
-				
-				// dnsServer = new DNSServer("DNS Server", 8153, "208.67.222.222",
-				// 5353);
-				dnsServer = new DNSServer("DNS Server", 8153, "8.8.8.8", 53, this);
-				// dnsServer = new DNSServer("DNS Server", 8153, "127.0.0.1", 5353);
-				dnsServer.setBasePath("/data/data/org.sshtunnel");
-				
+
 				return finishConnection();
 			}
 		} catch (Exception ignore) {
@@ -402,7 +396,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		if (isConnecting || isStopping) {
 			return;
 		}
-		
+
 		if (!isOnline()) {
 			return;
 		}
@@ -427,7 +421,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		}
 
 		if (isAutoReconnect && connected) {
-			
+
 			for (int reconNum = 1; reconNum <= RECONNECT_TRIES; reconNum++) {
 
 				onDisconnect();
@@ -591,8 +585,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			else
 				runRootCommand(cmd.toString());
 
-			new Thread(dnsServer).start();
-
 			// Forward Successful
 			return true;
 
@@ -685,21 +677,30 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	/** Called when the activity is closed. */
 	@Override
 	public void onDestroy() {
-		
+
 		isStopping = true;
 
 		stopForegroundCompat(1);
-		
-//		if (stateChanged != null) {
-//			unregisterReceiver(stateChanged);
-//			stateChanged = null;
-//		}
+
+		// if (stateChanged != null) {
+		// unregisterReceiver(stateChanged);
+		// stateChanged = null;
+		// }
 
 		if (connected) {
 
 			notifyAlert(getString(R.string.forward_stop),
 					getString(R.string.service_stopped),
 					Notification.FLAG_AUTO_CANCEL);
+		}
+
+		try {
+			if (dnsServer != null) {
+				dnsServer.close();
+				dnsServer = null;
+			}
+		} catch (Exception e) {
+			Log.e(TAG, "DNS Server close unexpected");
 		}
 
 		// Make sure the connection is closed, important here
@@ -715,7 +716,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		} catch (Exception ignore) {
 			// Nothing
 		}
-		
+
 		// for widget, maybe exception here
 		try {
 			RemoteViews views = new RemoteViews(getPackageName(),
@@ -727,7 +728,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		} catch (Exception ignore) {
 			// Nothing
 		}
-		
+
 		isStopping = false;
 
 		super.onDestroy();
@@ -753,13 +754,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		if (connection != null) {
 			connection.close();
 			connection = null;
-		}
-
-		try {
-			if (dnsServer != null)
-				dnsServer.close();
-		} catch (Exception e) {
-			Log.e(TAG, "DNS Server close unexpected");
 		}
 
 		StringBuffer cmd = new StringBuffer();
@@ -836,9 +830,9 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 				break;
 			case MSG_CONNECT_SUCCESS:
 				ed.putBoolean("isRunning", true);
-//				stateChanged = new ConnectivityBroadcastReceiver();
-//				registerReceiver(stateChanged, new IntentFilter(
-//						ConnectivityManager.CONNECTIVITY_ACTION));
+				// stateChanged = new ConnectivityBroadcastReceiver();
+				// registerReceiver(stateChanged, new IntentFilter(
+				// ConnectivityManager.CONNECTIVITY_ACTION));
 				break;
 			case MSG_CONNECT_FAIL:
 				ed.putBoolean("isRunning", false);
@@ -876,17 +870,29 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 				handler.sendEmptyMessage(MSG_CONNECT_START);
 				isConnecting = true;
-				
+
 				// Test for Redirect Support
 				initHasRedirectSupported();
-				
+
 				if (isOnline() && handleCommand()) {
 					// Connection and forward successful
 					notifyAlert(getString(R.string.forward_success),
 							getString(R.string.service_running));
 					handler.sendEmptyMessage(MSG_CONNECT_FINISH);
 					handler.sendEmptyMessage(MSG_CONNECT_SUCCESS);
-					
+
+					// dnsServer = new DNSServer("DNS Server", 8153,
+					// "208.67.222.222",
+					// 5353);
+					if (dnsServer == null) {
+						dnsServer = new DNSServer("DNS Server", 8153,
+								"8.8.8.8", 53, SSHTunnelService.this);
+						// dnsServer = new DNSServer("DNS Server", 8153,
+						// "127.0.0.1", 5353);
+						dnsServer.setBasePath("/data/data/org.sshtunnel");
+						new Thread(dnsServer).start();
+					}
+
 					// for widget, maybe exception here
 					try {
 						RemoteViews views = new RemoteViews(getPackageName(),
@@ -902,26 +908,26 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 					} catch (Exception ignore) {
 						// Nothing
 					}
-					
+
 				} else {
 					// Connection or forward unsuccessful
 					notifyAlert(getString(R.string.forward_fail),
 							getString(R.string.service_failed),
 							Notification.FLAG_AUTO_CANCEL);
-					
+
 					handler.sendEmptyMessage(MSG_CONNECT_FINISH);
 					handler.sendEmptyMessage(MSG_CONNECT_FAIL);
-					
+
 					try {
 						Thread.sleep(1000);
 					} catch (InterruptedException ignore) {
 						// Nothing
 					}
-					
+
 					connected = false;
 					stopSelf();
 				}
-				
+
 				isConnecting = false;
 			}
 		}).start();
