@@ -209,7 +209,10 @@ public class DNSServer implements WrapServer {
 
 	public void close() throws IOException {
 		inService = false;
-		srvSocket.close();
+		if (srvSocket != null) {
+			srvSocket.close();
+			srvSocket = null;
+		}
 		saveCache();
 		Log.i(TAG, "DNS服务关闭");
 	}
@@ -570,6 +573,11 @@ public class DNSServer implements WrapServer {
 			} catch (Exception e) {
 				Log.e(TAG, "Unexpected Exception", e);
 			}
+		}
+
+		if (srvSocket != null) {
+			srvSocket.close();
+			srvSocket = null;
 		}
 
 		if (isWorked(SSHTunnel.SERVICE_NAME, context)) {
