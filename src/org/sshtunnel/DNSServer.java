@@ -139,7 +139,7 @@ public class DNSServer implements WrapServer {
 
 	private DatagramSocket srvSocket;
 
-	private int srvPort = 8153;
+	private int srvPort = 0;
 	private String name;
 	protected String dnsHost;
 	protected int dnsPort;
@@ -165,10 +165,8 @@ public class DNSServer implements WrapServer {
 
 	private String target = "8.8.8.8:53";
 
-	public DNSServer(String name, int port, String dnsHost, int dnsPort,
-			Context context) {
+	public DNSServer(String name, String dnsHost, int dnsPort, Context context) {
 		this.name = name;
-		this.srvPort = port;
 		this.dnsHost = dnsHost;
 		this.dnsPort = dnsPort;
 		this.context = context;
@@ -177,17 +175,21 @@ public class DNSServer implements WrapServer {
 
 		if (dnsHost != null && !dnsHost.equals(""))
 			target = dnsHost + ":" + dnsPort;
+	}
 
+	public int init() {
 		try {
-			srvSocket = new DatagramSocket(srvPort,
+			srvSocket = new DatagramSocket(0,
 					InetAddress.getByName("127.0.0.1"));
 			inService = true;
-			Log.e(TAG, this.name + "启动于端口： " + port);
+			srvPort = srvSocket.getLocalPort();
+			Log.e(TAG, this.name + "启动于端口： " + srvPort);
 		} catch (SocketException e) {
-			Log.e(TAG, "DNSServer初始化错误，端口号" + port, e);
+			Log.e(TAG, "DNSServer初始化错误，端口号" + srvPort, e);
 		} catch (UnknownHostException e) {
-			Log.e(TAG, "DNSServer初始化错误，端口号" + port, e);
+			Log.e(TAG, "DNSServer初始化错误，端口号" + srvPort, e);
 		}
+		return srvPort;
 	}
 
 	/**

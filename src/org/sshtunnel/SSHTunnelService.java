@@ -71,6 +71,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	private LocalPortForwarder lpf = null;
 	private DynamicPortForwarder dpf = null;
 	private DNSServer dnsServer = null;
+	private static Thread dnsThread = null;
+	private int dnsPort = 0;
 	private volatile boolean isConnecting = false;
 	private volatile boolean isStopping = false;
 
@@ -479,44 +481,27 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 	final static String CMD_IPTABLES_REDIRECT_DEL_G1 = "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp --dport 80 -j REDIRECT --to 8123\n"
 			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp --dport 443 -j REDIRECT --to 8124\n";
-	// +
-	// "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p udp --dport 53 -j REDIRECT --to 8153\n";
 
 	final static String CMD_IPTABLES_REDIRECT_ADD_G1 = "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp --dport 80 -j REDIRECT --to 8123\n"
 			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp --dport 443 -j REDIRECT --to 8124\n";
-	// +
-	// "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p udp --dport 53 -j REDIRECT --to 8153\n";
 
 	final static String CMD_IPTABLES_REDIRECT_DEL_N1 = "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p tcp --dport 80 -j REDIRECT --to 8123\n"
 			+ "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p tcp --dport 443 -j REDIRECT --to 8124\n";
-	// +
-	// "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p udp --dport 53 -j REDIRECT --to 8153\n";
 
 	final static String CMD_IPTABLES_REDIRECT_ADD_N1 = "/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp --dport 80 -j REDIRECT --to 8123\n"
 			+ "/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp --dport 443 -j REDIRECT --to 8124\n";
-	// +
-	// "/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p udp --dport 53 -j REDIRECT --to 8153\n";
 
 	final static String CMD_IPTABLES_DNAT_DEL_G1 = "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp --dport 80 -j DNAT --to-destination 127.0.0.1:8123\n"
 			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p tcp --dport 443 -j DNAT --to-destination 127.0.0.1:8124\n";
-	// +
-	// "/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:8153\n";
 
 	final static String CMD_IPTABLES_DNAT_ADD_G1 = "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp --dport 80 -j DNAT --to-destination 127.0.0.1:8123\n"
 			+ "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p tcp --dport 443 -j DNAT --to-destination 127.0.0.1:8124\n";
-	// +
-	// "/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:8153\n";
 
 	final static String CMD_IPTABLES_DNAT_DEL_N1 = "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p tcp --dport 80 -j DNAT --to-destination 127.0.0.1:8123\n"
 			+ "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p tcp --dport 443 -j DNAT --to-destination 127.0.0.1:8124\n";
-	// +
-	// "/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:8153\n";
 
 	final static String CMD_IPTABLES_DNAT_ADD_N1 = "/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp --dport 80 -j DNAT --to-destination 127.0.0.1:8123\n"
 			+ "/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p tcp --dport 443 -j DNAT --to-destination 127.0.0.1:8124\n";
-
-	// +
-	// "/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:8153\n";
 
 	/**
 	 * Internal method to request actual PTY terminal once we've finished
@@ -538,15 +523,23 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 			if (hasRedirectSupport) {
 				if (isARMv6()) {
-					cmd.append("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p udp --dport 53 -j REDIRECT --to 8153\n");
+					cmd.append("/data/data/org.sshtunnel/iptables_g1 "
+							+ "-t nat -A OUTPUT -p udp --dport 53 -j REDIRECT --to "
+							+ dnsPort + "\n");
 				} else {
-					cmd.append("/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p udp --dport 53 -j REDIRECT --to 8153\n");
+					cmd.append("/data/data/org.sshtunnel/iptables_n1 "
+							+ "-t nat -A OUTPUT -p udp --dport 53 -j REDIRECT --to "
+							+ dnsPort + "\n");
 				}
 			} else {
 				if (isARMv6()) {
-					cmd.append("/data/data/org.sshtunnel/iptables_g1 -t nat -A OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:8153\n");
+					cmd.append("/data/data/org.sshtunnel/iptables_g1 "
+							+ "-t nat -A OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:"
+							+ dnsPort + "\n");
 				} else {
-					cmd.append("/data/data/org.sshtunnel/iptables_n1 -t nat -A OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:8153\n");
+					cmd.append("/data/data/org.sshtunnel/iptables_n1 "
+							+ "-t nat -A OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:"
+							+ dnsPort + "\n");
 				}
 			}
 
@@ -699,6 +692,9 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 				dnsServer.close();
 				dnsServer = null;
 			}
+			if (dnsThread != null) {
+				dnsThread.interrupt();
+			}
 		} catch (Exception e) {
 			Log.e(TAG, "DNS Server close unexpected");
 		}
@@ -760,15 +756,23 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 		if (hasRedirectSupport) {
 			if (isARMv6()) {
-				cmd.append("/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p udp --dport 53 -j REDIRECT --to 8153\n");
+				cmd.append("/data/data/org.sshtunnel/iptables_g1 "
+						+ "-t nat -D OUTPUT -p udp --dport 53 -j REDIRECT --to "
+						+ dnsPort + "\n");
 			} else {
-				cmd.append("/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p udp --dport 53 -j REDIRECT --to 8153\n");
+				cmd.append("/data/data/org.sshtunnel/iptables_n1 "
+						+ "-t nat -D OUTPUT -p udp --dport 53 -j REDIRECT --to "
+						+ dnsPort + "\n");
 			}
 		} else {
 			if (isARMv6()) {
-				cmd.append("/data/data/org.sshtunnel/iptables_g1 -t nat -D OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:8153\n");
+				cmd.append("/data/data/org.sshtunnel/iptables_g1 "
+						+ "-t nat -D OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:"
+						+ dnsPort + "\n");
 			} else {
-				cmd.append("/data/data/org.sshtunnel/iptables_n1 -t nat -D OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:8153\n");
+				cmd.append("/data/data/org.sshtunnel/iptables_n1 "
+						+ "-t nat -D OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:"
+						+ dnsPort + "\n");
 			}
 		}
 
@@ -866,9 +870,10 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		isSocks = bundle.getBoolean("isSocks");
 
 		if (dnsServer == null) {
-			dnsServer = new DNSServer("DNS Server", 8153, "8.8.8.8", 53,
+			dnsServer = new DNSServer("DNS Server", "8.8.8.8", 53,
 					SSHTunnelService.this);
 			dnsServer.setBasePath("/data/data/org.sshtunnel");
+			dnsPort = dnsServer.init();
 		}
 
 		new Thread(new Runnable() {
@@ -887,7 +892,10 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 					handler.sendEmptyMessage(MSG_CONNECT_FINISH);
 					handler.sendEmptyMessage(MSG_CONNECT_SUCCESS);
 
-					Thread dnsThread = new Thread(dnsServer);
+					if (dnsThread != null)
+						dnsThread.interrupt();
+
+					dnsThread = new Thread(dnsServer);
 					dnsThread.setDaemon(true);
 					dnsThread.start();
 
