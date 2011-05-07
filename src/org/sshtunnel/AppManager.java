@@ -69,7 +69,7 @@ public class AppManager extends Activity implements OnCheckedChangeListener,
 						getString(R.string.loading), true, true);
 				break;
 			case MSG_LOAD_FINISH:
-				
+
 				listApps.setAdapter(adapter);
 
 				listApps.setOnScrollListener(new OnScrollListener() {
@@ -77,7 +77,8 @@ public class AppManager extends Activity implements OnCheckedChangeListener,
 					boolean visible;
 
 					@Override
-					public void onScrollStateChanged(AbsListView view, int scrollState) {
+					public void onScrollStateChanged(AbsListView view,
+							int scrollState) {
 						visible = true;
 						if (scrollState == ListView.OnScrollListener.SCROLL_STATE_IDLE) {
 							overlay.setVisibility(View.INVISIBLE);
@@ -85,16 +86,17 @@ public class AppManager extends Activity implements OnCheckedChangeListener,
 					}
 
 					@Override
-					public void onScroll(AbsListView view, int firstVisibleItem,
-							int visibleItemCount, int totalItemCount) {
+					public void onScroll(AbsListView view,
+							int firstVisibleItem, int visibleItemCount,
+							int totalItemCount) {
 						if (visible) {
-							overlay.setText(apps[firstVisibleItem].getName().substring(
-									0, 1));
+							overlay.setText(apps[firstVisibleItem].getName()
+									.substring(0, 1));
 							overlay.setVisibility(View.VISIBLE);
 						}
 					}
 				});
-				
+
 				if (pd != null) {
 					pd.dismiss();
 					pd = null;
@@ -160,8 +162,8 @@ public class AppManager extends Activity implements OnCheckedChangeListener,
 
 		final LayoutInflater inflater = getLayoutInflater();
 
-		adapter = new ArrayAdapter<ProxyedApp>(this,
-				R.layout.layout_apps_item, R.id.itemtext, apps) {
+		adapter = new ArrayAdapter<ProxyedApp>(this, R.layout.layout_apps_item,
+				R.id.itemtext, apps) {
 			public View getView(int position, View convertView, ViewGroup parent) {
 				ListEntry entry;
 				if (convertView == null) {
@@ -266,7 +268,8 @@ public class AppManager extends Activity implements OnCheckedChangeListener,
 			apps[appIdx].setUsername(pMgr.getNameForUid(apps[appIdx].getUid()));
 			apps[appIdx].setProcname(aInfo.processName);
 			apps[appIdx].setName(pMgr.getApplicationLabel(aInfo).toString());
-			apps[appIdx].setIcon(pMgr.getApplicationIcon(aInfo));
+			if (pMgr.getApplicationIcon(aInfo) != null)
+				apps[appIdx].setIcon(pMgr.getApplicationIcon(aInfo));
 
 			// check if this application is allowed
 			if (Arrays.binarySearch(tordApps, apps[appIdx].getUsername()) >= 0) {
