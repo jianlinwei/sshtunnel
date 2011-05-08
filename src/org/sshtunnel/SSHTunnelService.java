@@ -71,7 +71,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	private LocalPortForwarder lpf = null;
 	private DynamicPortForwarder dpf = null;
 	private DNSServer dnsServer = null;
-	private static Thread dnsThread = null;
+	private Thread dnsThread = null;
 	private int dnsPort = 0;
 	private volatile boolean isConnecting = false;
 	private volatile boolean isStopping = false;
@@ -694,6 +694,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			}
 			if (dnsThread != null) {
 				dnsThread.interrupt();
+				dnsThread = null;
 			}
 		} catch (Exception e) {
 			Log.e(TAG, "DNS Server close unexpected");
@@ -892,8 +893,10 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 					handler.sendEmptyMessage(MSG_CONNECT_FINISH);
 					handler.sendEmptyMessage(MSG_CONNECT_SUCCESS);
 
-					if (dnsThread != null)
+					if (dnsThread != null) {
 						dnsThread.interrupt();
+						dnsThread = null;
+					}
 
 					dnsThread = new Thread(dnsServer);
 					dnsThread.setDaemon(true);
