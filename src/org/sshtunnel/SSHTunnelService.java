@@ -706,12 +706,12 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 				// Make sure the connection is closed, important here
 				onDisconnect();
+				
+				isStopping = false;
 
 				handler.sendEmptyMessage(MSG_DISCONNECT_FINISH);
 			}
 		}.start();
-
-		isStopping = false;
 
 		super.onDestroy();
 	}
