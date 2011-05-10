@@ -37,7 +37,7 @@ public class ConnectivityBroadcastReceiver extends BroadcastReceiver {
 	}
 
 	@Override
-	public synchronized void onReceive(Context context, Intent intent) {
+	public void onReceive(Context context, Intent intent) {
 		String action = intent.getAction();
 
 		if (!action.equals(ConnectivityManager.CONNECTIVITY_ACTION)) {
@@ -47,6 +47,7 @@ public class ConnectivityBroadcastReceiver extends BroadcastReceiver {
 
 		Log.e(TAG, "Connection Test");
 
+		
 		if (!isOnline(context)) {
 			if (isWorked(context, SSHTunnel.SERVICE_NAME)) {
 				try {
@@ -66,6 +67,15 @@ public class ConnectivityBroadcastReceiver extends BroadcastReceiver {
 //			}
 			
 			if (!isWorked(context, SSHTunnel.SERVICE_NAME)) {
+				
+				while (SSHTunnelService.isStopping) {
+					try {
+						Thread.sleep(1000);
+					} catch (InterruptedException e) {
+						break;
+					}
+				}
+				
 				SSHTunnelReceiver sshr = new SSHTunnelReceiver();
 				sshr.onReceive(context, intent, false);
 			}

@@ -75,7 +75,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	private DNSServer dnsServer = null;
 	private int dnsPort = 0;
 	private volatile boolean isConnecting = false;
-	private volatile boolean isStopping = false;
+	public volatile static boolean isStopping = false;
 
 	private final static int AUTH_TRIES = 1;
 	private final static int RECONNECT_TRIES = 2;
@@ -373,7 +373,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		try {
 			if (connection.isAuthenticationComplete()) {
 
-				return true;
+				return enablePortForward();
 			}
 		} catch (Exception ignore) {
 			// Nothing
@@ -396,6 +396,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 	public void connectionLost(Throwable reason) {
 
+		Log.d(TAG, "Connection Lost");
+
 		SimpleDateFormat df = new SimpleDateFormat("HH:mm:ss");
 
 		if (isConnecting || isStopping) {
@@ -403,6 +405,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		}
 
 		if (!isOnline()) {
+			stopReconnect(df);
 			return;
 		}
 
@@ -422,17 +425,18 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			}
 			Log.e(TAG, "connection lost: " + reason.getMessage());
 		} else {
+			stopReconnect(df);
 			return;
 		}
 
 		if (isAutoReconnect && connected) {
 
 			for (int reconNum = 1; reconNum <= RECONNECT_TRIES; reconNum++) {
-				
+
+				Log.d(TAG, "Reconnect tries: " + reconNum);
+
 				onDisconnect();
-				
-				flushIptables();
-				
+
 				if (!connect()) {
 
 					try {
@@ -444,8 +448,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 					continue;
 				}
 
-				finishConnection();
-				
 				notifyAlert(
 						getString(R.string.reconnect_success) + " "
 								+ df.format(new Date()),
@@ -530,94 +532,83 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	 * Internal method to request actual PTY terminal once we've finished
 	 * authentication. If called before authenticated, it will just fail.
 	 */
-	private boolean finishConnection() {
+	private void finishConnection() {
 
-		if (enablePortForward()) {
-			Log.e(TAG, "Forward Successful");
+		Log.e(TAG, "Forward Successful");
 
-			if (isSocks)
-				runRootCommand(BASE + "proxy_socks.sh start " + localPort);
-			else
-				runRootCommand(BASE + "proxy_http.sh start " + localPort);
+		if (isSocks)
+			runRootCommand(BASE + "proxy_socks.sh start " + localPort);
+		else
+			runRootCommand(BASE + "proxy_http.sh start " + localPort);
 
-			StringBuffer cmd = new StringBuffer();
+		StringBuffer cmd = new StringBuffer();
 
-			if (hasRedirectSupport) {
-				if (isARMv6()) {
-					cmd.append(BASE
-							+ "iptables_g1 "
-							+ "-t nat -A OUTPUT -p udp --dport 53 -j REDIRECT --to "
-							+ dnsPort + "\n");
-				} else {
-					cmd.append(BASE
-							+ "iptables_n1 "
-							+ "-t nat -A OUTPUT -p udp --dport 53 -j REDIRECT --to "
-							+ dnsPort + "\n");
-				}
+		if (hasRedirectSupport) {
+			if (isARMv6()) {
+				cmd.append(BASE
+						+ "iptables_g1 "
+						+ "-t nat -A OUTPUT -p udp --dport 53 -j REDIRECT --to "
+						+ dnsPort + "\n");
 			} else {
-				if (isARMv6()) {
-					cmd.append(BASE
-							+ "iptables_g1 "
-							+ "-t nat -A OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:"
-							+ dnsPort + "\n");
-				} else {
-					cmd.append(BASE
-							+ "iptables_n1 "
-							+ "-t nat -A OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:"
-							+ dnsPort + "\n");
-				}
+				cmd.append(BASE
+						+ "iptables_n1 "
+						+ "-t nat -A OUTPUT -p udp --dport 53 -j REDIRECT --to "
+						+ dnsPort + "\n");
 			}
-
-			if (isAutoSetProxy) {
-				if (isARMv6()) {
-					cmd.append(hasRedirectSupport ? CMD_IPTABLES_REDIRECT_ADD_G1
-							: CMD_IPTABLES_DNAT_ADD_G1);
-				} else {
-					cmd.append(hasRedirectSupport ? CMD_IPTABLES_REDIRECT_ADD_N1
-							: CMD_IPTABLES_DNAT_ADD_N1);
-				}
+		} else {
+			if (isARMv6()) {
+				cmd.append(BASE
+						+ "iptables_g1 "
+						+ "-t nat -A OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:"
+						+ dnsPort + "\n");
 			} else {
-				// for proxy specified apps
-				if (apps == null || apps.length <= 0)
-					apps = AppManager.getApps(this);
+				cmd.append(BASE
+						+ "iptables_n1 "
+						+ "-t nat -A OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:"
+						+ dnsPort + "\n");
+			}
+		}
 
-				for (int i = 0; i < apps.length; i++) {
-					if (apps[i].isProxyed()) {
-						if (isARMv6()) {
-							cmd.append((hasRedirectSupport ? CMD_IPTABLES_REDIRECT_ADD_G1
-									: CMD_IPTABLES_DNAT_DEL_G1).replace(
-									"-t nat", "-t nat -m owner --uid-owner "
-											+ apps[i].getUid()));
-						} else {
-							cmd.append((hasRedirectSupport ? CMD_IPTABLES_REDIRECT_ADD_N1
-									: CMD_IPTABLES_DNAT_DEL_N1).replace(
-									"-t nat", "-t nat -m owner --uid-owner "
-											+ apps[i].getUid()));
-						}
+		if (isAutoSetProxy) {
+			if (isARMv6()) {
+				cmd.append(hasRedirectSupport ? CMD_IPTABLES_REDIRECT_ADD_G1
+						: CMD_IPTABLES_DNAT_ADD_G1);
+			} else {
+				cmd.append(hasRedirectSupport ? CMD_IPTABLES_REDIRECT_ADD_N1
+						: CMD_IPTABLES_DNAT_ADD_N1);
+			}
+		} else {
+			// for proxy specified apps
+			if (apps == null || apps.length <= 0)
+				apps = AppManager.getApps(this);
+
+			for (int i = 0; i < apps.length; i++) {
+				if (apps[i].isProxyed()) {
+					if (isARMv6()) {
+						cmd.append((hasRedirectSupport ? CMD_IPTABLES_REDIRECT_ADD_G1
+								: CMD_IPTABLES_DNAT_DEL_G1).replace(
+								"-t nat",
+								"-t nat -m owner --uid-owner "
+										+ apps[i].getUid()));
+					} else {
+						cmd.append((hasRedirectSupport ? CMD_IPTABLES_REDIRECT_ADD_N1
+								: CMD_IPTABLES_DNAT_DEL_N1).replace(
+								"-t nat",
+								"-t nat -m owner --uid-owner "
+										+ apps[i].getUid()));
 					}
 				}
 			}
-
-			if (isSocks)
-				runRootCommand(cmd.toString().replace("8124", "8123"));
-			else
-				runRootCommand(cmd.toString());
-
-			// Forward Successful
-			return true;
-
-		} else {
-
-			// Forward Unsuccessful
-			return false;
 		}
 
-	}
+		String rules = cmd.toString().replace("--dport 443",
+				"-d ! " + host + " --dport 443");
 
-	/** Called when the activity is first created. */
-	public boolean handleCommand() {
+		if (isSocks)
+			runRootCommand(rules.replace("8124", "8123"));
+		else
+			runRootCommand(rules);
 
-		return connect();
 	}
 
 	private void initSoundVibrateLights(Notification notification) {
@@ -801,10 +792,13 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			}
 		}
 
+		String rules = cmd.toString().replace("--dport 443",
+				"-d ! " + host + " --dport 443");
+
 		if (isSocks)
-			runRootCommand(cmd.toString().replace("8124", "8123"));
+			runRootCommand(rules.replace("8124", "8123"));
 		else
-			runRootCommand(cmd.toString());
+			runRootCommand(rules);
 
 		if (isSocks)
 			runRootCommand(BASE + "proxy_socks.sh stop");
@@ -911,23 +905,25 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		isAutoSetProxy = bundle.getBoolean("isAutoSetProxy");
 		isSocks = bundle.getBoolean("isSocks");
 
+		if (dnsServer == null) {
+			dnsServer = new DNSServer("DNS Server", "8.8.8.8", 53,
+					SSHTunnelService.this);
+			dnsServer.setBasePath("/data/data/org.sshtunnel");
+			dnsPort = dnsServer.init();
+		}
+
 		new Thread(new Runnable() {
 			public void run() {
 
 				handler.sendEmptyMessage(MSG_CONNECT_START);
 				isConnecting = true;
 
-				if (dnsServer == null) {
-					dnsServer = new DNSServer("DNS Server", "8.8.8.8", 53,
-							SSHTunnelService.this);
-					dnsServer.setBasePath("/data/data/org.sshtunnel");
-					dnsPort = dnsServer.init();
-				}
-
 				// Test for Redirect Support
 				initHasRedirectSupported();
 
-				if (isOnline() && handleCommand()) {
+				if (isOnline() && connect()) {
+
+					isConnecting = false;
 
 					// Connection and forward successful
 					finishConnection();
@@ -976,8 +972,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 					connected = false;
 					stopSelf();
 				}
-
-				isConnecting = false;
 			}
 		}).start();
 	}
