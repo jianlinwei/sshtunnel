@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -61,6 +62,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	private SharedPreferences settings = null;
 
 	private String host;
+	private String hostAddress = null;
 	private int port;
 	private int localPort;
 	private int remotePort;
@@ -601,8 +603,11 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			}
 		}
 
-		String rules = cmd.toString().replace("--dport 443",
-				"-d ! " + host + " --dport 443");
+		String rules = cmd.toString();
+		if (hostAddress != null)
+			rules = rules.replace("--dport 443",
+					"! -d " + hostAddress + " --dport 443").replace(
+					"--dport 80", "! -d " + hostAddress + " --dport 80");
 
 		if (isSocks)
 			runRootCommand(rules.replace("8124", "8123"));
@@ -792,8 +797,12 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			}
 		}
 
-		String rules = cmd.toString().replace("--dport 443",
-				"-d ! " + host + " --dport 443");
+		String rules = cmd.toString();
+
+		if (hostAddress != null)
+			rules = rules.replace("--dport 443",
+					"! -d " + hostAddress + " --dport 443").replace(
+					"--dport 80", "! -d " + hostAddress + " --dport 80");
 
 		if (isSocks)
 			runRootCommand(rules.replace("8124", "8123"));
@@ -912,6 +921,12 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			dnsPort = dnsServer.init();
 		}
 
+		try {
+			hostAddress = InetAddress.getByName(host).getHostAddress();
+		} catch (UnknownHostException e) {
+			hostAddress = null;
+		}
+
 		new Thread(new Runnable() {
 			public void run() {
 
@@ -921,7 +936,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 				// Test for Redirect Support
 				initHasRedirectSupported();
 
-				if (isOnline() && connect()) {
+				if (hostAddress != null && isOnline() && connect()) {
 
 					isConnecting = false;
 
