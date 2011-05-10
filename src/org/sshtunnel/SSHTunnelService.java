@@ -490,45 +490,15 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		return true;
 	}
 
-	final static String CMD_IPTABLES_REDIRECT_DEL_G1 = BASE
-			+ "iptables_g1 -t nat -D OUTPUT -p tcp --dport 80 -j REDIRECT --to 8123\n"
-			+ BASE
-			+ "iptables_g1 -t nat -D OUTPUT -p tcp --dport 443 -j REDIRECT --to 8124\n";
-
 	final static String CMD_IPTABLES_REDIRECT_ADD_G1 = BASE
-			+ "iptables_g1 -t nat -A OUTPUT -p tcp --dport 80 -j REDIRECT --to 8123\n"
+			+ "iptables_g1 -t nat -A SSHTUNNEL -p tcp --dport 80 -j REDIRECT --to 8123\n"
 			+ BASE
-			+ "iptables_g1 -t nat -A OUTPUT -p tcp --dport 443 -j REDIRECT --to 8124\n";
-
-	final static String CMD_IPTABLES_REDIRECT_DEL_N1 = BASE
-			+ "iptables_n1 -t nat -D OUTPUT -p tcp --dport 80 -j REDIRECT --to 8123\n"
-			+ BASE
-			+ "iptables_n1 -t nat -D OUTPUT -p tcp --dport 443 -j REDIRECT --to 8124\n";
-
-	final static String CMD_IPTABLES_REDIRECT_ADD_N1 = BASE
-			+ "iptables_n1 -t nat -A OUTPUT -p tcp --dport 80 -j REDIRECT --to 8123\n"
-			+ BASE
-			+ "iptables_n1 -t nat -A OUTPUT -p tcp --dport 443 -j REDIRECT --to 8124\n";
-
-	final static String CMD_IPTABLES_DNAT_DEL_G1 = BASE
-			+ "iptables_g1 -t nat -D OUTPUT -p tcp --dport 80 -j DNAT --to-destination 127.0.0.1:8123\n"
-			+ BASE
-			+ "iptables_g1 -t nat -D OUTPUT -p tcp --dport 443 -j DNAT --to-destination 127.0.0.1:8124\n";
+			+ "iptables_g1 -t nat -A SSHTUNNEL -p tcp --dport 443 -j REDIRECT --to 8124\n";
 
 	final static String CMD_IPTABLES_DNAT_ADD_G1 = BASE
-			+ "iptables_g1 -t nat -A OUTPUT -p tcp --dport 80 -j DNAT --to-destination 127.0.0.1:8123\n"
+			+ "iptables_g1 -t nat -A SSHTUNNEL -p tcp --dport 80 -j DNAT --to-destination 127.0.0.1:8123\n"
 			+ BASE
-			+ "iptables_g1 -t nat -A OUTPUT -p tcp --dport 443 -j DNAT --to-destination 127.0.0.1:8124\n";
-
-	final static String CMD_IPTABLES_DNAT_DEL_N1 = BASE
-			+ "iptables_n1 -t nat -D OUTPUT -p tcp --dport 80 -j DNAT --to-destination 127.0.0.1:8123\n"
-			+ BASE
-			+ "iptables_n1 -t nat -D OUTPUT -p tcp --dport 443 -j DNAT --to-destination 127.0.0.1:8124\n";
-
-	final static String CMD_IPTABLES_DNAT_ADD_N1 = BASE
-			+ "iptables_n1 -t nat -A OUTPUT -p tcp --dport 80 -j DNAT --to-destination 127.0.0.1:8123\n"
-			+ BASE
-			+ "iptables_n1 -t nat -A OUTPUT -p tcp --dport 443 -j DNAT --to-destination 127.0.0.1:8124\n";
+			+ "iptables_g1 -t nat -A SSHTUNNEL -p tcp --dport 443 -j DNAT --to-destination 127.0.0.1:8124\n";
 
 	/**
 	 * Internal method to request actual PTY terminal once we've finished
@@ -545,65 +515,51 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 		StringBuffer cmd = new StringBuffer();
 
-		if (hasRedirectSupport) {
-			if (isARMv6()) {
-				cmd.append(BASE
-						+ "iptables_g1 "
-						+ "-t nat -A OUTPUT -p udp --dport 53 -j REDIRECT --to "
-						+ dnsPort + "\n");
-			} else {
-				cmd.append(BASE
-						+ "iptables_n1 "
-						+ "-t nat -A OUTPUT -p udp --dport 53 -j REDIRECT --to "
-						+ dnsPort + "\n");
-			}
-		} else {
-			if (isARMv6()) {
-				cmd.append(BASE
-						+ "iptables_g1 "
-						+ "-t nat -A OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:"
-						+ dnsPort + "\n");
-			} else {
-				cmd.append(BASE
-						+ "iptables_n1 "
-						+ "-t nat -A OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:"
-						+ dnsPort + "\n");
-			}
-		}
+		cmd.append(BASE + "iptables_g1 -t nat -N SSHTUNNEL\n");
+		cmd.append(BASE + "iptables_g1 -t nat -F SSHTUNNEL\n");
+		cmd.append(BASE + "iptables_g1 -t nat -N SSHTUNNELDNS\n");
+		cmd.append(BASE + "iptables_g1 -t nat -F SSHTUNNELDNS\n");
+
+		if (hasRedirectSupport)
+			cmd.append(BASE
+					+ "iptables_g1 "
+					+ "-t nat -A SSHTUNNELDNS -p udp --dport 53 -j REDIRECT --to "
+					+ dnsPort + "\n");
+		else
+			cmd.append(BASE
+					+ "iptables_g1 "
+					+ "-t nat -A SSHTUNNELDNS -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:"
+					+ dnsPort + "\n");
+
+		cmd.append(BASE
+				+ "iptables_g1 -t nat -A OUTPUT -p udp -j SSHTUNNELDNS\n");
+
+		cmd.append(hasRedirectSupport ? CMD_IPTABLES_REDIRECT_ADD_G1
+				: CMD_IPTABLES_DNAT_ADD_G1);
 
 		if (isAutoSetProxy) {
-			if (isARMv6()) {
-				cmd.append(hasRedirectSupport ? CMD_IPTABLES_REDIRECT_ADD_G1
-						: CMD_IPTABLES_DNAT_ADD_G1);
-			} else {
-				cmd.append(hasRedirectSupport ? CMD_IPTABLES_REDIRECT_ADD_N1
-						: CMD_IPTABLES_DNAT_ADD_N1);
-			}
+			cmd.append(BASE
+					+ "iptables_g1 -t nat -A OUTPUT -p tcp -j SSHTUNNEL\n");
 		} else {
+
 			// for proxy specified apps
 			if (apps == null || apps.length <= 0)
 				apps = AppManager.getApps(this);
 
 			for (int i = 0; i < apps.length; i++) {
 				if (apps[i].isProxyed()) {
-					if (isARMv6()) {
-						cmd.append((hasRedirectSupport ? CMD_IPTABLES_REDIRECT_ADD_G1
-								: CMD_IPTABLES_DNAT_DEL_G1).replace(
-								"-t nat",
-								"-t nat -m owner --uid-owner "
-										+ apps[i].getUid()));
-					} else {
-						cmd.append((hasRedirectSupport ? CMD_IPTABLES_REDIRECT_ADD_N1
-								: CMD_IPTABLES_DNAT_DEL_N1).replace(
-								"-t nat",
-								"-t nat -m owner --uid-owner "
-										+ apps[i].getUid()));
-					}
+					cmd.append(BASE + "iptables_g1 "
+							+ "-t nat -m owner --uid-owner " + apps[i].getUid()
+							+ " -A OUTPUT -p tcp -j SSHTUNNEL\n");
 				}
 			}
 		}
 
 		String rules = cmd.toString();
+
+		if (!isARMv6())
+			rules = rules.replace("iptables_g1", "iptables_n1");
+
 		if (hostAddress != null)
 			rules = rules.replace("--dport 443",
 					"! -d " + hostAddress + " --dport 443").replace(
@@ -738,76 +694,38 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 		StringBuffer cmd = new StringBuffer();
 
-		if (hasRedirectSupport) {
-			if (isARMv6()) {
-				cmd.append(BASE
-						+ "iptables_g1 "
-						+ "-t nat -D OUTPUT -p udp --dport 53 -j REDIRECT --to "
-						+ dnsPort + "\n");
-			} else {
-				cmd.append(BASE
-						+ "iptables_n1 "
-						+ "-t nat -D OUTPUT -p udp --dport 53 -j REDIRECT --to "
-						+ dnsPort + "\n");
-			}
-		} else {
-			if (isARMv6()) {
-				cmd.append(BASE
-						+ "iptables_g1 "
-						+ "-t nat -D OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:"
-						+ dnsPort + "\n");
-			} else {
-				cmd.append(BASE
-						+ "iptables_n1 "
-						+ "-t nat -D OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:"
-						+ dnsPort + "\n");
-			}
-		}
-
+		cmd.append(BASE + "iptables_g1 -t nat -F SSHTUNNEL\n");
+		cmd.append(BASE + "iptables_g1 -t nat -F SSHTUNNELDNS\n");
+		cmd.append(BASE + "iptables_g1 -t nat -X SSHTUNNEL\n");
+		cmd.append(BASE + "iptables_g1 -t nat -X SSHTUNNELDNS\n");
+		
+		cmd.append(BASE
+				+ "iptables_g1 -t nat -D OUTPUT -p udp -j SSHTUNNELDNS\n");
+		
 		if (isAutoSetProxy) {
-			if (isARMv6()) {
-				cmd.append(hasRedirectSupport ? CMD_IPTABLES_REDIRECT_DEL_G1
-						: CMD_IPTABLES_DNAT_DEL_G1);
-			} else {
-
-				cmd.append(hasRedirectSupport ? CMD_IPTABLES_REDIRECT_DEL_N1
-						: CMD_IPTABLES_DNAT_DEL_N1);
-			}
+			cmd.append(BASE
+					+ "iptables_g1 -t nat -D OUTPUT -p tcp -j SSHTUNNEL\n");
 		} else {
+
 			// for proxy specified apps
 			if (apps == null || apps.length <= 0)
 				apps = AppManager.getApps(this);
 
 			for (int i = 0; i < apps.length; i++) {
 				if (apps[i].isProxyed()) {
-					if (isARMv6()) {
-						cmd.append((hasRedirectSupport ? CMD_IPTABLES_REDIRECT_DEL_G1
-								: CMD_IPTABLES_DNAT_DEL_G1).replace(
-								"-t nat",
-								"-t nat -m owner --uid-owner "
-										+ apps[i].getUid()));
-					} else {
-						cmd.append((hasRedirectSupport ? CMD_IPTABLES_REDIRECT_DEL_N1
-								: CMD_IPTABLES_DNAT_DEL_N1).replace(
-								"-t nat",
-								"-t nat -m owner --uid-owner "
-										+ apps[i].getUid()));
-					}
+					cmd.append(BASE + "iptables_g1 "
+							+ "-t nat -m owner --uid-owner " + apps[i].getUid()
+							+ " -D OUTPUT -p tcp -j SSHTUNNEL\n");
 				}
 			}
 		}
 
 		String rules = cmd.toString();
 
-		if (hostAddress != null)
-			rules = rules.replace("--dport 443",
-					"! -d " + hostAddress + " --dport 443").replace(
-					"--dport 80", "! -d " + hostAddress + " --dport 80");
+		if (!isARMv6())
+			rules = rules.replace("iptables_g1", "iptables_n1");
 
-		if (isSocks)
-			runRootCommand(rules.replace("8124", "8123"));
-		else
-			runRootCommand(rules);
+		runRootCommand(rules);
 
 		if (isSocks)
 			runRootCommand(BASE + "proxy_socks.sh stop");
