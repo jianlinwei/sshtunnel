@@ -77,7 +77,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	private volatile boolean isConnecting = false;
 	private volatile boolean isStopping = false;
 
-	private final static int AUTH_TRIES = 2;
+	private final static int AUTH_TRIES = 1;
 	private final static int RECONNECT_TRIES = 2;
 
 	private Connection connection;
