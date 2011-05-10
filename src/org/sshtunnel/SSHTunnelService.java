@@ -881,18 +881,18 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		isAutoSetProxy = bundle.getBoolean("isAutoSetProxy");
 		isSocks = bundle.getBoolean("isSocks");
 
-		if (dnsServer == null) {
-			dnsServer = new DNSServer("DNS Server", "8.8.8.8", 53,
-					SSHTunnelService.this);
-			dnsServer.setBasePath("/data/data/org.sshtunnel");
-			dnsPort = dnsServer.init();
-		}
-
 		new Thread(new Runnable() {
 			public void run() {
 
 				handler.sendEmptyMessage(MSG_CONNECT_START);
 				isConnecting = true;
+
+				if (dnsServer == null) {
+					dnsServer = new DNSServer("DNS Server", "8.8.8.8", 53,
+							SSHTunnelService.this);
+					dnsServer.setBasePath("/data/data/org.sshtunnel");
+					dnsPort = dnsServer.init();
+				}
 
 				// Test for Redirect Support
 				initHasRedirectSupported();
