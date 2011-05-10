@@ -55,6 +55,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	private static final int MSG_CONNECT_FINISH = 1;
 	private static final int MSG_CONNECT_SUCCESS = 2;
 	private static final int MSG_CONNECT_FAIL = 3;
+	private static final int MSG_DISCONNECT_FINISH = 4;
 
 	private SharedPreferences settings = null;
 
@@ -700,31 +701,15 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			Log.e(TAG, "DNS Server close unexpected");
 		}
 
-		// Make sure the connection is closed, important here
-		onDisconnect();
+		new Thread() {
+			public void run() {
 
-		Editor ed = settings.edit();
-		ed.putBoolean("isRunning", false);
-		ed.commit();
+				// Make sure the connection is closed, important here
+				onDisconnect();
 
-		try {
-			notificationManager.cancel(0);
-			notificationManager.cancel(1);
-		} catch (Exception ignore) {
-			// Nothing
-		}
-
-		// for widget, maybe exception here
-		try {
-			RemoteViews views = new RemoteViews(getPackageName(),
-					R.layout.sshtunnel_appwidget);
-			views.setImageViewResource(R.id.serviceToggle, R.drawable.off);
-			AppWidgetManager awm = AppWidgetManager.getInstance(this);
-			awm.updateAppWidget(awm.getAppWidgetIds(new ComponentName(this,
-					SSHTunnelWidgetProvider.class)), views);
-		} catch (Exception ignore) {
-			// Nothing
-		}
+				handler.sendEmptyMessage(MSG_DISCONNECT_FINISH);
+			}
+		}.start();
 
 		isStopping = false;
 
@@ -841,6 +826,32 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 				break;
 			case MSG_CONNECT_FAIL:
 				ed.putBoolean("isRunning", false);
+				break;
+			case MSG_DISCONNECT_FINISH:
+
+				ed.putBoolean("isRunning", false);
+
+				try {
+					notificationManager.cancel(0);
+					notificationManager.cancel(1);
+				} catch (Exception ignore) {
+					// Nothing
+				}
+
+				// for widget, maybe exception here
+				try {
+					RemoteViews views = new RemoteViews(getPackageName(),
+							R.layout.sshtunnel_appwidget);
+					views.setImageViewResource(R.id.serviceToggle,
+							R.drawable.off);
+					AppWidgetManager awm = AppWidgetManager
+							.getInstance(SSHTunnelService.this);
+					awm.updateAppWidget(awm.getAppWidgetIds(new ComponentName(
+							SSHTunnelService.this,
+							SSHTunnelWidgetProvider.class)), views);
+				} catch (Exception ignore) {
+					// Nothing
+				}
 				break;
 			}
 			ed.commit();
