@@ -261,6 +261,8 @@ public class SSHTunnel extends PreferenceActivity implements
 
 			isAutoSetProxyCheck.setChecked(false);
 			isAutoSetProxyCheck.setEnabled(false);
+			proxyedApps.setEnabled(false);
+			showAToast(getString(R.string.require_root_alert));
 		}
 
 		if (!isWorked(SERVICE_NAME)) {

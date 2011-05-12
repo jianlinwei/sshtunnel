@@ -19,6 +19,7 @@
 		your
 		problem to the project page. \n\n(sshtunnel.googlecode.com)
 	</string>
+	<string name="require_root_alert">PLEASE ROOT YOUR DEVICE FIRST !!!</string>
 
 	<!-- status string -->
 	<string name="service_running">SSHTunnel service is running now</string>
