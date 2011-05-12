@@ -144,6 +144,8 @@ public class DNSServer implements WrapServer {
 	protected String dnsHost;
 	protected int dnsPort;
 	protected Context context;
+	private volatile int threadNum = 0;
+	private final static int MAX_THREAD_NUM = 5;
 
 	final protected int DNS_PKG_HEADER_LEN = 12;
 	final private int[] DNS_HEADERS = { 0, 0, 0x81, 0x80, 0, 0, 0, 0, 0, 0, 0,
@@ -500,14 +502,14 @@ public class DNSServer implements WrapServer {
 		loadCache();
 
 		byte[] qbuffer = new byte[576];
-		long starTime = System.currentTimeMillis();
 
 		SharedPreferences settings = PreferenceManager
 				.getDefaultSharedPreferences(context);
 
+		threadNum = 0;
 		while (true) {
 			try {
-				DatagramPacket dnsq = new DatagramPacket(qbuffer,
+				final DatagramPacket dnsq = new DatagramPacket(qbuffer,
 						qbuffer.length);
 
 				if (!settings.getBoolean("isRunning", false))
@@ -518,10 +520,10 @@ public class DNSServer implements WrapServer {
 
 				byte[] data = dnsq.getData();
 				int dnsqLength = dnsq.getLength();
-				byte[] udpreq = new byte[dnsqLength];
+				final byte[] udpreq = new byte[dnsqLength];
 				System.arraycopy(data, 0, udpreq, 0, dnsqLength);
 				// 尝试从缓存读取域名解析
-				String questDomain = getRequestDomain(udpreq);
+				final String questDomain = getRequestDomain(udpreq);
 
 				Log.d(TAG, "解析" + questDomain);
 
@@ -539,17 +541,30 @@ public class DNSServer implements WrapServer {
 					sendDns(answer, dnsq, srvSocket);
 					Log.d(TAG, "自定义解析" + orgCache);
 				} else {
-					starTime = System.currentTimeMillis();
-					byte[] answer = fetchAnswer(udpreq);
-					if (answer != null && answer.length != 0) {
-						addToCache(questDomain, answer);
-						sendDns(answer, dnsq, srvSocket);
-						Log.d(TAG, "正确返回DNS解析，长度：" + answer.length + "  耗时："
-								+ (System.currentTimeMillis() - starTime)
-								/ 1000 + "s");
-					} else {
-						Log.e(TAG, "返回DNS包长为0");
+
+					while (threadNum >= MAX_THREAD_NUM) {
+						Thread.sleep(2000);
 					}
+					threadNum++;
+					new Thread() {
+						public void run() {
+							long startTime = System.currentTimeMillis();
+							byte[] answer = fetchAnswer(udpreq);
+							if (answer != null && answer.length != 0) {
+								addToCache(questDomain, answer);
+								sendDns(answer, dnsq, srvSocket);
+								Log.d(TAG,
+										"正确返回DNS解析，长度："
+												+ answer.length
+												+ "  耗时："
+												+ (System.currentTimeMillis() - startTime)
+												/ 1000 + "s");
+							} else {
+								Log.e(TAG, "返回DNS包长为0");
+							}
+							threadNum--;
+						}
+					}.start();
 
 				}
 
