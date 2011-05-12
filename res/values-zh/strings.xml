@@ -57,6 +57,7 @@
 	<string name="connecting">正在连接</string>
 	<string name="auto_connecting">连接中...</string>
 	<string name="loading">加载应用列表中...</string>
+	<string name="require_root_alert">请确认已获得ROOT权限，否则无法正常使用所有功能！</string>
 
 	<string name="remote_address">远程地址</string>
 	<string name="remote_address_summary">远程转发地址，默认 127.0.0.1
