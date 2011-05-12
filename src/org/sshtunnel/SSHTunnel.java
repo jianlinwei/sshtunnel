@@ -116,6 +116,18 @@ public class SSHTunnel extends PreferenceActivity implements
 		return true;
 	}
 
+	public boolean detectRoot() {
+		try {
+			Process proc = Runtime.getRuntime().exec("su");
+			if (proc == null)
+				return false;
+			proc.destroy();
+		} catch (Exception e) {
+			return false;
+		}
+		return true;
+	}
+
 	private void CopyAssets() {
 		AssetManager assetManager = getAssets();
 		String[] files = null;
@@ -251,7 +263,7 @@ public class SSHTunnel extends PreferenceActivity implements
 			enableAll();
 		}
 
-		if (!runRootCommand("")) {
+		if (!detectRoot()) {
 			isRoot = false;
 		} else {
 			isRoot = true;
@@ -802,11 +814,13 @@ public class SSHTunnel extends PreferenceActivity implements
 		case Menu.FIRST + 3:
 			String versionName = "";
 			try {
-				versionName = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+				versionName = getPackageManager().getPackageInfo(
+						getPackageName(), 0).versionName;
 			} catch (NameNotFoundException e) {
 				versionName = "";
 			}
-			showAToast(getString(R.string.about) + " (" + versionName + ")" + getString(R.string.copy_rights));
+			showAToast(getString(R.string.about) + " (" + versionName + ")"
+					+ getString(R.string.copy_rights));
 			break;
 		}
 
