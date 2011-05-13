@@ -73,7 +73,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	private boolean isAutoSetProxy = false;
 	private boolean isSocks = false;
 	private LocalPortForwarder lpf = null;
-	private LocalPortForwarder dnspf = null;
 	private DynamicPortForwarder dpf = null;
 	private DNSServer dnsServer = null;
 	private int dnsPort = 0;
@@ -476,8 +475,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		// LocalPortForwarder lpf1 = null;
 		try {
 			
-			dnspf = connection.createLocalPortForwarder(5353, "8.8.8.8", 53);
-			
 			if (isSocks) {
 				dpf = connection.createDynamicPortForwarder(localPort);
 			} else {
@@ -751,10 +748,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 				dpf.close();
 				dpf = null;
 			}
-			if (dnspf != null) {
-				dnspf.close();
-				dnspf = null;
-			}
 		} catch (Exception ignore) {
 			// Nothing
 		}
@@ -841,7 +834,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		isSocks = bundle.getBoolean("isSocks");
 
 		if (dnsServer == null) {
-			dnsServer = new DNSServer("DNS Server", "127.0.0.1", 5353,
+			dnsServer = new DNSServer("DNS Server", "8.8.8.8", 53,
 					SSHTunnelService.this);
 			dnsServer.setBasePath("/data/data/org.sshtunnel");
 			dnsPort = dnsServer.init();
