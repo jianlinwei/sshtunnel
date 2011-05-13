@@ -549,18 +549,23 @@ public class DNSServer implements WrapServer {
 					new Thread() {
 						public void run() {
 							long startTime = System.currentTimeMillis();
-							byte[] answer = fetchAnswer(udpreq);
-							if (answer != null && answer.length != 0) {
-								addToCache(questDomain, answer);
-								sendDns(answer, dnsq, srvSocket);
-								Log.d(TAG,
-										"正确返回DNS解析，长度："
-												+ answer.length
-												+ "  耗时："
-												+ (System.currentTimeMillis() - startTime)
-												/ 1000 + "s");
-							} else {
-								Log.e(TAG, "返回DNS包长为0");
+							try {
+								byte[] answer = fetchAnswer(udpreq);
+								if (answer != null && answer.length != 0) {
+									addToCache(questDomain, answer);
+									sendDns(answer, dnsq, srvSocket);
+									Log.d(TAG,
+											"正确返回DNS解析，长度："
+													+ answer.length
+													+ "  耗时："
+													+ (System
+															.currentTimeMillis() - startTime)
+													/ 1000 + "s");
+								} else {
+									Log.e(TAG, "返回DNS包长为0");
+								}
+							} catch (Exception e) {
+								// Nothing
 							}
 							threadNum--;
 						}
