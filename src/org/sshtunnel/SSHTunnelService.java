@@ -751,6 +751,10 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 				dpf.close();
 				dpf = null;
 			}
+			if (dnspf != null) {
+				dnspf.close();
+				dnspf = null;
+			}
 		} catch (Exception ignore) {
 			// Nothing
 		}
