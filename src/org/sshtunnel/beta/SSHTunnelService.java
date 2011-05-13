@@ -374,13 +374,13 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 				if (apps[i].isProxyed()) {
 					if (isARMv6()) {
 						cmd.append((hasRedirectSupport ? CMD_IPTABLES_REDIRECT_ADD_G1
-								: CMD_IPTABLES_DNAT_DEL_G1).replace(
+								: CMD_IPTABLES_DNAT_ADD_G1).replace(
 								"-t nat",
 								"-t nat -m owner --uid-owner "
 										+ apps[i].getUid()));
 					} else {
 						cmd.append((hasRedirectSupport ? CMD_IPTABLES_REDIRECT_ADD_N1
-								: CMD_IPTABLES_DNAT_DEL_N1).replace(
+								: CMD_IPTABLES_DNAT_ADD_N1).replace(
 								"-t nat",
 								"-t nat -m owner --uid-owner "
 										+ apps[i].getUid()));
