@@ -586,6 +586,7 @@ public class DNSServer implements WrapServer {
 
 			} catch (SocketException e) {
 				Log.e(TAG, "Socket Exception", e);
+				break;
 			} catch (IOException e) {
 				Log.e(TAG, "IO Exception", e);
 			} catch (NullPointerException e) {
