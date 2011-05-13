@@ -23,6 +23,8 @@ import java.net.SocketException;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Hashtable;
 
 import android.app.ActivityManager;
@@ -146,6 +148,7 @@ public class DNSServer implements WrapServer {
 	protected Context context;
 	private volatile int threadNum = 0;
 	private final static int MAX_THREAD_NUM = 5;
+	public HashSet<String> domains;
 
 	final protected int DNS_PKG_HEADER_LEN = 12;
 	final private int[] DNS_HEADERS = { 0, 0, 0x81, 0x80, 0, 0, 0, 0, 0, 0, 0,
@@ -174,6 +177,8 @@ public class DNSServer implements WrapServer {
 		this.context = context;
 
 		initOrgCache();
+
+		domains = new HashSet<String>();
 
 		if (dnsHost != null && !dnsHost.equals(""))
 			target = dnsHost + ":" + dnsPort;
@@ -542,6 +547,13 @@ public class DNSServer implements WrapServer {
 					Log.d(TAG, "自定义解析" + orgCache);
 				} else {
 
+					synchronized (this) {
+						if (domains.contains(questDomain))
+							continue;
+						else
+							domains.add(questDomain);
+					}
+
 					while (threadNum >= MAX_THREAD_NUM) {
 						Thread.sleep(2000);
 					}
@@ -566,6 +578,9 @@ public class DNSServer implements WrapServer {
 								}
 							} catch (Exception e) {
 								// Nothing
+							}
+							synchronized (DNSServer.this) {
+								domains.remove(questDomain);
 							}
 							threadNum--;
 						}
