@@ -42,7 +42,7 @@
 			android:title="@string/auto_reconnect" android:summary="@string/auto_reconnect_summary"></CheckBoxPreference>
 		<CheckBoxPreference android:key="isAutoSetProxy"
 			android:title="@string/auto_set_proxy" android:summary="@string/auto_set_proxy_summary"></CheckBoxPreference>
-		<Preference android:key="proxyedApps" android:title="@string/proxyed_apps"></Preference>
+		<Preference android:key="proxyedApps" android:title="@string/proxyed_apps" android:summary="@string/proxyed_apps_summary"></Preference>
 
 	</PreferenceCategory>
 

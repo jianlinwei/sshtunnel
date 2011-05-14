@@ -85,7 +85,9 @@
 		and IPTABLES support)</string>
 
 	<!-- settings proxyed apps category -->
-	<string name="proxyed_apps">Choose apps through proxy</string>
+	<string name="proxyed_apps">Individual Proxy</string>
+	<string name="proxyed_apps_summary">Choose apps through proxy (needs ROOT permission
+		and IPTABLES support)</string>
 	<string name="proxyed_help">Select apps to use with SSHTunnel:</string>
 
 	<!-- menu bar category -->

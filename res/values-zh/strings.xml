@@ -50,7 +50,8 @@
 	<string name="user_empty">用户名不能为空</string>
 	<string name="recovery">清除连接状态</string>
 	<string name="number_alert">请检查端口号设置，必须为数字</string>
-	<string name="proxyed_apps">为应用分别设置代理</string>
+	<string name="proxyed_apps">应用代理</string>
+	<string name="proxyed_apps_summary">为应用分别设置代理，需要 ROOT 权限以及 IPTABLES 的支持</string>
 	<string name="proxyed_help">选择使用安全隧道的应用:</string>
 	<string name="socks">使用SOCKS代理</string>
 	<string name="socks_summary">启用动态转口转发 (注意: 耗电量较大)</string>
