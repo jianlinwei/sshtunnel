@@ -834,7 +834,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		isSocks = bundle.getBoolean("isSocks");
 
 		if (dnsServer == null) {
-			dnsServer = new DNSServer("DNS Server", "8.8.8.8", 53,
+			dnsServer = new DNSServer("DNS Server", "8.8.4.4", 53,
 					SSHTunnelService.this);
 			dnsServer.setBasePath("/data/data/org.sshtunnel");
 			dnsPort = dnsServer.init();
