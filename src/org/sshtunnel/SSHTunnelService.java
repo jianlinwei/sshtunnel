@@ -769,6 +769,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 				break;
 			case MSG_CONNECT_FINISH:
 				ed.putBoolean("isConnecting", false);
+				ed.putBoolean("isSwitching", false);
 				break;
 			case MSG_CONNECT_SUCCESS:
 				ed.putBoolean("isRunning", true);
@@ -782,6 +783,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			case MSG_DISCONNECT_FINISH:
 
 				ed.putBoolean("isRunning", false);
+				ed.putBoolean("isSwitching", false);
 
 				try {
 					notificationManager.cancel(0);

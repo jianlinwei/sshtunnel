@@ -11,6 +11,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.util.Log;
@@ -78,8 +79,16 @@ public class SSHTunnelWidgetProvider extends AppWidgetProvider {
 		if (intent.getAction().equals(PROXY_SWITCH_ACTION)) {
 			
 			SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(context);
-			if (settings.getBoolean("isConnecting", false))
+			
+			if (settings.getBoolean("isSwitching", false))
 				return;
+			
+			
+			Editor ed = settings.edit();
+			
+			ed.putBoolean("isSwitching", true);
+			
+			ed.commit();
 			
 			RemoteViews views = new RemoteViews(context.getPackageName(),
 					R.layout.sshtunnel_appwidget);
