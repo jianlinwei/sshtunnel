@@ -76,6 +76,11 @@ public class SSHTunnelWidgetProvider extends AppWidgetProvider {
 		super.onReceive(context, intent);
 
 		if (intent.getAction().equals(PROXY_SWITCH_ACTION)) {
+			
+			SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(context);
+			if (settings.getBoolean("isConnecting", false))
+				return;
+			
 			RemoteViews views = new RemoteViews(context.getPackageName(),
 					R.layout.sshtunnel_appwidget);
 			try {
