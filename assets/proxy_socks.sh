@@ -23,7 +23,7 @@ redsocks {
  local_port = 8123;
  ip = 127.0.0.1;
  port = $2;
- type = socks4;
+ type = socks5;
 } 
 " >>$DIR/redsocks.conf
 
