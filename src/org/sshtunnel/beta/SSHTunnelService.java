@@ -299,9 +299,9 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		String cmd = "";
 
 		try {
-			cmd = "/data/data/org.sshtunnel.beta/ssh -N -T -y -L " + localPort
+			cmd = "/data/data/org.sshtunnel.beta/ssh -N -T -y -L 127.0.0.1:" + localPort
 					+ ":" + "127.0.0.1" + ":" + remotePort + " -L "
-					+ "5353:8.8.8.8:53 " + user + "@" + hostIP + "/" + port;
+					+ "127.0.0.1:5353:8.8.8.8:53 " + user + "@" + hostIP + "/" + port;
 
 			Log.e(TAG, cmd);
 
