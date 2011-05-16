@@ -238,8 +238,7 @@ public class SSHTunnel extends PreferenceActivity implements
 			runCommand("chmod 777 /data/data/org.sshtunnel.beta/iptables_n1");
 			runCommand("chmod 777 /data/data/org.sshtunnel.beta/redsocks");
 			runCommand("chmod 777 /data/data/org.sshtunnel.beta/proxy.sh");
-			runCommand("chmod 777 /data/data/org.sshtunnel.beta/ssh_g1");
-			runCommand("chmod 777 /data/data/org.sshtunnel.beta/ssh_n1");
+			runCommand("chmod 777 /data/data/org.sshtunnel.beta/ssh");
 		}
 
 	}

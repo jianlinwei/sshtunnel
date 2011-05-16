@@ -299,16 +299,9 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		String cmd = "";
 
 		try {
-			if (isARMv6())
-				cmd = "/data/data/org.sshtunnel.beta/ssh_g1 -N -T -y -L "
-						+ localPort + ":" + "127.0.0.1" + ":" + remotePort
-						+ " -L " + "5353:8.8.8.8:53 " + user + "@" + hostIP
-						+ "/" + port;
-			else
-				cmd = "/data/data/org.sshtunnel.beta/ssh_n1 -N -T -y -L "
-						+ localPort + ":" + "127.0.0.1" + ":" + remotePort
-						+ " -L " + "5353:8.8.8.8:53 " + user + "@" + hostIP
-						+ "/" + port;
+			cmd = "/data/data/org.sshtunnel.beta/ssh -N -T -y -L " + localPort
+					+ ":" + "127.0.0.1" + ":" + remotePort + " -L "
+					+ "5353:8.8.8.8:53 " + user + "@" + hostIP + "/" + port;
 
 			Log.e(TAG, cmd);
 
@@ -336,7 +329,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 		StringBuffer cmd = new StringBuffer();
 
-		runRootCommand("/data/data/org.sshtunnel.beta/proxy.sh start " + localPort);
+		runRootCommand("/data/data/org.sshtunnel.beta/proxy.sh start "
+				+ localPort);
 
 		if (hasRedirectSupport) {
 			if (isARMv6()) {
@@ -533,7 +527,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		Editor ed = settings.edit();
 		ed.putBoolean("isRunning", false);
 		ed.commit();
-		
+
 		notificationManager.cancel(0);
 
 		super.onDestroy();
