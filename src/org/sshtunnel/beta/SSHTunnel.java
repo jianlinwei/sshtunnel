@@ -592,12 +592,8 @@ public class SSHTunnel extends PreferenceActivity implements
 				try {
 					// recovery();
 					String cmd = "";
-					if (SSHTunnelService.isARMv6())
-						cmd = "/data/data/org.sshtunnel.beta/ssh_g1 -y " + user
-								+ "@" + host + "/" + port;
-					else
-						cmd = "/data/data/org.sshtunnel.beta/ssh_n1 -y " + user
-								+ "@" + host + "/" + port;
+					cmd = "/data/data/org.sshtunnel.beta/ssh -y " + user + "@"
+							+ host + "/" + port;
 
 					String cmd1 = cmd
 							+ " wget http://sshtunnel.googlecode.com/files/setup.sh";
@@ -663,13 +659,7 @@ public class SSHTunnel extends PreferenceActivity implements
 			// Nothing
 		}
 
-		if (SSHTunnelService.isARMv6()) {
-			runRootCommand(SSHTunnelService.BASE
-					+ "iptables_g1 -t nat -F OUTPUT");
-		} else {
-			runRootCommand(SSHTunnelService.BASE
-					+ "iptables_n1 -t nat -F OUTPUT");
-		}
+		runRootCommand(SSHTunnelService.BASE + "iptables -t nat -F OUTPUT");
 
 		runRootCommand(SSHTunnelService.BASE + "proxy.sh stop");
 	}
