@@ -127,7 +127,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	private ProxyedApp apps[];
 
 	// Flag indicating if this is an ARMv6 device (-1: unknown, 0: no, 1: yes)
-	public static int isARMv6 = -1;
 	private boolean hasRedirectSupport = true;
 
 	public final static String BASE = "/data/data/org.sshtunnel/";
@@ -198,40 +197,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		setForeground(false);
 	}
 
-	/**
-	 * Check if this is an ARMv6 device
-	 * 
-	 * @return true if this is ARMv6
-	 */
-	public static boolean isARMv6() {
-		if (isARMv6 == -1) {
-			BufferedReader r = null;
-			try {
-				isARMv6 = 0;
-				r = new BufferedReader(new FileReader("/proc/cpuinfo"));
-				for (String line = r.readLine(); line != null; line = r
-						.readLine()) {
-					if (line.startsWith("Processor") && line.contains("ARMv6")) {
-						isARMv6 = 1;
-						break;
-					} else if (line.startsWith("CPU architecture")
-							&& (line.contains("6TE") || line.contains("5TE"))) {
-						isARMv6 = 1;
-						break;
-					}
-				}
-			} catch (Exception ex) {
-			} finally {
-				if (r != null)
-					try {
-						r.close();
-					} catch (Exception ex) {
-					}
-			}
-		}
-		return (isARMv6 == 1);
-	}
-
 	public static boolean runRootCommand(String command) {
 		Process process = null;
 		DataOutputStream os = null;
@@ -269,12 +234,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		String command;
 		String line = null;
 
-		if (isARMv6()) {
-			command = BASE
-					+ "iptables_g1 -t nat -A OUTPUT -p udp --dport 54 -j REDIRECT --to 8154";
-		} else
-			command = BASE
-					+ "iptables_n1 -t nat -A OUTPUT -p udp --dport 54 -j REDIRECT --to 8154";
+		command = BASE
+				+ "iptables -t nat -A OUTPUT -p udp --dport 54 -j REDIRECT --to 8154";
 
 		try {
 			process = Runtime.getRuntime().exec("su");
@@ -512,7 +473,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 		// LocalPortForwarder lpf1 = null;
 		try {
-			
+
 			if (isSocks) {
 				dpf = connection.createDynamicPortForwarder(localPort);
 			} else {
@@ -529,15 +490,15 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		return true;
 	}
 
-	final static String CMD_IPTABLES_REDIRECT_ADD_G1 = BASE
-			+ "iptables_g1 -t nat -A SSHTUNNEL -p tcp --dport 80 -j REDIRECT --to 8123\n"
+	final static String CMD_IPTABLES_REDIRECT_ADD = BASE
+			+ "iptables -t nat -A SSHTUNNEL -p tcp --dport 80 -j REDIRECT --to 8123\n"
 			+ BASE
-			+ "iptables_g1 -t nat -A SSHTUNNEL -p tcp --dport 443 -j REDIRECT --to 8124\n";
+			+ "iptables -t nat -A SSHTUNNEL -p tcp --dport 443 -j REDIRECT --to 8124\n";
 
-	final static String CMD_IPTABLES_DNAT_ADD_G1 = BASE
-			+ "iptables_g1 -t nat -A SSHTUNNEL -p tcp --dport 80 -j DNAT --to-destination 127.0.0.1:8123\n"
+	final static String CMD_IPTABLES_DNAT_ADD = BASE
+			+ "iptables -t nat -A SSHTUNNEL -p tcp --dport 80 -j DNAT --to-destination 127.0.0.1:8123\n"
 			+ BASE
-			+ "iptables_g1 -t nat -A SSHTUNNEL -p tcp --dport 443 -j DNAT --to-destination 127.0.0.1:8124\n";
+			+ "iptables -t nat -A SSHTUNNEL -p tcp --dport 443 -j DNAT --to-destination 127.0.0.1:8124\n";
 
 	/**
 	 * Internal method to request actual PTY terminal once we've finished
@@ -554,31 +515,29 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 		StringBuffer cmd = new StringBuffer();
 
-		cmd.append(BASE + "iptables_g1 -t nat -N SSHTUNNEL\n");
-		cmd.append(BASE + "iptables_g1 -t nat -F SSHTUNNEL\n");
-		cmd.append(BASE + "iptables_g1 -t nat -N SSHTUNNELDNS\n");
-		cmd.append(BASE + "iptables_g1 -t nat -F SSHTUNNELDNS\n");
+		cmd.append(BASE + "iptables -t nat -N SSHTUNNEL\n");
+		cmd.append(BASE + "iptables -t nat -F SSHTUNNEL\n");
+		cmd.append(BASE + "iptables -t nat -N SSHTUNNELDNS\n");
+		cmd.append(BASE + "iptables -t nat -F SSHTUNNELDNS\n");
 
 		if (hasRedirectSupport)
 			cmd.append(BASE
-					+ "iptables_g1 "
+					+ "iptables "
 					+ "-t nat -A SSHTUNNELDNS -p udp --dport 53 -j REDIRECT --to "
 					+ dnsPort + "\n");
 		else
 			cmd.append(BASE
-					+ "iptables_g1 "
+					+ "iptables "
 					+ "-t nat -A SSHTUNNELDNS -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:"
 					+ dnsPort + "\n");
 
-		cmd.append(BASE
-				+ "iptables_g1 -t nat -A OUTPUT -p udp -j SSHTUNNELDNS\n");
+		cmd.append(BASE + "iptables -t nat -A OUTPUT -p udp -j SSHTUNNELDNS\n");
 
-		cmd.append(hasRedirectSupport ? CMD_IPTABLES_REDIRECT_ADD_G1
-				: CMD_IPTABLES_DNAT_ADD_G1);
+		cmd.append(hasRedirectSupport ? CMD_IPTABLES_REDIRECT_ADD
+				: CMD_IPTABLES_DNAT_ADD);
 
 		if (isAutoSetProxy) {
-			cmd.append(BASE
-					+ "iptables_g1 -t nat -A OUTPUT -p tcp -j SSHTUNNEL\n");
+			cmd.append(BASE + "iptables -t nat -A OUTPUT -p tcp -j SSHTUNNEL\n");
 		} else {
 
 			// for proxy specified apps
@@ -587,7 +546,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 			for (int i = 0; i < apps.length; i++) {
 				if (apps[i].isProxyed()) {
-					cmd.append(BASE + "iptables_g1 "
+					cmd.append(BASE + "iptables "
 							+ "-t nat -m owner --uid-owner " + apps[i].getUid()
 							+ " -A OUTPUT -p tcp -j SSHTUNNEL\n");
 				}
@@ -595,9 +554,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		}
 
 		String rules = cmd.toString();
-
-		if (!isARMv6())
-			rules = rules.replace("iptables_g1", "iptables_n1");
 
 		if (hostAddress != null)
 			rules = rules.replace("--dport 443",
@@ -733,17 +689,15 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 		StringBuffer cmd = new StringBuffer();
 
-		cmd.append(BASE + "iptables_g1 -t nat -F SSHTUNNEL\n");
-		cmd.append(BASE + "iptables_g1 -t nat -F SSHTUNNELDNS\n");
-		cmd.append(BASE + "iptables_g1 -t nat -X SSHTUNNEL\n");
-		cmd.append(BASE + "iptables_g1 -t nat -X SSHTUNNELDNS\n");
-		
-		cmd.append(BASE
-				+ "iptables_g1 -t nat -D OUTPUT -p udp -j SSHTUNNELDNS\n");
-		
+		cmd.append(BASE + "iptables -t nat -F SSHTUNNEL\n");
+		cmd.append(BASE + "iptables -t nat -F SSHTUNNELDNS\n");
+		cmd.append(BASE + "iptables -t nat -X SSHTUNNEL\n");
+		cmd.append(BASE + "iptables -t nat -X SSHTUNNELDNS\n");
+
+		cmd.append(BASE + "iptables -t nat -D OUTPUT -p udp -j SSHTUNNELDNS\n");
+
 		if (isAutoSetProxy) {
-			cmd.append(BASE
-					+ "iptables_g1 -t nat -D OUTPUT -p tcp -j SSHTUNNEL\n");
+			cmd.append(BASE + "iptables -t nat -D OUTPUT -p tcp -j SSHTUNNEL\n");
 		} else {
 
 			// for proxy specified apps
@@ -752,7 +706,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 			for (int i = 0; i < apps.length; i++) {
 				if (apps[i].isProxyed()) {
-					cmd.append(BASE + "iptables_g1 "
+					cmd.append(BASE + "iptables "
 							+ "-t nat -m owner --uid-owner " + apps[i].getUid()
 							+ " -D OUTPUT -p tcp -j SSHTUNNEL\n");
 				}
@@ -760,9 +714,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		}
 
 		String rules = cmd.toString();
-
-		if (!isARMv6())
-			rules = rules.replace("iptables_g1", "iptables_n1");
 
 		runRootCommand(rules);
 

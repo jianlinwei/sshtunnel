@@ -915,13 +915,7 @@ public class SSHTunnel extends PreferenceActivity implements
 			// Nothing
 		}
 
-		if (SSHTunnelService.isARMv6()) {
-			runRootCommand(SSHTunnelService.BASE
-					+ "iptables_g1 -t nat -F OUTPUT");
-		} else {
-			runRootCommand(SSHTunnelService.BASE
-					+ "iptables_n1 -t nat -F OUTPUT");
-		}
+		runRootCommand(SSHTunnelService.BASE + "iptables -t nat -F OUTPUT");
 
 		runRootCommand(SSHTunnelService.BASE + "proxy_http.sh stop");
 	}
