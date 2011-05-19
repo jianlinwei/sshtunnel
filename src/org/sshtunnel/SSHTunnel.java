@@ -317,8 +317,7 @@ public class SSHTunnel extends PreferenceActivity implements
 
 		if (!isWorked(SERVICE_NAME)) {
 			CopyAssets();
-			runCommand("chmod 777 /data/data/org.sshtunnel/iptables_g1");
-			runCommand("chmod 777 /data/data/org.sshtunnel/iptables_n1");
+			runCommand("chmod 777 /data/data/org.sshtunnel/iptables");
 			runCommand("chmod 777 /data/data/org.sshtunnel/redsocks");
 			runCommand("chmod 777 /data/data/org.sshtunnel/proxy_http.sh");
 			runCommand("chmod 777 /data/data/org.sshtunnel/proxy_socks.sh");
