@@ -124,7 +124,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 	private volatile boolean connected = false;
 
-	private ProxyedApp apps[];
+	private ProxyedApp apps[] = null;
 
 	// Flag indicating if this is an ARMv6 device (-1: unknown, 0: no, 1: yes)
 	public static int isARMv6 = -1;
