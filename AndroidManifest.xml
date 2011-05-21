@@ -15,6 +15,7 @@
 			</intent-filter>
 		</activity>
 		<activity android:name=".AppManager" android:label="@string/app_name" />
+		<activity android:name=".FileChooser" android:label="@string/app_name" />
 
 		<service android:enabled="true" android:name=".SSHTunnelService" />
 

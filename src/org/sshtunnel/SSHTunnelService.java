@@ -282,7 +282,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		}
 
 		try {
-			File f = new File("/sdcard/sshtunnel/key");
+			String path = settings.getString("key_path", "/sdcard/sshtunnel/key");
+			File f = new File(path);
 			if (f.exists())
 				if (connection.authenticateWithPublicKey(user, f, password)) {
 					return;

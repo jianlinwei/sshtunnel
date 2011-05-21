@@ -84,4 +84,12 @@
 	<string name="profile_base">账号</string>
 	<string name="profile_del">删除当前账号</string>
 
+	<!-- file chooser -->
+	<string name="file_chooser">选择你的密钥文件</string>
+	<string name="key_manager">密钥管理</string>
+	<string name="current_dir">当前目录</string>
+	<string name="parent_dir">上级目录</string>
+	<string name="folder">目录</string>
+	<string name="file_size">文件大小</string>
+
 </resources>
