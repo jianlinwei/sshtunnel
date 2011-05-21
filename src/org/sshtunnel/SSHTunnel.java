@@ -832,6 +832,8 @@ public class SSHTunnel extends PreferenceActivity implements
 				.setIcon(android.R.drawable.ic_menu_delete);
 		menu.add(Menu.NONE, Menu.FIRST + 3, 3, getString(R.string.about))
 				.setIcon(android.R.drawable.ic_menu_info_details);
+		menu.add(Menu.NONE, Menu.FIRST + 4, 4, getString(R.string.key_manager))
+		.setIcon(android.R.drawable.ic_menu_edit);
 
 		// return true才会起作用
 		return true;
@@ -858,6 +860,10 @@ public class SSHTunnel extends PreferenceActivity implements
 			}
 			showAToast(getString(R.string.about) + " (" + versionName + ")"
 					+ getString(R.string.copy_rights));
+			break;
+		case Menu.FIRST + 4:
+			Intent intent = new Intent(this, FileChooser.class);
+			startActivity(intent);
 			break;
 		}
 
