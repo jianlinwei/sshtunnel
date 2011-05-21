@@ -16,7 +16,7 @@
 	<string name="user">用户名</string>
 	<string name="host">主机地址</string>
 	<string name="port">主机端口</string>
-	<string name="password">密码</string>
+	<string name="password">密码 / 密钥</string>
 	<string name="local_port">本地端口</string>
 	<string name="remote_port">远程端口</string>
 	<string name="auto_connect">自动连接</string>
