@@ -124,7 +124,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 	private volatile boolean connected = false;
 
-	private ProxyedApp apps[];
+	private ProxyedApp apps[] = null;
 
 	// Flag indicating if this is an ARMv6 device (-1: unknown, 0: no, 1: yes)
 	private boolean hasRedirectSupport = true;
@@ -543,7 +543,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 			// for proxy specified apps
 			if (apps == null || apps.length <= 0)
-				apps = AppManager.getApps(this);
+				apps = AppManager.getProxyedApps(this);
 
 			for (int i = 0; i < apps.length; i++) {
 				if (apps[i].isProxyed()) {
@@ -703,7 +703,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 			// for proxy specified apps
 			if (apps == null || apps.length <= 0)
-				apps = AppManager.getApps(this);
+				apps = AppManager.getProxyedApps(this);
 
 			for (int i = 0; i < apps.length; i++) {
 				if (apps[i].isProxyed()) {

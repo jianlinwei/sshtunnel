@@ -17,7 +17,6 @@ import android.content.SharedPreferences.Editor;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.graphics.PixelFormat;
-import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -228,6 +227,58 @@ public class AppManager extends Activity implements OnCheckedChangeListener,
 		// Log.d(getClass().getName(),"Exiting Preferences");
 	}
 
+	public static ProxyedApp[] getProxyedApps(Context context) {
+
+		SharedPreferences prefs = PreferenceManager
+				.getDefaultSharedPreferences(context);
+
+		String tordAppString = prefs.getString(PREFS_KEY_PROXYED, "");
+		String[] tordApps;
+
+		StringTokenizer st = new StringTokenizer(tordAppString, "|");
+		tordApps = new String[st.countTokens()];
+		int tordIdx = 0;
+		while (st.hasMoreTokens()) {
+			tordApps[tordIdx++] = st.nextToken();
+		}
+
+		Arrays.sort(tordApps);
+
+		// else load the apps up
+		PackageManager pMgr = context.getPackageManager();
+
+		List<ApplicationInfo> lAppInfo = pMgr.getInstalledApplications(0);
+
+		Iterator<ApplicationInfo> itAppInfo = lAppInfo.iterator();
+
+		apps = new ProxyedApp[lAppInfo.size()];
+
+		ApplicationInfo aInfo = null;
+
+		int appIdx = 0;
+
+		while (itAppInfo.hasNext()) {
+			aInfo = itAppInfo.next();
+
+			apps[appIdx] = new ProxyedApp();
+
+			apps[appIdx].setUid(aInfo.uid);
+			
+			apps[appIdx].setUsername(pMgr.getNameForUid(apps[appIdx].getUid()));
+
+			// check if this application is allowed
+			if (Arrays.binarySearch(tordApps, apps[appIdx].getUsername()) >= 0) {
+				apps[appIdx].setProxyed(true);
+			} else {
+				apps[appIdx].setProxyed(false);
+			}
+
+			appIdx++;
+		}
+
+		return apps;
+	}
+	
 	public static ProxyedApp[] getApps(Context context) {
 
 		SharedPreferences prefs = PreferenceManager
