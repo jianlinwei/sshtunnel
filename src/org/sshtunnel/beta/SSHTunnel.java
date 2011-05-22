@@ -25,6 +25,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
+import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.AssetManager;
 import android.os.Bundle;
 import android.preference.CheckBoxPreference;
@@ -128,6 +129,8 @@ public class SSHTunnel extends PreferenceActivity implements
 			try {
 				// if (!(new File("/data/data/org.sshtunnel.beta/" +
 				// files[i])).exists()) {
+				if (files[i].contains("openssh"))
+					continue;
 				in = assetManager.open(files[i]);
 				out = new FileOutputStream("/data/data/org.sshtunnel.beta/"
 						+ files[i]);
@@ -139,7 +142,7 @@ public class SSHTunnel extends PreferenceActivity implements
 				out = null;
 				// }
 			} catch (Exception e) {
-				Log.e(TAG, e.getMessage());
+				Log.e(TAG, "Exception when copying asset", e);
 			}
 		}
 	}
@@ -149,6 +152,28 @@ public class SSHTunnel extends PreferenceActivity implements
 		int read;
 		while ((read = in.read(buffer)) != -1) {
 			out.write(buffer, 0, read);
+		}
+	}
+
+	private void CopyOpenSSH() {
+		AssetManager assetManager = getAssets();
+		try {
+			File f = new File("/data/data/org.sshtunnel.beta/openssh");
+			if (!f.exists())
+				f.createNewFile();
+			InputStream in = null;
+			OutputStream out = null;
+			out = new FileOutputStream(f);
+			for (int i = 1; i <= 3; i++) {
+				in = assetManager.open("openssh" + i);
+				copyFile(in, out);
+				in.close();
+				out.flush();
+			}
+			out.close();
+			out = null;
+		} catch (Exception e) {
+			Log.e(TAG, "Exception when copying asset", e);
 		}
 	}
 
@@ -230,20 +255,37 @@ public class SSHTunnel extends PreferenceActivity implements
 			isAutoSetProxyCheck.setEnabled(false);
 		}
 
-		if (!isWorked(SERVICE_NAME) || !isCopied("iptables")
-				|| !isCopied("redsocks") || !isCopied("proxy_http.sh")
-				|| !isCopied("proxy_socks.sh") || !isCopied("ssh")
-				|| !isCopied("openssh")) {
+		new Thread() {
+			public void run() {
 
-			CopyAssets();
+				SharedPreferences settings = PreferenceManager
+						.getDefaultSharedPreferences(SSHTunnel.this);
 
-			runCommand("chmod 777 /data/data/org.sshtunnel.beta/iptables");
-			runCommand("chmod 777 /data/data/org.sshtunnel.beta/redsocks");
-			runCommand("chmod 777 /data/data/org.sshtunnel.beta/proxy_http.sh");
-			runCommand("chmod 777 /data/data/org.sshtunnel.beta/proxy_socks.sh");
-			runCommand("chmod 777 /data/data/org.sshtunnel.beta/ssh");
-			runCommand("chmod 777 /data/data/org.sshtunnel.beta/openssh");
-		}
+				Editor edit = settings.edit();
+
+				String versionName = "";
+				try {
+					versionName = getPackageManager().getPackageInfo(
+							getPackageName(), 0).versionName;
+				} catch (NameNotFoundException e) {
+					versionName = "NONE";
+				}
+
+				if (!settings.getBoolean(versionName, false)) {
+					CopyAssets();
+					CopyOpenSSH();
+					runCommand("chmod 777 /data/data/org.sshtunnel.beta/iptables");
+					runCommand("chmod 777 /data/data/org.sshtunnel.beta/redsocks");
+					runCommand("chmod 777 /data/data/org.sshtunnel.beta/proxy_http.sh");
+					runCommand("chmod 777 /data/data/org.sshtunnel.beta/proxy_socks.sh");
+					runCommand("chmod 777 /data/data/org.sshtunnel.beta/ssh");
+					runCommand("chmod 777 /data/data/org.sshtunnel.beta/openssh");
+					edit = settings.edit();
+					edit.putBoolean(versionName, true);
+					edit.commit();
+				}
+			}
+		}.start();
 
 	}
 
@@ -590,7 +632,7 @@ public class SSHTunnel extends PreferenceActivity implements
 		case Menu.FIRST + 1:
 			recovery();
 			break;
-		
+
 		case Menu.FIRST + 2:
 			showAToast(getString(R.string.copy_rights));
 			break;

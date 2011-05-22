@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
         <string name="service_running">正通过安全隧道连接到互联网</string>
-        <string name="app_name">安全隧道</string>
+        <string name="app_name">安全隧道(BETA)</string>
         <string name="forward_success">安全隧道连接成功</string>
         <string name="forward_fail">安全隧道连接失败</string>
         <string name="service_stopped">安全隧道服务已停止</string>
