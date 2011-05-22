@@ -574,11 +574,9 @@ public class SSHTunnel extends PreferenceActivity implements
 		 * 2、Id，这个很重要，Android根据这个Id来确定不同的菜单 3、顺序，那个菜单现在在前面由这个参数的大小决定
 		 * 4、文本，菜单的显示文本
 		 */
-		menu.add(Menu.NONE, Menu.FIRST + 1, 2, getString(R.string.recovery))
+		menu.add(Menu.NONE, Menu.FIRST + 1, 1, getString(R.string.recovery))
 				.setIcon(android.R.drawable.ic_menu_delete);
-		menu.add(Menu.NONE, Menu.FIRST + 2, 1, getString(R.string.setup))
-				.setIcon(android.R.drawable.ic_menu_add);
-		menu.add(Menu.NONE, Menu.FIRST + 3, 3, getString(R.string.about))
+		menu.add(Menu.NONE, Menu.FIRST + 2, 2, getString(R.string.about))
 				.setIcon(android.R.drawable.ic_menu_info_details);
 		// return true才会起作用
 		return true;
@@ -592,81 +590,8 @@ public class SSHTunnel extends PreferenceActivity implements
 		case Menu.FIRST + 1:
 			recovery();
 			break;
+		
 		case Menu.FIRST + 2:
-			boolean check = true;
-			try {
-				SharedPreferences settings = PreferenceManager
-						.getDefaultSharedPreferences(this);
-
-				host = settings.getString("host", "");
-				if (isTextEmpty(host, getString(R.string.host_empty)))
-					check = false;
-
-				user = settings.getString("user", "");
-				if (isTextEmpty(user, getString(R.string.user_empty)))
-					check = false;
-
-				password = settings.getString("password", "");
-
-				String portText = settings.getString("port", "");
-				if (isTextEmpty(portText, getString(R.string.port_empty)))
-					check = false;
-				port = Integer.valueOf(portText);
-
-			} catch (Exception e) {
-				check = false;
-			}
-			if (check) {
-				Process p = null;
-				DataOutputStream os = null;
-				try {
-					// recovery();
-					String cmd = "";
-					cmd = "/data/data/org.sshtunnel.beta/ssh -y " + user + "@"
-							+ host + "/" + port;
-
-					String cmd1 = cmd
-							+ " wget http://sshtunnel.googlecode.com/files/setup.sh";
-
-					p = Runtime.getRuntime().exec(cmd1);
-					os = new DataOutputStream(p.getOutputStream());
-
-					Log.e(TAG, cmd1);
-
-					os.writeBytes(password + "\n");
-					os.flush();
-
-					p.waitFor();
-
-					String cmd2 = cmd + " bash ./setup.sh";
-					p = Runtime.getRuntime().exec(cmd2);
-
-					os = new DataOutputStream(p.getOutputStream());
-
-					Log.e(TAG, cmd2);
-
-					os.writeBytes(password + "\n");
-					os.flush();
-
-					p.waitFor();
-
-					showAToast(getString(R.string.setup_alert));
-
-				} catch (Exception e) {
-					Log.e(TAG, e.getMessage());
-				} finally {
-					if (p != null)
-						p.destroy();
-					if (os != null)
-						try {
-							os.close();
-						} catch (IOException e) {
-							// Nothing
-						}
-				}
-			}
-			break;
-		case Menu.FIRST + 3:
 			showAToast(getString(R.string.copy_rights));
 			break;
 		}
