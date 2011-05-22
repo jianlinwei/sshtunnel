@@ -351,8 +351,13 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 		FileInputStream mTermIn = new FileInputStream(mTermFd);
 		FileOutputStream mTermOut = new FileOutputStream(mTermFd);
-
+		
 		try {
+			
+			int all = mTermIn.available();
+			byte[] tmp = new byte[all];
+			mTermIn.read(tmp);
+			
 			if (isSocks)
 				cmd = "/data/data/org.sshtunnel.beta/openssh -NTY -D "
 						+ localPort + " -p " + port + " -L "
@@ -367,10 +372,9 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 			mTermOut.write((cmd + "\n").getBytes());
 			mTermOut.flush();
-
-			int count = 0;
+			
 			byte[] data = new byte[256];
-			while ((mTermIn.read(data)) != -1) {
+			if ((mTermIn.read(data)) != -1) {
 				StringBuffer sb = new StringBuffer();
 				for (int i = 0; i < data.length; i++) {
 					char printableB = (char) data[i];
@@ -384,14 +388,10 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 					mTermOut.write((password + "\n").getBytes());
 					mTermOut.write("exit\n".getBytes());
 					mTermOut.flush();
-					break;
 				} else {
 					Log.e(TAG, "Connect fail: " + line);
-					if (count > 30) {
-						return false;
-					}
+					return false;
 				}
-				count++;
 			}
 
 		} catch (Exception e) {
