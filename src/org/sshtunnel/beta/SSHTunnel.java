@@ -655,6 +655,15 @@ public class SSHTunnel extends PreferenceActivity implements
 		} catch (Exception ignore) {
 			// Nothing
 		}
+		
+		CopyAssets();
+		CopyOpenSSH();
+		runCommand("chmod 777 /data/data/org.sshtunnel.beta/iptables");
+		runCommand("chmod 777 /data/data/org.sshtunnel.beta/redsocks");
+		runCommand("chmod 777 /data/data/org.sshtunnel.beta/proxy_http.sh");
+		runCommand("chmod 777 /data/data/org.sshtunnel.beta/proxy_socks.sh");
+		runCommand("chmod 777 /data/data/org.sshtunnel.beta/ssh");
+		runCommand("chmod 777 /data/data/org.sshtunnel.beta/openssh");
 
 		runRootCommand(SSHTunnelService.BASE + "iptables -t nat -F OUTPUT");
 

@@ -355,7 +355,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		try {
 			if (isSocks)
 				cmd = "/data/data/org.sshtunnel.beta/openssh -NTY -D "
-						+ localPort + " -p " + port + " " + user + "@" + hostIP;
+						+ localPort + " -p " + port + " -L "
+						+ "127.0.0.1:5353:8.8.8.8:53 " + user + "@" + hostIP;
 			else
 				cmd = "/data/data/org.sshtunnel.beta/ssh -NTy -L 127.0.0.1:"
 						+ localPort + ":" + "127.0.0.1" + ":" + remotePort
@@ -372,11 +373,11 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			while ((mTermIn.read(data)) != -1) {
 				StringBuffer sb = new StringBuffer();
 				for (int i = 0; i < data.length; i++) {
-                    char printableB = (char) data[i];
-                    if (data[i] < 32 || data[i] > 126) {
-                        printableB = ' ';
-                    }
-                    sb.append(printableB);
+					char printableB = (char) data[i];
+					if (data[i] < 32 || data[i] > 126) {
+						printableB = ' ';
+					}
+					sb.append(printableB);
 				}
 				String line = sb.toString();
 				if (line.toLowerCase().contains("password")) {
