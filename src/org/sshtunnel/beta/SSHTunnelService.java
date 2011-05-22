@@ -351,15 +351,10 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 		FileInputStream mTermIn = new FileInputStream(mTermFd);
 		FileOutputStream mTermOut = new FileOutputStream(mTermFd);
-		
+
 		try {
-			
-			int all = mTermIn.available();
-			byte[] tmp = new byte[all];
-			mTermIn.read(tmp);
-			
 			if (isSocks)
-				cmd = "/data/data/org.sshtunnel.beta/openssh -NTY -D "
+				cmd = "/data/data/org.sshtunnel.beta/openssh -NT -D "
 						+ localPort + " -p " + port + " -L "
 						+ "127.0.0.1:5353:8.8.8.8:53 " + user + "@" + hostIP;
 			else
@@ -372,9 +367,10 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 			mTermOut.write((cmd + "\n").getBytes());
 			mTermOut.flush();
-			
+
+			int count = 0;
 			byte[] data = new byte[256];
-			if ((mTermIn.read(data)) != -1) {
+			while ((mTermIn.read(data)) != -1) {
 				StringBuffer sb = new StringBuffer();
 				for (int i = 0; i < data.length; i++) {
 					char printableB = (char) data[i];
@@ -384,14 +380,24 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 					sb.append(printableB);
 				}
 				String line = sb.toString();
+				if (line.toLowerCase().contains("yes")) {
+					mTermOut.write(("yes\n").getBytes());
+					mTermOut.flush();
+					continue;
+				}
 				if (line.toLowerCase().contains("password")) {
 					mTermOut.write((password + "\n").getBytes());
 					mTermOut.write("exit\n".getBytes());
 					mTermOut.flush();
+					Log.d(TAG, "Flush count: " + count);
+					break;
 				} else {
 					Log.e(TAG, "Connect fail: " + line);
-					return false;
+					if (count > 10) {
+						return false;
+					}
 				}
+				count++;
 			}
 
 		} catch (Exception e) {

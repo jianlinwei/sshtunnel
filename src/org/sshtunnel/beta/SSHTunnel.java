@@ -21,6 +21,7 @@ import android.app.ActivityManager.RunningServiceInfo;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.DialogInterface.OnCancelListener;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
@@ -539,7 +540,22 @@ public class SSHTunnel extends PreferenceActivity implements
 			if (settings.getBoolean("isConnecting", false)) {
 				Log.d(TAG, "Connecting start");
 				pd = ProgressDialog.show(this, "",
-						getString(R.string.connecting), true, false);
+						getString(R.string.connecting), true, true);
+				pd.setOnCancelListener(new OnCancelListener() {
+					@Override
+					public void onCancel(DialogInterface arg0) {
+						new Thread() {
+							public void run() {
+								try {
+									stopService(new Intent(SSHTunnel.this,
+											SSHTunnelService.class));
+								} catch (Exception e) {
+									// Nothing
+								}
+							}
+						}.start();
+					}
+				});
 			} else {
 				Log.d(TAG, "Connecting finish");
 				if (pd != null) {
@@ -655,7 +671,7 @@ public class SSHTunnel extends PreferenceActivity implements
 		} catch (Exception ignore) {
 			// Nothing
 		}
-		
+
 		CopyAssets();
 		CopyOpenSSH();
 		runCommand("chmod 777 /data/data/org.sshtunnel.beta/iptables");
