@@ -2,7 +2,7 @@
 <resources>
 
         <!-- app string -->
-        <string name="app_name">SSHTunnel</string>
+        <string name="app_name">SSHTunnel(BETA)</string>
         <string name="ok_iknow">OK, I know</string>
         <string name="feedback">Feedback @ofmax</string>
 

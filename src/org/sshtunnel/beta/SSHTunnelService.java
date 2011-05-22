@@ -3,12 +3,16 @@ package org.sshtunnel.beta;
 import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.FileDescriptor;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 
 import org.sshtunnel.beta.R;
@@ -34,6 +38,108 @@ import android.util.Log;
 
 public class SSHTunnelService extends Service implements ConnectionMonitor {
 
+	/**
+	 * A multi-thread-safe produce-consumer byte array. Only allows one producer
+	 * and one consumer.
+	 */
+
+	class ByteQueue {
+		public ByteQueue(int size) {
+			mBuffer = new byte[size];
+		}
+
+		public int getBytesAvailable() {
+			synchronized (this) {
+				return mStoredBytes;
+			}
+		}
+
+		public int read(byte[] buffer, int offset, int length)
+				throws InterruptedException {
+			if (length + offset > buffer.length) {
+				throw new IllegalArgumentException(
+						"length + offset > buffer.length");
+			}
+			if (length < 0) {
+				throw new IllegalArgumentException("length < 0");
+
+			}
+			if (length == 0) {
+				return 0;
+			}
+			synchronized (this) {
+				while (mStoredBytes == 0) {
+					wait();
+				}
+				int totalRead = 0;
+				int bufferLength = mBuffer.length;
+				boolean wasFull = bufferLength == mStoredBytes;
+				while (length > 0 && mStoredBytes > 0) {
+					int oneRun = Math.min(bufferLength - mHead, mStoredBytes);
+					int bytesToCopy = Math.min(length, oneRun);
+					System.arraycopy(mBuffer, mHead, buffer, offset,
+							bytesToCopy);
+					mHead += bytesToCopy;
+					if (mHead >= bufferLength) {
+						mHead = 0;
+					}
+					mStoredBytes -= bytesToCopy;
+					length -= bytesToCopy;
+					offset += bytesToCopy;
+					totalRead += bytesToCopy;
+				}
+				if (wasFull) {
+					notify();
+				}
+				return totalRead;
+			}
+		}
+
+		public void write(byte[] buffer, int offset, int length)
+				throws InterruptedException {
+			if (length + offset > buffer.length) {
+				throw new IllegalArgumentException(
+						"length + offset > buffer.length");
+			}
+			if (length < 0) {
+				throw new IllegalArgumentException("length < 0");
+
+			}
+			if (length == 0) {
+				return;
+			}
+			synchronized (this) {
+				int bufferLength = mBuffer.length;
+				boolean wasEmpty = mStoredBytes == 0;
+				while (length > 0) {
+					while (bufferLength == mStoredBytes) {
+						wait();
+					}
+					int tail = mHead + mStoredBytes;
+					int oneRun;
+					if (tail >= bufferLength) {
+						tail = tail - bufferLength;
+						oneRun = mHead - tail;
+					} else {
+						oneRun = bufferLength - tail;
+					}
+					int bytesToCopy = Math.min(oneRun, length);
+					System.arraycopy(buffer, offset, mBuffer, tail, bytesToCopy);
+					offset += bytesToCopy;
+					mStoredBytes += bytesToCopy;
+					length -= bytesToCopy;
+				}
+				if (wasEmpty) {
+					notify();
+				}
+			}
+		}
+
+		private byte[] mBuffer;
+		private int mHead;
+		private int mStoredBytes;
+	}
+
 	private NotificationManager notificationManager;
 	private Intent intent;
 	private PendingIntent pendIntent;
@@ -46,10 +152,9 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	private static final int MSG_CONNECT_SUCCESS = 2;
 	private static final int MSG_CONNECT_FAIL = 3;
 
-	private SharedPreferences settings = null;
+	private final static String DEFAULT_SHELL = "/system/bin/sh -";
 
-	private Process sshProcess = null;
-	private DataOutputStream sshOS = null;
+	private SharedPreferences settings = null;
 
 	// private Process proxyProcess = null;
 	// private DataOutputStream proxyOS = null;
@@ -65,10 +170,17 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	// private LocalPortForwarder lpf2 = null;
 	private DNSServer dnsServer = null;
 	private boolean isSocks = false;
+	private int processId = 0;
 
 	private ProxyedApp apps[];
 
 	private boolean connected = false;
+
+	/**
+	 * The pseudo-teletype (pty) file descriptor that we use to communicate with
+	 * another process, typically a shell.
+	 */
+	private FileDescriptor mTermFd;
 
 	public static final String BASE = "/data/data/org.sshtunnel.beta/";
 
@@ -209,6 +321,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	public static boolean runRootCommand(String command) {
 		Process process = null;
 		DataOutputStream os = null;
+		Log.d(TAG, command);
 		try {
 			process = Runtime.getRuntime().exec("su");
 			os = new DataOutputStream(process.getOutputStream());
@@ -217,7 +330,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			os.flush();
 			process.waitFor();
 		} catch (Exception e) {
-			Log.e(TAG, e.getMessage());
+			Log.e(TAG, "Exception in root command", e);
 			return false;
 		} finally {
 			try {
@@ -236,29 +349,49 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 		String cmd = "";
 
+		FileInputStream mTermIn = new FileInputStream(mTermFd);
+		FileOutputStream mTermOut = new FileOutputStream(mTermFd);
+
 		try {
 			if (isSocks)
-				cmd = "/data/data/org.sshtunnel.beta/openssh -N -T -y -D "
+				cmd = "/data/data/org.sshtunnel.beta/openssh -NTY -D "
 						+ localPort + " -p " + port + " " + user + "@" + hostIP;
 			else
-				cmd = "/data/data/org.sshtunnel.beta/ssh -N -T -y -L 127.0.0.1:"
-						+ localPort
-						+ ":"
-						+ "127.0.0.1"
-						+ ":"
-						+ remotePort
-						+ " -L "
-						+ "127.0.0.1:5353:8.8.8.8:53 "
-						+ user
-						+ "@"
+				cmd = "/data/data/org.sshtunnel.beta/ssh -NTy -L 127.0.0.1:"
+						+ localPort + ":" + "127.0.0.1" + ":" + remotePort
+						+ " -L " + "127.0.0.1:5353:8.8.8.8:53 " + user + "@"
 						+ hostIP + "/" + port;
 
 			Log.e(TAG, cmd);
 
-			sshProcess = Runtime.getRuntime().exec(cmd);
-			sshOS = new DataOutputStream(sshProcess.getOutputStream());
-			sshOS.writeBytes(password + "\n");
-			sshOS.flush();
+			mTermOut.write((cmd + "\n").getBytes());
+			mTermOut.flush();
+
+			int count = 0;
+			byte[] data = new byte[256];
+			while ((mTermIn.read(data)) != -1) {
+				StringBuffer sb = new StringBuffer();
+				for (int i = 0; i < data.length; i++) {
+                    char printableB = (char) data[i];
+                    if (data[i] < 32 || data[i] > 126) {
+                        printableB = ' ';
+                    }
+                    sb.append(printableB);
+				}
+				String line = sb.toString();
+				if (line.toLowerCase().contains("password")) {
+					mTermOut.write((password + "\n").getBytes());
+					mTermOut.write("exit\n".getBytes());
+					mTermOut.flush();
+					break;
+				} else {
+					Log.e(TAG, "Connect fail: " + line);
+					if (count > 30) {
+						return false;
+					}
+				}
+				count++;
+			}
 
 		} catch (Exception e) {
 			Log.e(TAG, "Connect Error!");
@@ -406,6 +539,74 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		return null;
 	}
 
+	private ArrayList<String> parse(String cmd) {
+		final int PLAIN = 0;
+		final int WHITESPACE = 1;
+		final int INQUOTE = 2;
+		int state = WHITESPACE;
+		ArrayList<String> result = new ArrayList<String>();
+		int cmdLen = cmd.length();
+		StringBuilder builder = new StringBuilder();
+		for (int i = 0; i < cmdLen; i++) {
+			char c = cmd.charAt(i);
+			if (state == PLAIN) {
+				if (Character.isWhitespace(c)) {
+					result.add(builder.toString());
+					builder.delete(0, builder.length());
+					state = WHITESPACE;
+				} else if (c == '"') {
+					state = INQUOTE;
+				} else {
+					builder.append(c);
+				}
+			} else if (state == WHITESPACE) {
+				if (Character.isWhitespace(c)) {
+					// do nothing
+				} else if (c == '"') {
+					state = INQUOTE;
+				} else {
+					state = PLAIN;
+					builder.append(c);
+				}
+			} else if (state == INQUOTE) {
+				if (c == '\\') {
+					if (i + 1 < cmdLen) {
+						i += 1;
+						builder.append(cmd.charAt(i));
+					}
+				} else if (c == '"') {
+					state = PLAIN;
+				} else {
+					builder.append(c);
+				}
+			}
+		}
+		if (builder.length() > 0) {
+			result.add(builder.toString());
+		}
+		return result;
+	}
+
+	private FileDescriptor createSubprocess(String shell, int[] processId) {
+
+		if (shell == null || shell.equals("")) {
+			shell = DEFAULT_SHELL;
+		}
+		ArrayList<String> args = parse(shell);
+		String arg0 = args.get(0);
+		String arg1 = null;
+		String arg2 = null;
+
+		if (args.size() >= 2) {
+			arg1 = args.get(1);
+		}
+		if (args.size() >= 3) {
+			arg2 = args.get(2);
+		}
+
+		return Exec.createSubprocess(arg0, arg1, arg2, processId);
+	}
+
 	@Override
 	public void onCreate() {
 		super.onCreate();
@@ -467,27 +668,17 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 		notificationManager.cancel(0);
 
+		if (mTermFd != null) {
+			Exec.close(mTermFd);
+			mTermFd = null;
+		}
+
 		super.onDestroy();
 	}
 
 	private void onDisconnect() {
 
 		connected = false;
-
-		try {
-			if (sshOS != null) {
-				sshOS.close();
-				sshOS = null;
-			}
-			if (sshProcess != null) {
-				sshProcess.destroy();
-				sshProcess = null;
-			}
-
-		} catch (Exception e) {
-
-			Log.e(TAG, "close connection error", e);
-		}
 
 		StringBuffer cmd = new StringBuffer();
 
@@ -516,9 +707,19 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			}
 		}
 
-		runRootCommand(cmd.toString());
+		String rules = cmd.toString();
 
-		runRootCommand("/data/data/org.sshtunnel.beta/proxy.sh stop");
+		if (hostIP != null)
+			rules = rules.replace("--dport 443",
+					"! -d " + hostIP + " --dport 443").replace("--dport 80",
+					"! -d " + hostIP + " --dport 80");
+
+		if (isSocks)
+			runRootCommand(rules.replace("8124", "8123"));
+		else
+			runRootCommand(rules);
+
+		runRootCommand("/data/data/org.sshtunnel.beta/proxy_http.sh stop");
 
 	}
 
@@ -568,6 +769,9 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		new Thread(new Runnable() {
 			public void run() {
 				handler.sendEmptyMessage(MSG_CONNECT_START);
+				int[] processIds = new int[1];
+				mTermFd = createSubprocess(null, processIds);
+				processId = processIds[0];
 				if (isOnline() && handleCommand()) {
 					// Connection and forward successful
 					notifyAlert(getString(R.string.forward_success),
@@ -654,12 +858,13 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	@Override
 	public void waitFor() {
 		try {
-			if (sshProcess != null) {
-				sshProcess.waitFor();
-			}
+			Exec.waitFor(processId);
 		} catch (Exception ignore) {
 			// Nothing
 		}
+		int[] processIds = new int[1];
+		mTermFd = createSubprocess(null, processIds);
+		processId = processIds[0];
 
 	}
 
