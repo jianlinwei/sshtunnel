@@ -64,6 +64,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	private boolean isAutoSetProxy = false;
 	// private LocalPortForwarder lpf2 = null;
 	private DNSServer dnsServer = null;
+	private boolean isSocks = false;
 
 	private ProxyedApp apps[];
 
@@ -236,10 +237,21 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		String cmd = "";
 
 		try {
-			cmd = "/data/data/org.sshtunnel.beta/ssh -N -T -y -L 127.0.0.1:"
-					+ localPort + ":" + "127.0.0.1" + ":" + remotePort + " -L "
-					+ "127.0.0.1:5353:8.8.8.8:53 " + user + "@" + hostIP + "/"
-					+ port;
+			if (isSocks)
+				cmd = "/data/data/org.sshtunnel.beta/openssh -N -T -y -D "
+						+ localPort + " -p " + port + " " + user + "@" + hostIP;
+			else
+				cmd = "/data/data/org.sshtunnel.beta/ssh -N -T -y -L 127.0.0.1:"
+						+ localPort
+						+ ":"
+						+ "127.0.0.1"
+						+ ":"
+						+ remotePort
+						+ " -L "
+						+ "127.0.0.1:5353:8.8.8.8:53 "
+						+ user
+						+ "@"
+						+ hostIP + "/" + port;
 
 			Log.e(TAG, cmd);
 
@@ -267,8 +279,10 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 		StringBuffer cmd = new StringBuffer();
 
-		runRootCommand("/data/data/org.sshtunnel.beta/proxy.sh start "
-				+ localPort);
+		if (isSocks)
+			runRootCommand(BASE + "proxy_socks.sh start " + localPort);
+		else
+			runRootCommand(BASE + "proxy_http.sh start " + localPort);
 
 		if (hasRedirectSupport) {
 			cmd.append(BASE
@@ -296,7 +310,17 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			}
 		}
 
-		runRootCommand(cmd.toString());
+		String rules = cmd.toString();
+
+		if (hostIP != null)
+			rules = rules.replace("--dport 443",
+					"! -d " + hostIP + " --dport 443").replace("--dport 80",
+					"! -d " + hostIP + " --dport 80");
+
+		if (isSocks)
+			runRootCommand(rules.replace("8124", "8123"));
+		else
+			runRootCommand(rules);
 
 		// Forward Successful
 		return;
@@ -539,6 +563,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		localPort = bundle.getInt("localPort");
 		remotePort = bundle.getInt("remotePort");
 		isAutoSetProxy = bundle.getBoolean("isAutoSetProxy");
+		isSocks = bundle.getBoolean("isSocks");
 
 		new Thread(new Runnable() {
 			public void run() {

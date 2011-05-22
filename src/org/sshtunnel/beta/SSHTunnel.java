@@ -56,6 +56,7 @@ public class SSHTunnel extends PreferenceActivity implements
 	public static boolean isAutoConnect = false;
 	public static boolean isAutoSetProxy = false;
 	public static boolean isRoot = false;
+	private boolean isSocks = false;
 
 	private CheckBoxPreference isAutoConnectCheck;
 	private CheckBoxPreference isAutoSetProxyCheck;
@@ -66,6 +67,7 @@ public class SSHTunnel extends PreferenceActivity implements
 	private EditTextPreference localPortText;
 	private EditTextPreference remotePortText;
 	private CheckBoxPreference isRunningCheck;
+	private CheckBoxPreference isSocksCheck;
 	private Preference proxyedApps;
 
 	public static boolean runRootCommand(String command) {
@@ -190,6 +192,7 @@ public class SSHTunnel extends PreferenceActivity implements
 		isRunningCheck = (CheckBoxPreference) findPreference("isRunning");
 		isAutoSetProxyCheck = (CheckBoxPreference) findPreference("isAutoSetProxy");
 		isAutoConnectCheck = (CheckBoxPreference) findPreference("isAutoConnect");
+		isSocksCheck = (CheckBoxPreference) findPreference("isSocks");
 
 		SharedPreferences settings = PreferenceManager
 				.getDefaultSharedPreferences(this);
@@ -223,22 +226,23 @@ public class SSHTunnel extends PreferenceActivity implements
 		}
 
 		if (!isRoot) {
-
 			isAutoSetProxyCheck.setChecked(false);
 			isAutoSetProxyCheck.setEnabled(false);
 		}
 
-		if (!isWorked(SERVICE_NAME) || !isCopied("iptables_g1")
-				|| !isCopied("iptables_n1") || !isCopied("redsocks")
-				|| !isCopied("proxy.sh") || !isCopied("ssh")) {
+		if (!isWorked(SERVICE_NAME) || !isCopied("iptables")
+				|| !isCopied("redsocks") || !isCopied("proxy_http.sh")
+				|| !isCopied("proxy_socks.sh") || !isCopied("ssh")
+				|| !isCopied("openssh")) {
 
 			CopyAssets();
 
-			runCommand("chmod 777 /data/data/org.sshtunnel.beta/iptables_g1");
-			runCommand("chmod 777 /data/data/org.sshtunnel.beta/iptables_n1");
+			runCommand("chmod 777 /data/data/org.sshtunnel.beta/iptables");
 			runCommand("chmod 777 /data/data/org.sshtunnel.beta/redsocks");
-			runCommand("chmod 777 /data/data/org.sshtunnel.beta/proxy.sh");
+			runCommand("chmod 777 /data/data/org.sshtunnel.beta/proxy_http.sh");
+			runCommand("chmod 777 /data/data/org.sshtunnel.beta/proxy_socks.sh");
 			runCommand("chmod 777 /data/data/org.sshtunnel.beta/ssh");
+			runCommand("chmod 777 /data/data/org.sshtunnel.beta/openssh");
 		}
 
 	}
@@ -294,14 +298,20 @@ public class SSHTunnel extends PreferenceActivity implements
 				return false;
 			}
 
-			String remotePortText = settings.getString("remotePort", "");
-			if (isTextEmpty(remotePortText,
-					getString(R.string.remote_port_empty)))
-				return false;
-			remotePort = Integer.valueOf(remotePortText);
-
 			isAutoConnect = settings.getBoolean("isAutoConnect", false);
 			isAutoSetProxy = settings.getBoolean("isAutoSetProxy", false);
+			isSocks = settings.getBoolean("isSocks", false);
+
+			if (!isSocks) {
+				String remotePortText = settings.getString("remotePort", "");
+				if (isTextEmpty(remotePortText,
+						getString(R.string.remote_port_empty)))
+					return false;
+				remotePort = Integer.valueOf(remotePortText);
+			} else {
+				remotePort = 0;
+			}
+
 		} catch (Exception e) {
 			return false;
 		}
@@ -317,6 +327,7 @@ public class SSHTunnel extends PreferenceActivity implements
 			bundle.putInt("localPort", localPort);
 			bundle.putInt("remotePort", remotePort);
 			bundle.putBoolean("isAutoSetProxy", isAutoSetProxy);
+			bundle.putBoolean("isSocks", isSocks);
 
 			it.putExtras(bundle);
 			startService(it);
@@ -352,6 +363,7 @@ public class SSHTunnel extends PreferenceActivity implements
 
 		isAutoSetProxyCheck.setEnabled(false);
 		isAutoConnectCheck.setEnabled(false);
+		isSocksCheck.setEnabled(false);
 	}
 
 	private void enableAll() {
@@ -360,12 +372,16 @@ public class SSHTunnel extends PreferenceActivity implements
 		userText.setEnabled(true);
 		passwordText.setEnabled(true);
 		localPortText.setEnabled(true);
-		remotePortText.setEnabled(true);
+		if (!isSocksCheck.isChecked()) {
+			remotePortText.setEnabled(true);
+		}
 		if (!isAutoSetProxyCheck.isChecked())
 			proxyedApps.setEnabled(true);
 
 		isAutoSetProxyCheck.setEnabled(true);
 		isAutoConnectCheck.setEnabled(true);
+		isSocksCheck.setEnabled(true);
+
 	}
 
 	@Override
@@ -409,6 +425,12 @@ public class SSHTunnel extends PreferenceActivity implements
 			proxyedApps.setEnabled(false);
 		else
 			proxyedApps.setEnabled(true);
+
+		if (settings.getBoolean("isSocks", false)) {
+			remotePortText.setEnabled(false);
+		} else {
+			remotePortText.setEnabled(true);
+		}
 
 		Editor edit = settings.edit();
 
@@ -499,6 +521,14 @@ public class SSHTunnel extends PreferenceActivity implements
 			} else {
 				enableAll();
 				isRunningCheck.setChecked(false);
+			}
+		}
+
+		if (key.equals("isSocks")) {
+			if (settings.getBoolean("isSocks", false)) {
+				remotePortText.setEnabled(false);
+			} else {
+				remotePortText.setEnabled(true);
 			}
 		}
 
@@ -661,7 +691,7 @@ public class SSHTunnel extends PreferenceActivity implements
 
 		runRootCommand(SSHTunnelService.BASE + "iptables -t nat -F OUTPUT");
 
-		runRootCommand(SSHTunnelService.BASE + "proxy.sh stop");
+		runRootCommand(SSHTunnelService.BASE + "proxy_http.sh stop");
 	}
 
 	@Override

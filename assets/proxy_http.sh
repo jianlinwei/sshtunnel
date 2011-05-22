@@ -1,16 +1,12 @@
 #!/system/bin/sh
 
-DIR=/data/data/org.sshtunnel.beta
+DIR=/data/data/org.sshtunnel
 
 PATH=$DIR:$PATH
 
 case $1 in
  start)
-  
-  #kill process first
-  kill -9 `cat $DIR/redsocks.pid`
-  rm $DIR/redsocks.pid
-  
+
 echo "
 base {
  log_debug = off;
@@ -35,7 +31,7 @@ redsocks {
  ip = 127.0.0.1;
  port = $2;
  type = http-connect;
-} 
+}
 " >>$DIR/redsocks.conf
 
   $DIR/redsocks -p $DIR/redsocks.pid -c $DIR/redsocks.conf
