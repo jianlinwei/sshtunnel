@@ -405,6 +405,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			Log.e(TAG, "Connect Error!");
 			return false;
 		}
+		
+		runRootCommand(BASE + "busybox pgrep openssh > " + BASE + "sshpid");
 
 		return true;
 	}
