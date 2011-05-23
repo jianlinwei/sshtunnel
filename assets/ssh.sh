@@ -2,6 +2,8 @@
 
 DIR=/data/data/org.sshtunnel.beta
 
+echo $$>$DIR/sshpid
+
 case $1 in
   dynamic)
 
@@ -14,7 +16,5 @@ $DIR/openssh -NT -p $2 -L 127.0.0.1:$3:$4:$5 -L 127.0.0.1:5353:8.8.8.8:53 $6@$7
   
   ;;
 esac
-
-echo $$>$DIR/sshpid
 
 exit
