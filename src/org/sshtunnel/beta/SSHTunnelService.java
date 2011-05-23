@@ -676,6 +676,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 		notificationManager.cancel(0);
 
+		Exec.hangupProcessGroup(processId);
+
 		if (mTermFd != null) {
 			Exec.close(mTermFd);
 			mTermFd = null;
@@ -880,8 +882,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		try {
 			FileInputStream fin = new FileInputStream(f);
 			BufferedReader br = new BufferedReader(new InputStreamReader(fin));
-			processId = Integer.valueOf(br.readLine());
-			Exec.waitFor(processId);
+			int sshProcessId = Integer.valueOf(br.readLine());
+			Exec.waitFor(sshProcessId);
 		} catch (Exception e) {
 			SimpleDateFormat df = new SimpleDateFormat("HH:mm:ss");
 
@@ -894,7 +896,9 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 					Notification.FLAG_AUTO_CANCEL);
 			stopSelf();
 		}
-		
+		Exec.hangupProcessGroup(processId);
+		if (mTermFd != null)
+			Exec.close(mTermFd);
 		int[] processIds = new int[1];
 		mTermFd = createSubprocess(null, processIds);
 		processId = processIds[0];
