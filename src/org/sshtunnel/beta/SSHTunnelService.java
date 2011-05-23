@@ -350,17 +350,17 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 	public boolean connect() {
 
-		String cmd = "";
+		String cmd = "echo $$ > " + BASE + "shell.pid\n";
 
 		FileInputStream mTermIn = new FileInputStream(mTermFd);
 		FileOutputStream mTermOut = new FileOutputStream(mTermFd);
 
 		try {
 			if (isSocks)
-				cmd = "/data/data/org.sshtunnel.beta/ssh.sh dynamic " + port
+				cmd += "/data/data/org.sshtunnel.beta/ssh.sh dynamic " + port
 						+ " " + localPort + " " + user + " " + hostIP;
 			else
-				cmd = "/data/data/org.sshtunnel.beta/ssh.sh local " + port
+				cmd += "/data/data/org.sshtunnel.beta/ssh.sh local " + port
 						+ " " + localPort + " " + "127.0.0.1" + " "
 						+ remotePort + " " + user + " " + hostIP;
 
@@ -406,7 +406,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			return false;
 		}
 		
-		runRootCommand(BASE + "busybox pgrep openssh > " + BASE + "sshpid");
+		runRootCommand(BASE + "busybox pgrep openssh > " + BASE + "ssh.pid");
 
 		return true;
 	}
@@ -876,7 +876,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	@Override
 	public void waitFor() {
 
-		File f = new File(BASE + "sshpid");
+		File f = new File(BASE + "ssh.pid");
 		if (!f.exists()) {
 			// Connection or forward unsuccessful
 			notifyAlert(getString(R.string.forward_fail),
@@ -888,10 +888,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		}
 
 		try {
-			FileInputStream fin = new FileInputStream(f);
-			BufferedReader br = new BufferedReader(new InputStreamReader(fin));
-			int sshProcessId = Integer.valueOf(br.readLine());
-			Exec.waitFor(sshProcessId);
+			Log.d(TAG, "ProcessId: " + processId);
+			Exec.waitFor(processId);
 		} catch (Exception e) {
 			SimpleDateFormat df = new SimpleDateFormat("HH:mm:ss");
 			connected = false;

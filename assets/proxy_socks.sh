@@ -40,5 +40,9 @@ stop)
   
   rm $DIR/redsocks.conf
   
+  rm $DIR/ssh.pid
+  
+  rm $DIR/shell.pid
+  
   ;;
 esac
