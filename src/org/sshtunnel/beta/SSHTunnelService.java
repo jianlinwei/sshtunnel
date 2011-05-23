@@ -406,7 +406,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			return false;
 		}
 
-		finishConnection();
 		return true;
 	}
 
@@ -784,6 +783,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 				processId = processIds[0];
 				if (isOnline() && handleCommand()) {
 					// Connection and forward successful
+					finishConnection();
+
 					notifyAlert(getString(R.string.forward_success),
 							getString(R.string.service_running));
 					connected = true;
@@ -844,11 +845,16 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		}
 
 		synchronized (this) {
-			onDisconnect();
-
-			connect();
-
-			connected = true;
+			if (!connect()) {
+				connected = false;
+				notifyAlert(
+						getString(R.string.auto_reconnected) + " "
+								+ df.format(new Date()),
+						getString(R.string.reconnect_fail) + " @"
+								+ df.format(new Date()),
+						Notification.FLAG_AUTO_CANCEL);
+				stopSelf();
+			}
 		}
 
 		return;
