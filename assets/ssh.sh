@@ -2,19 +2,17 @@
 
 DIR=/data/data/org.sshtunnel.beta
 
-echo $$>$DIR/sshpid
-
 case $1 in
   dynamic)
 
-$DIR/openssh -NT -p $2 -D $3 -L 127.0.0.1:5353:8.8.8.8:53 $4@$5
+$DIR/openssh -NT -p $2 -D $3 -L 127.0.0.1:5353:8.8.8.8:53 $4@$5 &
   
   ;;
   local)
 
-$DIR/openssh -NT -p $2 -L 127.0.0.1:$3:$4:$5 -L 127.0.0.1:5353:8.8.8.8:53 $6@$7
+$DIR/openssh -NT -p $2 -L 127.0.0.1:$3:$4:$5 -L 127.0.0.1:5353:8.8.8.8:53 $6@$7 &
   
   ;;
 esac
 
-exit
+$DIR/busybox pgrep openssh > $DIR/sshpid

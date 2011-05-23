@@ -892,7 +892,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			Exec.waitFor(sshProcessId);
 		} catch (Exception e) {
 			SimpleDateFormat df = new SimpleDateFormat("HH:mm:ss");
-
 			connected = false;
 			notifyAlert(
 					getString(R.string.auto_reconnected) + " "
