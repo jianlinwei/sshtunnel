@@ -3,10 +3,13 @@ package org.sshtunnel.beta;
 import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.File;
 import java.io.FileDescriptor;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
+import java.io.InputStreamReader;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.InetAddress;
@@ -862,11 +865,36 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 	@Override
 	public void waitFor() {
-		try {
-			Exec.waitFor(processId);
-		} catch (Exception ignore) {
-			// Nothing
+
+		File f = new File(BASE + "sshpid");
+		if (!f.exists()) {
+			// Connection or forward unsuccessful
+			notifyAlert(getString(R.string.forward_fail),
+					getString(R.string.service_failed),
+					Notification.FLAG_AUTO_CANCEL);
+			connected = false;
+			handler.sendEmptyMessage(MSG_CONNECT_FAIL);
+			stopSelf();
 		}
+
+		try {
+			FileInputStream fin = new FileInputStream(f);
+			BufferedReader br = new BufferedReader(new InputStreamReader(fin));
+			processId = Integer.valueOf(br.readLine());
+			Exec.waitFor(processId);
+		} catch (Exception e) {
+			SimpleDateFormat df = new SimpleDateFormat("HH:mm:ss");
+
+			connected = false;
+			notifyAlert(
+					getString(R.string.auto_reconnected) + " "
+							+ df.format(new Date()),
+					getString(R.string.reconnect_fail) + " @"
+							+ df.format(new Date()),
+					Notification.FLAG_AUTO_CANCEL);
+			stopSelf();
+		}
+		
 		int[] processIds = new int[1];
 		mTermFd = createSubprocess(null, processIds);
 		processId = processIds[0];
