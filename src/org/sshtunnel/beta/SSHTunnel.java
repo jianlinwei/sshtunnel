@@ -280,6 +280,7 @@ public class SSHTunnel extends PreferenceActivity implements
 					runCommand("chmod 777 /data/data/org.sshtunnel.beta/proxy_http.sh");
 					runCommand("chmod 777 /data/data/org.sshtunnel.beta/proxy_socks.sh");
 					runCommand("chmod 777 /data/data/org.sshtunnel.beta/ssh.sh");
+					runCommand("chmod 777 /data/data/org.sshtunnel.beta/busybox");
 					runCommand("chmod 777 /data/data/org.sshtunnel.beta/openssh");
 					edit = settings.edit();
 					edit.putBoolean(versionName, true);
@@ -679,6 +680,7 @@ public class SSHTunnel extends PreferenceActivity implements
 		runCommand("chmod 777 /data/data/org.sshtunnel.beta/proxy_http.sh");
 		runCommand("chmod 777 /data/data/org.sshtunnel.beta/proxy_socks.sh");
 		runCommand("chmod 777 /data/data/org.sshtunnel.beta/ssh.sh");
+		runCommand("chmod 777 /data/data/org.sshtunnel.beta/busybox");
 		runCommand("chmod 777 /data/data/org.sshtunnel.beta/openssh");
 
 		runRootCommand(SSHTunnelService.BASE + "iptables -t nat -F OUTPUT");

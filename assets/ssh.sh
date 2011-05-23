@@ -17,4 +17,6 @@ $DIR/openssh -NT -p $2 -L 127.0.0.1:$3:$4:$5 -L 127.0.0.1:5353:8.8.8.8:53 $6@$7
   ;;
 esac
 
+$DIR/busybox killall -9 openssh
+
 exit
