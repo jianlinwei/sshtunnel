@@ -354,14 +354,12 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 		try {
 			if (isSocks)
-				cmd = "/data/data/org.sshtunnel.beta/openssh -NT -D "
-						+ localPort + " -p " + port + " -L "
-						+ "127.0.0.1:5353:8.8.8.8:53 " + user + "@" + hostIP;
+				cmd = "/data/data/org.sshtunnel.beta/ssh.sh dynamic " + port
+						+ " " + localPort + " " + user + " " + hostIP;
 			else
-				cmd = "/data/data/org.sshtunnel.beta/ssh -NTy -L 127.0.0.1:"
-						+ localPort + ":" + "127.0.0.1" + ":" + remotePort
-						+ " -L " + "127.0.0.1:5353:8.8.8.8:53 " + user + "@"
-						+ hostIP + "/" + port;
+				cmd = "/data/data/org.sshtunnel.beta/ssh.sh local " + port
+						+ " " + localPort + " " + "127.0.0.1" + " "
+						+ remotePort + " " + user + " " + hostIP;
 
 			Log.e(TAG, cmd);
 
@@ -387,8 +385,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 				}
 				if (line.toLowerCase().contains("password")) {
 					mTermOut.write((password + "\n").getBytes());
-					mTermOut.write("exit\n".getBytes());
 					mTermOut.flush();
+					mTermFd.sync();
 					Log.d(TAG, "Flush count: " + count);
 					break;
 				} else {
