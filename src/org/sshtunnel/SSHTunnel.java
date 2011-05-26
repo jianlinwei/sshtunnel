@@ -191,7 +191,7 @@ public class SSHTunnel extends PreferenceActivity implements
 				out = null;
 				// }
 			} catch (Exception e) {
-				Log.e(TAG, e.getMessage());
+				Log.e(TAG, "Assets error", e);
 			}
 		}
 	}
