@@ -9,7 +9,9 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.InetAddress;
@@ -143,6 +145,86 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		private int mStoredBytes;
 	}
 
+	/**
+	 * Internal thread used to execute scripts (as root or not).
+	 */
+	private final class ConnectRunner extends Thread {
+
+		private FileInputStream mTermIn;
+		private FileOutputStream mTermOut;
+
+		@Override
+		public void run() {
+
+			String cmd = "echo $$ > " + BASE + "shell.pid\n";
+
+			mTermIn = new FileInputStream(mTermFd);
+			mTermOut = new FileOutputStream(mTermFd);
+
+			try {
+				if (isSocks)
+					cmd += "/data/data/org.sshtunnel.beta/ssh.sh dynamic "
+							+ port + " " + localPort + " " + user + " "
+							+ hostIP;
+				else
+					cmd += "/data/data/org.sshtunnel.beta/ssh.sh local " + port
+							+ " " + localPort + " " + "127.0.0.1" + " "
+							+ remotePort + " " + user + " " + hostIP;
+
+				Log.e(TAG, cmd);
+
+				mTermOut.write((cmd + "\n").getBytes());
+				mTermOut.flush();
+
+				byte[] data = new byte[256];
+				while ((mTermIn.read(data)) != -1) {
+					StringBuffer sb = new StringBuffer();
+					for (int i = 0; i < data.length; i++) {
+						char printableB = (char) data[i];
+						if (data[i] < 32 || data[i] > 126) {
+							printableB = ' ';
+						}
+						sb.append(printableB);
+					}
+					String line = sb.toString();
+					if (line.toLowerCase().contains("yes")) {
+						mTermOut.write(("yes\n").getBytes());
+						mTermOut.flush();
+						continue;
+					}
+					if (line.toLowerCase().contains("password")) {
+						mTermOut.write((password + "\n").getBytes());
+						mTermOut.flush();
+						mTermFd.sync();
+						break;
+					} else {
+						Log.e(TAG, "Connect fail: " + line);
+					}
+				}
+
+			} catch (IOException e) {
+				Log.e(TAG, "Operation timed-out");
+			} catch (Exception e) {
+				Log.e(TAG, "Unexcepted error: ", e);
+			} finally {
+				destroy();
+			}
+		}
+
+		/**
+		 * Destroy this script runner
+		 */
+		public synchronized void destroy() {
+			if (mTermIn != null)
+				try {
+					mTermIn.close();
+				} catch (IOException e) {
+					Log.e(TAG, "Eroor in close term", e);
+				}
+			mTermIn = null;
+		}
+	}
+
 	private NotificationManager notificationManager;
 	private Intent intent;
 	private PendingIntent pendIntent;
@@ -154,6 +236,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	private static final int MSG_CONNECT_FINISH = 1;
 	private static final int MSG_CONNECT_SUCCESS = 2;
 	private static final int MSG_CONNECT_FAIL = 3;
+	
+	private static final int CONNECT_TIMEOUT = 30000;
 
 	private final static String DEFAULT_SHELL = "/system/bin/sh -";
 
@@ -348,64 +432,82 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		return true;
 	}
 
-	public boolean connect() {
+	public boolean connect(int timeout) {
 
-		String cmd = "echo $$ > " + BASE + "shell.pid\n";
-
-		FileInputStream mTermIn = new FileInputStream(mTermFd);
-		FileOutputStream mTermOut = new FileOutputStream(mTermFd);
-
+		final ConnectRunner runner = new ConnectRunner();
+		runner.start();
 		try {
-			if (isSocks)
-				cmd += "/data/data/org.sshtunnel.beta/ssh.sh dynamic " + port
-						+ " " + localPort + " " + user + " " + hostIP;
-			else
-				cmd += "/data/data/org.sshtunnel.beta/ssh.sh local " + port
-						+ " " + localPort + " " + "127.0.0.1" + " "
-						+ remotePort + " " + user + " " + hostIP;
-
-			Log.e(TAG, cmd);
-
-			mTermOut.write((cmd + "\n").getBytes());
-			mTermOut.flush();
-
-			int count = 0;
-			byte[] data = new byte[256];
-			while ((mTermIn.read(data)) != -1) {
-				StringBuffer sb = new StringBuffer();
-				for (int i = 0; i < data.length; i++) {
-					char printableB = (char) data[i];
-					if (data[i] < 32 || data[i] > 126) {
-						printableB = ' ';
-					}
-					sb.append(printableB);
-				}
-				String line = sb.toString();
-				if (line.toLowerCase().contains("yes")) {
-					mTermOut.write(("yes\n").getBytes());
-					mTermOut.flush();
-					continue;
-				}
-				if (line.toLowerCase().contains("password")) {
-					mTermOut.write((password + "\n").getBytes());
-					mTermOut.flush();
-					mTermFd.sync();
-					Log.d(TAG, "Flush count: " + count);
-					break;
-				} else {
-					Log.e(TAG, "Connect fail: " + line);
-					if (count > 10) {
-						return false;
-					}
-				}
-				count++;
+			if (timeout > 0) {
+				runner.join(timeout);
+			} else {
+				runner.join();
 			}
-
-		} catch (Exception e) {
-			Log.e(TAG, "Connect Error!");
-			return false;
+			if (runner.isAlive()) {
+				// Timed-out
+				runner.destroy();
+				runner.join(150);
+				return false;
+			}
+		} catch (InterruptedException ex) {
+			// Nothing
 		}
 		
+		// String cmd = "echo $$ > " + BASE + "shell.pid\n";
+
+		// FileInputStream mTermIn = new FileInputStream(mTermFd);
+		// FileOutputStream mTermOut = new FileOutputStream(mTermFd);
+		//
+		// try {
+		// if (isSocks)
+		// cmd += "/data/data/org.sshtunnel.beta/ssh.sh dynamic " + port
+		// + " " + localPort + " " + user + " " + hostIP;
+		// else
+		// cmd += "/data/data/org.sshtunnel.beta/ssh.sh local " + port
+		// + " " + localPort + " " + "127.0.0.1" + " "
+		// + remotePort + " " + user + " " + hostIP;
+		//
+		// Log.e(TAG, cmd);
+		//
+		// mTermOut.write((cmd + "\n").getBytes());
+		// mTermOut.flush();
+		//
+		// int count = 0;
+		// byte[] data = new byte[256];
+		// while ((mTermIn.read(data)) != -1) {
+		// StringBuffer sb = new StringBuffer();
+		// for (int i = 0; i < data.length; i++) {
+		// char printableB = (char) data[i];
+		// if (data[i] < 32 || data[i] > 126) {
+		// printableB = ' ';
+		// }
+		// sb.append(printableB);
+		// }
+		// String line = sb.toString();
+		// if (line.toLowerCase().contains("yes")) {
+		// mTermOut.write(("yes\n").getBytes());
+		// mTermOut.flush();
+		// continue;
+		// }
+		// if (line.toLowerCase().contains("password")) {
+		// mTermOut.write((password + "\n").getBytes());
+		// mTermOut.flush();
+		// mTermFd.sync();
+		// Log.d(TAG, "Flush count: " + count);
+		// break;
+		// } else {
+		// Log.e(TAG, "Connect fail: " + line);
+		// if (count > 10) {
+		// return false;
+		// }
+		// }
+		// count++;
+		// }
+		//
+		// } catch (Exception e) {
+		// Log.e(TAG, "Connect Error!");
+		// return false;
+		// }
+
 		runRootCommand(BASE + "busybox pgrep openssh > " + BASE + "ssh.pid");
 
 		return true;
@@ -496,7 +598,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		dnsServer.setBasePath("/data/data/org.sshtunnel.beta");
 		new Thread(dnsServer).start();
 
-		return connect();
+		return connect(CONNECT_TIMEOUT);
 	}
 
 	private void notifyAlert(String title, String info) {
@@ -847,7 +949,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		}
 
 		synchronized (this) {
-			if (!connect()) {
+			if (!connect(CONNECT_TIMEOUT)) {
 				connected = false;
 				notifyAlert(
 						getString(R.string.auto_reconnected) + " "
