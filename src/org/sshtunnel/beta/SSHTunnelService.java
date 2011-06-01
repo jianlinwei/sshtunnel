@@ -215,13 +215,22 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		 * Destroy this script runner
 		 */
 		public synchronized void destroy() {
-			if (mTermIn != null)
+			if (mTermIn != null) {
 				try {
 					mTermIn.close();
 				} catch (IOException e) {
-					Log.e(TAG, "Eroor in close term", e);
+					Log.e(TAG, "Eroor in close termIn", e);
 				}
+			}
+			if (mTermOut != null) {
+				try {
+					mTermOut.close();
+				} catch (IOException e) {
+					Log.e(TAG, "Eroor in close termOut", e);
+				}
+			}
 			mTermIn = null;
+			mTermOut = null;
 		}
 	}
 
