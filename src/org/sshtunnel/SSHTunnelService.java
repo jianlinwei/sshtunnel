@@ -349,7 +349,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 		} catch (Exception e) {
 			Log.e(TAG,
-					"Problem in SSH connection thread during authentication", e);
+					"Problem in SSH connection thread during connecting", e);
 
 			// Display the reason in the text.
 
