@@ -825,21 +825,21 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 		isAutoSetProxy = bundle.getBoolean("isAutoSetProxy");
 		isSocks = bundle.getBoolean("isSocks");
 
-		if (dnsServer == null) {
-			dnsServer = new DNSServer("DNS Server", "8.8.4.4", 53,
-					SSHTunnelService.this);
-			dnsServer.setBasePath("/data/data/org.sshtunnel");
-			dnsPort = dnsServer.init();
-		}
-
-		try {
-			hostAddress = InetAddress.getByName(host).getHostAddress();
-		} catch (UnknownHostException e) {
-			hostAddress = null;
-		}
-
 		new Thread(new Runnable() {
 			public void run() {
+				
+				if (dnsServer == null) {
+					dnsServer = new DNSServer("DNS Server", "8.8.4.4", 53,
+							SSHTunnelService.this);
+					dnsServer.setBasePath("/data/data/org.sshtunnel");
+					dnsPort = dnsServer.init();
+				}
+
+				try {
+					hostAddress = InetAddress.getByName(host).getHostAddress();
+				} catch (UnknownHostException e) {
+					hostAddress = null;
+				}
 
 				handler.sendEmptyMessage(MSG_CONNECT_START);
 				isConnecting = true;
