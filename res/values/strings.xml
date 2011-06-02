@@ -25,6 +25,7 @@
 	<string name="fail_to_connect">cannot connect to the host</string>
 	<string name="fail_to_authenticate">incorrect user name or password</string>
 	<string name="fail_to_forward">port forwarding not supported</string>
+	<string name="fail_to_online">no network available</string>
 
 	<!-- status string -->
 	<string name="service_running">SSHTunnel service is running now</string>
