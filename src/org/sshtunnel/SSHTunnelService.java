@@ -125,6 +125,8 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 	// Flag indicating if this is an ARMv6 device (-1: unknown, 0: no, 1: yes)
 	private boolean hasRedirectSupport = true;
 
+	private String reason = "";
+
 	public final static String BASE = "/data/data/org.sshtunnel/";
 
 	private static final Class<?>[] mStartForegroundSignature = new Class[] {
@@ -351,6 +353,8 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 
 			// Display the reason in the text.
 
+			reason = getString(R.string.fail_to_connect);
+
 			return false;
 		}
 
@@ -367,20 +371,17 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 		} catch (Exception e) {
 			Log.e(TAG,
 					"Problem in SSH connection thread during authentication", e);
+
+			reason = getString(R.string.fail_to_authenticate);
 			return false;
 		}
 
-		try {
-			if (connection.isAuthenticationComplete()) {
+		if (connection.isAuthenticationComplete()) {
 
-				return enablePortForward();
-			}
-		} catch (Exception ignore) {
-			// Nothing
-			Log.e(TAG, "Cannot enable port forwarding", ignore);
-			return false;
+			return enablePortForward();
 		}
 
+		reason = getString(R.string.fail_to_authenticate);
 		Log.e(TAG, "Cannot authenticate");
 		return false;
 
@@ -485,6 +486,7 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 			// lpf2 = connection.createLocalPortForwarder(5353, "8.8.8.8", 53);
 		} catch (Exception e) {
 			Log.e(TAG, "Could not create local port forward", e);
+			reason = getString(R.string.fail_to_forward);
 			return false;
 		}
 
@@ -827,7 +829,7 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 
 		new Thread(new Runnable() {
 			public void run() {
-				
+
 				if (dnsServer == null) {
 					dnsServer = new DNSServer("DNS Server", "8.8.4.4", 53,
 							SSHTunnelService.this);
@@ -882,7 +884,7 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 
 				} else {
 					// Connection or forward unsuccessful
-					notifyAlert(getString(R.string.forward_fail),
+					notifyAlert(getString(R.string.forward_fail) + ": " + reason,
 							getString(R.string.service_failed),
 							Notification.FLAG_AUTO_CANCEL);
 

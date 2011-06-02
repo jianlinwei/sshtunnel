@@ -20,11 +20,16 @@
 		problem to the project page. \n\n(sshtunnel.googlecode.com)
 	</string>
 	<string name="require_root_alert">PLEASE ROOT YOUR DEVICE FIRST !!!</string>
+	
+	<!-- error string -->
+	<string name="fail_to_connect">cannot connect to the host</string>
+	<string name="fail_to_authenticate">incorrect user name or password</string>
+	<string name="fail_to_forward">port forwarding not supported</string>
 
 	<!-- status string -->
 	<string name="service_running">SSHTunnel service is running now</string>
 	<string name="forward_success">Connected</string>
-	<string name="forward_fail">Fail to connect</string>
+	<string name="forward_fail">Error</string>
 	<string name="service_stopped">SSHTunnel service stopped</string>
 	<string name="auto_reconnected">Reconnecting</string>
 	<string name="reconnect_success">Reconnected</string>
