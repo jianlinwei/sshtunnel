@@ -3,7 +3,7 @@
 	<string name="service_running">正通过安全隧道连接到互联网</string>
 	<string name="app_name">安全隧道</string>
 	<string name="forward_success">安全隧道连接成功</string>
-	<string name="forward_fail">安全隧道连接失败</string>
+	<string name="forward_fail">连接失败</string>
 	<string name="service_stopped">安全隧道服务已停止</string>
 	<string name="auto_reconnected">恢复连接中</string>
 	<string name="reconnect_success">恢复连接成功</string>
@@ -91,5 +91,10 @@
 	<string name="parent_dir">上级目录</string>
 	<string name="folder">目录</string>
 	<string name="file_size">文件大小</string>
+	
+		<!-- error string -->
+	<string name="fail_to_connect">无法连接到主机</string>
+	<string name="fail_to_authenticate">错误的用户名或密码</string>
+	<string name="fail_to_forward">主机不支持端口转发</string>
 
 </resources>
