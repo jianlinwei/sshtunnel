@@ -851,7 +851,7 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 				// Test for Redirect Support
 				initHasRedirectSupported();
 
-				if (hostAddress != null && isOnline() && connect()) {
+				if (isOnline() && hostAddress != null && connect()) {
 
 					isConnecting = false;
 
