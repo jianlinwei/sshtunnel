@@ -640,6 +640,8 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 			// Running on an older platform.
 			mStartForeground = mStopForeground = null;
 		}
+		
+		reason = getString(R.string.fail_to_connect);
 	}
 
 	/** Called when the activity is closed. */
@@ -909,8 +911,10 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 		ConnectivityManager manager = (ConnectivityManager) this
 				.getSystemService(CONNECTIVITY_SERVICE);
 		NetworkInfo networkInfo = manager.getActiveNetworkInfo();
-		if (networkInfo == null)
+		if (networkInfo == null) {
+			reason = getString(R.string.fail_to_online);
 			return false;
+		}
 		return true;
 	}
 

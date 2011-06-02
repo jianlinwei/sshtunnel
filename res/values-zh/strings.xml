@@ -96,5 +96,6 @@
 	<string name="fail_to_connect">无法连接到主机</string>
 	<string name="fail_to_authenticate">错误的用户名或密码</string>
 	<string name="fail_to_forward">主机不支持端口转发</string>
+	<string name="fail_to_online">无可用网络</string>
 
 </resources>
