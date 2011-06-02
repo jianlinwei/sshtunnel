@@ -89,8 +89,12 @@ public class AppManager extends Activity implements OnCheckedChangeListener,
 							int firstVisibleItem, int visibleItemCount,
 							int totalItemCount) {
 						if (visible) {
-							overlay.setText(apps[firstVisibleItem].getName()
-									.substring(0, 1));
+							String name = apps[firstVisibleItem].getName();
+							if (name != null && name.length() > 1)
+								overlay.setText(apps[firstVisibleItem]
+										.getName().substring(0, 1));
+							else
+								overlay.setText("*");
 							overlay.setVisibility(View.VISIBLE);
 						}
 					}
@@ -263,7 +267,7 @@ public class AppManager extends Activity implements OnCheckedChangeListener,
 			apps[appIdx] = new ProxyedApp();
 
 			apps[appIdx].setUid(aInfo.uid);
-			
+
 			apps[appIdx].setUsername(pMgr.getNameForUid(apps[appIdx].getUid()));
 
 			// check if this application is allowed
@@ -278,7 +282,7 @@ public class AppManager extends Activity implements OnCheckedChangeListener,
 
 		return apps;
 	}
-	
+
 	public static ProxyedApp[] getApps(Context context) {
 
 		SharedPreferences prefs = PreferenceManager
