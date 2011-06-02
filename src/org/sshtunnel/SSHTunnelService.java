@@ -38,12 +38,9 @@
 
 package org.sshtunnel;
 
-import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.InetAddress;
@@ -59,14 +56,12 @@ import android.appwidget.AppWidgetManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.media.AudioManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
-import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -81,7 +76,8 @@ import com.trilead.ssh2.DynamicPortForwarder;
 import com.trilead.ssh2.InteractiveCallback;
 import com.trilead.ssh2.LocalPortForwarder;
 
-public class SSHTunnelService extends Service implements ConnectionMonitor {
+public class SSHTunnelService extends Service implements InteractiveCallback,
+		ConnectionMonitor {
 
 	// ConnectivityBroadcastReceiver stateChanged = null;
 
@@ -275,6 +271,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	private void authenticate() {
 		try {
 			if (connection.authenticateWithNone(user)) {
+				Log.d(TAG, "Authenticate with none");
 				return;
 			}
 		} catch (Exception e) {
@@ -282,35 +279,37 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		}
 
 		try {
-			String path = settings.getString("key_path", "/sdcard/sshtunnel/key");
+			String path = settings.getString("key_path",
+					"/sdcard/sshtunnel/key");
 			File f = new File(path);
 			if (f.exists())
 				if (connection.authenticateWithPublicKey(user, f, password)) {
+					Log.d(TAG, "Authenticate with public key");
 					return;
 				}
 		} catch (Exception e) {
 			Log.d(TAG, "Host does not support 'Public key' authentication.");
 		}
 
-		// try {
-		// if (connection.authenticateWithKeyboardInteractive(user, this))
-		// return;
-		// } catch (Exception e) {
-		// Log.d(TAG,
-		// "Host does not support 'Keyboard-Interactive' authentication.");
-		// }
-
 		try {
-
-			if (connection.authenticateWithPassword(user, password))
+			if (connection.authenticateWithPassword(user, password)) {
+				Log.d(TAG, "Authenticate with password");
 				return;
-
+			}
 		} catch (IllegalStateException e) {
 			Log.e(TAG,
 					"Connection went away while we were trying to authenticate",
 					e);
 		} catch (Exception e) {
 			Log.e(TAG, "Problem during handleAuthentication()", e);
+		}
+
+		try {
+			if (connection.authenticateWithKeyboardInteractive(user, this))
+				return;
+		} catch (Exception e) {
+			Log.d(TAG,
+					"Host does not support 'Keyboard-Interactive' authentication.");
 		}
 	}
 
@@ -348,8 +347,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			connected = true;
 
 		} catch (Exception e) {
-			Log.e(TAG,
-					"Problem in SSH connection thread during connecting", e);
+			Log.e(TAG, "Problem in SSH connection thread during connecting", e);
 
 			// Display the reason in the text.
 
@@ -379,9 +377,11 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			}
 		} catch (Exception ignore) {
 			// Nothing
+			Log.e(TAG, "Cannot enable port forwarding", ignore);
 			return false;
 		}
 
+		Log.e(TAG, "Cannot authenticate");
 		return false;
 
 	}
@@ -912,15 +912,15 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		return true;
 	}
 
-	// @Override
-	// public String[] replyToChallenge(String name, String instruction,
-	// int numPrompts, String[] prompt, boolean[] echo) throws Exception {
-	// String[] responses = new String[numPrompts];
-	// for(int i = 0; i < numPrompts; i++) {
-	// // request response from user for each prompt
-	// responses[i] = ;
-	// }
-	// return responses;
-	// }
-
+	@Override
+	public String[] replyToChallenge(String name, String instruction,
+			int numPrompts, String[] prompt, boolean[] echo) throws Exception {
+		String[] responses = new String[numPrompts];
+		for (int i = 0; i < numPrompts; i++) {
+			// request response from user for each prompt
+			if (prompt[i].toLowerCase().contains("password"))
+				responses[i] = password;
+		}
+		return responses;
+	}
 }
