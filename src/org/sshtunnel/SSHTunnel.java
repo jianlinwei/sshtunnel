@@ -45,13 +45,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.StringTokenizer;
 
 import android.app.ActivityManager;
 import android.app.ActivityManager.RunningServiceInfo;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -79,37 +77,6 @@ public class SSHTunnel extends PreferenceActivity implements
 	private static final String TAG = "SSHTunnel";
 	public static final String SERVICE_NAME = "org.sshtunnel.SSHTunnelService";
 
-	private ProgressDialog pd = null;
-	private String host = "";
-	private int port = 22;
-	private int localPort = 1984;
-	private int remotePort = 3128;
-	private String remoteAddress = "127.0.0.1";
-	private String user = "";
-	private String password = "";
-	private String profile;
-	public static boolean isAutoConnect = false;
-	public static boolean isAutoReconnect = false;
-	public static boolean isAutoSetProxy = false;
-	public static boolean isSocks = false;
-	public static boolean isRoot = false;
-
-	private CheckBoxPreference isAutoConnectCheck;
-	private CheckBoxPreference isAutoReconnectCheck;
-	private CheckBoxPreference isAutoSetProxyCheck;
-	private CheckBoxPreference isSocksCheck;
-	private ListPreference profileList;
-
-	private EditTextPreference hostText;
-	private EditTextPreference portText;
-	private EditTextPreference userText;
-	private EditTextPreference passwordText;
-	private EditTextPreference localPortText;
-	private EditTextPreference remotePortText;
-	private EditTextPreference remoteAddressText;
-	private CheckBoxPreference isRunningCheck;
-	private Preference proxyedApps;
-
 	public static boolean runCommand(String command) {
 		Process process = null;
 		try {
@@ -127,7 +94,6 @@ public class SSHTunnel extends PreferenceActivity implements
 		}
 		return true;
 	}
-
 	public static boolean runRootCommand(String command) {
 		Process process = null;
 		DataOutputStream os = null;
@@ -153,18 +119,38 @@ public class SSHTunnel extends PreferenceActivity implements
 		}
 		return true;
 	}
+	private ProgressDialog pd = null;
+	private String host = "";
+	private int port = 22;
+	private int localPort = 1984;
+	private int remotePort = 3128;
+	private String remoteAddress = "127.0.0.1";
+	private String user = "";
+	private String password = "";
+	private String profile;
+	public static boolean isAutoConnect = false;
+	public static boolean isAutoReconnect = false;
+	public static boolean isAutoSetProxy = false;
 
-	public boolean detectRoot() {
-		try {
-			Process proc = Runtime.getRuntime().exec("su");
-			if (proc == null)
-				return false;
-			proc.destroy();
-		} catch (Exception e) {
-			return false;
-		}
-		return true;
-	}
+	public static boolean isSocks = false;
+	public static boolean isRoot = false;
+	private CheckBoxPreference isAutoConnectCheck;
+	private CheckBoxPreference isAutoReconnectCheck;
+	private CheckBoxPreference isAutoSetProxyCheck;
+
+	private CheckBoxPreference isSocksCheck;
+	private ListPreference profileList;
+	private EditTextPreference hostText;
+	private EditTextPreference portText;
+	private EditTextPreference userText;
+	private EditTextPreference passwordText;
+	private EditTextPreference localPortText;
+	private EditTextPreference remotePortText;
+	private EditTextPreference remoteAddressText;
+
+	private CheckBoxPreference isRunningCheck;
+
+	private Preference proxyedApps;
 
 	private void CopyAssets() {
 		AssetManager assetManager = getAssets();
@@ -202,6 +188,90 @@ public class SSHTunnel extends PreferenceActivity implements
 		while ((read = in.read(buffer)) != -1) {
 			out.write(buffer, 0, read);
 		}
+	}
+
+	private void delProfile() {
+		SharedPreferences settings = PreferenceManager
+				.getDefaultSharedPreferences(this);
+		String[] profileEntries = settings.getString("profileEntries", "")
+				.split("\\|");
+		String[] profileValues = settings.getString("profileValues", "").split(
+				"\\|");
+
+		Log.d(TAG, "Profile :" + profile);
+		if (profileEntries.length > 2) {
+			StringBuffer profileEntriesBuffer = new StringBuffer();
+			StringBuffer profileValuesBuffer = new StringBuffer();
+
+			String newProfileValue = "1";
+
+			for (int i = 0; i < profileValues.length - 1; i++) {
+				if (!profile.equals(profileValues[i])) {
+					profileEntriesBuffer.append(profileEntries[i] + "|");
+					profileValuesBuffer.append(profileValues[i] + "|");
+					newProfileValue = profileValues[i];
+				}
+			}
+			profileEntriesBuffer.append(getString(R.string.profile_new));
+			profileValuesBuffer.append("0");
+
+			Editor ed = settings.edit();
+			ed.putString("profileEntries", profileEntriesBuffer.toString());
+			ed.putString("profileValues", profileValuesBuffer.toString());
+			ed.putString("profile", newProfileValue);
+			ed.commit();
+
+			loadProfileList();
+		}
+	}
+
+	public boolean detectRoot() {
+		try {
+			Process proc = Runtime.getRuntime().exec("su");
+			if (proc == null)
+				return false;
+			proc.destroy();
+		} catch (Exception e) {
+			return false;
+		}
+		return true;
+	}
+
+	private void disableAll() {
+		hostText.setEnabled(false);
+		portText.setEnabled(false);
+		userText.setEnabled(false);
+		passwordText.setEnabled(false);
+		localPortText.setEnabled(false);
+		remotePortText.setEnabled(false);
+		remoteAddressText.setEnabled(false);
+		proxyedApps.setEnabled(false);
+		profileList.setEnabled(false);
+
+		isSocksCheck.setEnabled(false);
+		isAutoSetProxyCheck.setEnabled(false);
+		isAutoConnectCheck.setEnabled(false);
+		isAutoReconnectCheck.setEnabled(false);
+	}
+
+	private void enableAll() {
+		hostText.setEnabled(true);
+		portText.setEnabled(true);
+		userText.setEnabled(true);
+		passwordText.setEnabled(true);
+		localPortText.setEnabled(true);
+		if (!isSocksCheck.isChecked()) {
+			remotePortText.setEnabled(true);
+			remoteAddressText.setEnabled(true);
+		}
+		if (!isAutoSetProxyCheck.isChecked())
+			proxyedApps.setEnabled(true);
+
+		profileList.setEnabled(true);
+		isAutoSetProxyCheck.setEnabled(true);
+		isSocksCheck.setEnabled(true);
+		isAutoConnectCheck.setEnabled(true);
+		isAutoReconnectCheck.setEnabled(true);
 	}
 
 	private boolean isTextEmpty(String s, String msg) {
@@ -325,6 +395,28 @@ public class SSHTunnel extends PreferenceActivity implements
 
 	}
 
+	// 点击Menu时，系统调用当前Activity的onCreateOptionsMenu方法，并传一个实现了一个Menu接口的menu对象供你使用
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		/*
+		 * add()方法的四个参数，依次是： 1、组别，如果不分组的话就写Menu.NONE,
+		 * 2、Id，这个很重要，Android根据这个Id来确定不同的菜单 3、顺序，那个菜单现在在前面由这个参数的大小决定
+		 * 4、文本，菜单的显示文本
+		 */
+		menu.add(Menu.NONE, Menu.FIRST + 1, 1, getString(R.string.recovery))
+				.setIcon(android.R.drawable.ic_menu_close_clear_cancel);
+		menu.add(Menu.NONE, Menu.FIRST + 2, 2, getString(R.string.profile_del))
+				.setIcon(android.R.drawable.ic_menu_delete);
+		menu.add(Menu.NONE, Menu.FIRST + 3, 3, getString(R.string.about))
+				.setIcon(android.R.drawable.ic_menu_info_details);
+		menu.add(Menu.NONE, Menu.FIRST + 4, 4, getString(R.string.key_manager))
+		.setIcon(android.R.drawable.ic_menu_edit);
+
+		// return true才会起作用
+		return true;
+
+	}
+
 	/** Called when the activity is closed. */
 	@Override
 	public void onDestroy() {
@@ -332,95 +424,85 @@ public class SSHTunnel extends PreferenceActivity implements
 		super.onDestroy();
 	}
 
-	/** Called when connect button is clicked. */
-	public boolean serviceStart() {
-
-		if (isWorked(SERVICE_NAME)) {
-
+	@Override
+	public boolean onKeyDown(int keyCode, KeyEvent event) {
+		if (keyCode == KeyEvent.KEYCODE_BACK && event.getRepeatCount() == 0) { // 按下的如果是BACK，同时没有重复
 			try {
-				stopService(new Intent(SSHTunnel.this, SSHTunnelService.class));
-			} catch (Exception e) {
+				finish();
+			} catch (Exception ignore) {
 				// Nothing
 			}
-
-			return false;
+			return true;
 		}
+		return super.onKeyDown(keyCode, event);
+	}
 
-		SharedPreferences settings = PreferenceManager
-				.getDefaultSharedPreferences(this);
-
-		isAutoConnect = settings.getBoolean("isAutoConnect", false);
-		isAutoSetProxy = settings.getBoolean("isAutoSetProxy", false);
-		isAutoReconnect = settings.getBoolean("isAutoReconnect", false);
-		isSocks = settings.getBoolean("isSocks", false);
-
-		host = settings.getString("host", "");
-		if (isTextEmpty(host, getString(R.string.host_empty)))
-			return false;
-
-		user = settings.getString("user", "");
-		if (isTextEmpty(user, getString(R.string.user_empty)))
-			return false;
-
-		password = settings.getString("password", "");
-
-		try {
-			String portString = settings.getString("port", "");
-			if (isTextEmpty(portString, getString(R.string.port_empty)))
-				return false;
-			port = Integer.valueOf(portString);
-
-			String localPortString = settings.getString("localPort", "");
-			if (isTextEmpty(localPortString,
-					getString(R.string.local_port_empty)))
-				return false;
-			localPort = Integer.valueOf(localPortString);
-			if (localPort <= 1024)
-				this.showAToast(getString(R.string.port_alert));
-
-			if (!isSocks) {
-				String remotePortString = settings.getString("remotePort", "");
-				if (isTextEmpty(remotePortString,
-						getString(R.string.remote_port_empty)))
-					return false;
-				remotePort = Integer.valueOf(remotePortString);
-				remoteAddress = settings
-						.getString("remoteAddress", "127.0.0.1");
-			} else {
-				remoteAddress = "";
-				remotePort = 0;
-
+	// 菜单项被选择事件
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		switch (item.getItemId()) {
+		case Menu.FIRST + 1:
+			recovery();
+			break;
+		case Menu.FIRST + 2:
+			delProfile();
+			break;
+		case Menu.FIRST + 3:
+			String versionName = "";
+			try {
+				versionName = getPackageManager().getPackageInfo(
+						getPackageName(), 0).versionName;
+			} catch (NameNotFoundException e) {
+				versionName = "";
 			}
-		} catch (NumberFormatException e) {
-			showAToast(getString(R.string.number_alert));
-			Log.e(TAG, "wrong number", e);
-			return false;
-		}
-
-		try {
-
-			Intent it = new Intent(SSHTunnel.this, SSHTunnelService.class);
-			Bundle bundle = new Bundle();
-			bundle.putString("host", host);
-			bundle.putString("user", user);
-			bundle.putString("password", password);
-			bundle.putInt("port", port);
-			bundle.putInt("localPort", localPort);
-			bundle.putInt("remotePort", remotePort);
-			bundle.putString("remoteAddress", remoteAddress);
-			bundle.putBoolean("isAutoReconnect", isAutoReconnect);
-			bundle.putBoolean("isAutoSetProxy", isAutoSetProxy);
-			bundle.putBoolean("isSocks", isSocks);
-
-			it.putExtras(bundle);
-			startService(it);
-
-		} catch (Exception ignore) {
-			// Nothing
-			return false;
+			showAToast(getString(R.string.about) + " (" + versionName + ")"
+					+ getString(R.string.copy_rights));
+			break;
+		case Menu.FIRST + 4:
+			Intent intent = new Intent(this, FileChooser.class);
+			startActivity(intent);
+			break;
 		}
 
 		return true;
+	}
+
+	@Override
+	protected void onPause() {
+		super.onPause();
+
+		// Unregister the listener whenever a key changes
+		getPreferenceScreen().getSharedPreferences()
+				.unregisterOnSharedPreferenceChangeListener(this);
+	}
+
+	@Override
+	public boolean onPreferenceTreeClick(PreferenceScreen preferenceScreen,
+			Preference preference) {
+
+		if (preference.getKey() != null
+				&& preference.getKey().equals("proxyedApps")) {
+			Intent intent = new Intent(this, AppManager.class);
+			startActivity(intent);
+		} else if (preference.getKey() != null
+				&& preference.getKey().equals("isRunning")) {
+
+			if (!serviceStart()) {
+
+				SharedPreferences settings = PreferenceManager
+						.getDefaultSharedPreferences(SSHTunnel.this);
+
+				Editor edit = settings.edit();
+
+				edit.putBoolean("isRunning", false);
+
+				edit.commit();
+
+				enableAll();
+			}
+
+		}
+		return super.onPreferenceTreeClick(preferenceScreen, preference);
 	}
 
 	private void onProfileChange(String oldProfile) {
@@ -525,86 +607,6 @@ public class SSHTunnel extends PreferenceActivity implements
 
 	}
 
-	private void showAToast(String msg) {
-		AlertDialog.Builder builder = new AlertDialog.Builder(this);
-		builder.setMessage(msg)
-				.setCancelable(false)
-				.setNegativeButton(getString(R.string.ok_iknow),
-						new DialogInterface.OnClickListener() {
-							public void onClick(DialogInterface dialog, int id) {
-								dialog.cancel();
-							}
-						});
-		AlertDialog alert = builder.create();
-		alert.show();
-	}
-
-	private void disableAll() {
-		hostText.setEnabled(false);
-		portText.setEnabled(false);
-		userText.setEnabled(false);
-		passwordText.setEnabled(false);
-		localPortText.setEnabled(false);
-		remotePortText.setEnabled(false);
-		remoteAddressText.setEnabled(false);
-		proxyedApps.setEnabled(false);
-		profileList.setEnabled(false);
-
-		isSocksCheck.setEnabled(false);
-		isAutoSetProxyCheck.setEnabled(false);
-		isAutoConnectCheck.setEnabled(false);
-		isAutoReconnectCheck.setEnabled(false);
-	}
-
-	private void enableAll() {
-		hostText.setEnabled(true);
-		portText.setEnabled(true);
-		userText.setEnabled(true);
-		passwordText.setEnabled(true);
-		localPortText.setEnabled(true);
-		if (!isSocksCheck.isChecked()) {
-			remotePortText.setEnabled(true);
-			remoteAddressText.setEnabled(true);
-		}
-		if (!isAutoSetProxyCheck.isChecked())
-			proxyedApps.setEnabled(true);
-
-		profileList.setEnabled(true);
-		isAutoSetProxyCheck.setEnabled(true);
-		isSocksCheck.setEnabled(true);
-		isAutoConnectCheck.setEnabled(true);
-		isAutoReconnectCheck.setEnabled(true);
-	}
-
-	@Override
-	public boolean onPreferenceTreeClick(PreferenceScreen preferenceScreen,
-			Preference preference) {
-
-		if (preference.getKey() != null
-				&& preference.getKey().equals("proxyedApps")) {
-			Intent intent = new Intent(this, AppManager.class);
-			startActivity(intent);
-		} else if (preference.getKey() != null
-				&& preference.getKey().equals("isRunning")) {
-
-			if (!serviceStart()) {
-
-				SharedPreferences settings = PreferenceManager
-						.getDefaultSharedPreferences(SSHTunnel.this);
-
-				Editor edit = settings.edit();
-
-				edit.putBoolean("isRunning", false);
-
-				edit.commit();
-
-				enableAll();
-			}
-
-		}
-		return super.onPreferenceTreeClick(preferenceScreen, preference);
-	}
-
 	@Override
 	protected void onResume() {
 		super.onResume();
@@ -679,15 +681,6 @@ public class SSHTunnel extends PreferenceActivity implements
 		// Set up a listener whenever a key changes
 		getPreferenceScreen().getSharedPreferences()
 				.registerOnSharedPreferenceChangeListener(this);
-	}
-
-	@Override
-	protected void onPause() {
-		super.onPause();
-
-		// Unregister the listener whenever a key changes
-		getPreferenceScreen().getSharedPreferences()
-				.unregisterOnSharedPreferenceChangeListener(this);
 	}
 
 	public void onSharedPreferenceChanged(SharedPreferences settings, String key) {
@@ -818,93 +811,6 @@ public class SSHTunnel extends PreferenceActivity implements
 				passwordText.setSummary(getString(R.string.password_summary));
 	}
 
-	// 点击Menu时，系统调用当前Activity的onCreateOptionsMenu方法，并传一个实现了一个Menu接口的menu对象供你使用
-	@Override
-	public boolean onCreateOptionsMenu(Menu menu) {
-		/*
-		 * add()方法的四个参数，依次是： 1、组别，如果不分组的话就写Menu.NONE,
-		 * 2、Id，这个很重要，Android根据这个Id来确定不同的菜单 3、顺序，那个菜单现在在前面由这个参数的大小决定
-		 * 4、文本，菜单的显示文本
-		 */
-		menu.add(Menu.NONE, Menu.FIRST + 1, 1, getString(R.string.recovery))
-				.setIcon(android.R.drawable.ic_menu_close_clear_cancel);
-		menu.add(Menu.NONE, Menu.FIRST + 2, 2, getString(R.string.profile_del))
-				.setIcon(android.R.drawable.ic_menu_delete);
-		menu.add(Menu.NONE, Menu.FIRST + 3, 3, getString(R.string.about))
-				.setIcon(android.R.drawable.ic_menu_info_details);
-		menu.add(Menu.NONE, Menu.FIRST + 4, 4, getString(R.string.key_manager))
-		.setIcon(android.R.drawable.ic_menu_edit);
-
-		// return true才会起作用
-		return true;
-
-	}
-
-	// 菜单项被选择事件
-	@Override
-	public boolean onOptionsItemSelected(MenuItem item) {
-		switch (item.getItemId()) {
-		case Menu.FIRST + 1:
-			recovery();
-			break;
-		case Menu.FIRST + 2:
-			delProfile();
-			break;
-		case Menu.FIRST + 3:
-			String versionName = "";
-			try {
-				versionName = getPackageManager().getPackageInfo(
-						getPackageName(), 0).versionName;
-			} catch (NameNotFoundException e) {
-				versionName = "";
-			}
-			showAToast(getString(R.string.about) + " (" + versionName + ")"
-					+ getString(R.string.copy_rights));
-			break;
-		case Menu.FIRST + 4:
-			Intent intent = new Intent(this, FileChooser.class);
-			startActivity(intent);
-			break;
-		}
-
-		return true;
-	}
-
-	private void delProfile() {
-		SharedPreferences settings = PreferenceManager
-				.getDefaultSharedPreferences(this);
-		String[] profileEntries = settings.getString("profileEntries", "")
-				.split("\\|");
-		String[] profileValues = settings.getString("profileValues", "").split(
-				"\\|");
-
-		Log.d(TAG, "Profile :" + profile);
-		if (profileEntries.length > 2) {
-			StringBuffer profileEntriesBuffer = new StringBuffer();
-			StringBuffer profileValuesBuffer = new StringBuffer();
-
-			String newProfileValue = "1";
-
-			for (int i = 0; i < profileValues.length - 1; i++) {
-				if (!profile.equals(profileValues[i])) {
-					profileEntriesBuffer.append(profileEntries[i] + "|");
-					profileValuesBuffer.append(profileValues[i] + "|");
-					newProfileValue = profileValues[i];
-				}
-			}
-			profileEntriesBuffer.append(getString(R.string.profile_new));
-			profileValuesBuffer.append("0");
-
-			Editor ed = settings.edit();
-			ed.putString("profileEntries", profileEntriesBuffer.toString());
-			ed.putString("profileValues", profileValuesBuffer.toString());
-			ed.putString("profile", newProfileValue);
-			ed.commit();
-
-			loadProfileList();
-		}
-	}
-
 	private void recovery() {
 		try {
 			stopService(new Intent(this, SSHTunnelService.class));
@@ -925,17 +831,109 @@ public class SSHTunnel extends PreferenceActivity implements
 		runRootCommand(SSHTunnelService.BASE + "proxy_http.sh stop");
 	}
 
-	@Override
-	public boolean onKeyDown(int keyCode, KeyEvent event) {
-		if (keyCode == KeyEvent.KEYCODE_BACK && event.getRepeatCount() == 0) { // 按下的如果是BACK，同时没有重复
+	/** Called when connect button is clicked. */
+	public boolean serviceStart() {
+
+		if (isWorked(SERVICE_NAME)) {
+
 			try {
-				finish();
-			} catch (Exception ignore) {
+				stopService(new Intent(SSHTunnel.this, SSHTunnelService.class));
+			} catch (Exception e) {
 				// Nothing
 			}
-			return true;
+
+			return false;
 		}
-		return super.onKeyDown(keyCode, event);
+
+		SharedPreferences settings = PreferenceManager
+				.getDefaultSharedPreferences(this);
+
+		isAutoConnect = settings.getBoolean("isAutoConnect", false);
+		isAutoSetProxy = settings.getBoolean("isAutoSetProxy", false);
+		isAutoReconnect = settings.getBoolean("isAutoReconnect", false);
+		isSocks = settings.getBoolean("isSocks", false);
+
+		host = settings.getString("host", "");
+		if (isTextEmpty(host, getString(R.string.host_empty)))
+			return false;
+
+		user = settings.getString("user", "");
+		if (isTextEmpty(user, getString(R.string.user_empty)))
+			return false;
+
+		password = settings.getString("password", "");
+
+		try {
+			String portString = settings.getString("port", "");
+			if (isTextEmpty(portString, getString(R.string.port_empty)))
+				return false;
+			port = Integer.valueOf(portString);
+
+			String localPortString = settings.getString("localPort", "");
+			if (isTextEmpty(localPortString,
+					getString(R.string.local_port_empty)))
+				return false;
+			localPort = Integer.valueOf(localPortString);
+			if (localPort <= 1024)
+				this.showAToast(getString(R.string.port_alert));
+
+			if (!isSocks) {
+				String remotePortString = settings.getString("remotePort", "");
+				if (isTextEmpty(remotePortString,
+						getString(R.string.remote_port_empty)))
+					return false;
+				remotePort = Integer.valueOf(remotePortString);
+				remoteAddress = settings
+						.getString("remoteAddress", "127.0.0.1");
+			} else {
+				remoteAddress = "";
+				remotePort = 0;
+
+			}
+		} catch (NumberFormatException e) {
+			showAToast(getString(R.string.number_alert));
+			Log.e(TAG, "wrong number", e);
+			return false;
+		}
+
+		try {
+
+			Intent it = new Intent(SSHTunnel.this, SSHTunnelService.class);
+			Bundle bundle = new Bundle();
+			bundle.putString("host", host);
+			bundle.putString("user", user);
+			bundle.putString("password", password);
+			bundle.putInt("port", port);
+			bundle.putInt("localPort", localPort);
+			bundle.putInt("remotePort", remotePort);
+			bundle.putString("remoteAddress", remoteAddress);
+			bundle.putBoolean("isAutoReconnect", isAutoReconnect);
+			bundle.putBoolean("isAutoSetProxy", isAutoSetProxy);
+			bundle.putBoolean("isSocks", isSocks);
+
+			it.putExtras(bundle);
+			startService(it);
+
+		} catch (Exception ignore) {
+			// Nothing
+			return false;
+		}
+
+		return true;
+	}
+
+	private void showAToast(String msg) {
+		AlertDialog.Builder builder = new AlertDialog.Builder(this);
+		builder.setMessage(msg)
+				.setCancelable(false)
+				.setNegativeButton(getString(R.string.ok_iknow),
+						new DialogInterface.OnClickListener() {
+							public void onClick(DialogInterface dialog, int id) {
+								dialog.cancel();
+							}
+						});
+		AlertDialog alert = builder.create();
+		alert.show();
 	}
 
 }

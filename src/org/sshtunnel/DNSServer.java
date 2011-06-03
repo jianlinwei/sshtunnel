@@ -23,7 +23,6 @@ import java.net.SocketException;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
 
@@ -184,21 +183,6 @@ public class DNSServer implements WrapServer {
 			target = dnsHost + ":" + dnsPort;
 	}
 
-	public int init() {
-		try {
-			srvSocket = new DatagramSocket(0,
-					InetAddress.getByName("127.0.0.1"));
-			inService = true;
-			srvPort = srvSocket.getLocalPort();
-			Log.e(TAG, this.name + "启动于端口： " + srvPort);
-		} catch (SocketException e) {
-			Log.e(TAG, "DNSServer初始化错误，端口号" + srvPort, e);
-		} catch (UnknownHostException e) {
-			Log.e(TAG, "DNSServer初始化错误，端口号" + srvPort, e);
-		}
-		return srvPort;
-	}
-
 	/**
 	 * 在缓存中添加一个域名解析
 	 * 
@@ -344,6 +328,21 @@ public class DNSServer implements WrapServer {
 		return this.srvPort;
 	}
 
+	public int init() {
+		try {
+			srvSocket = new DatagramSocket(0,
+					InetAddress.getByName("127.0.0.1"));
+			inService = true;
+			srvPort = srvSocket.getLocalPort();
+			Log.e(TAG, this.name + "启动于端口： " + srvPort);
+		} catch (SocketException e) {
+			Log.e(TAG, "DNSServer初始化错误，端口号" + srvPort, e);
+		} catch (UnknownHostException e) {
+			Log.e(TAG, "DNSServer初始化错误，端口号" + srvPort, e);
+		}
+		return srvPort;
+	}
+
 	private void initOrgCache() {
 		try {
 			URL aURL = new URL("http://myhosts.sinaapp.com/hosts");
@@ -386,6 +385,20 @@ public class DNSServer implements WrapServer {
 
 	public boolean isInService() {
 		return inService;
+	}
+
+	public boolean isWorked(String service, Context context) {
+		ActivityManager myManager = (ActivityManager) context
+				.getSystemService(Context.ACTIVITY_SERVICE);
+		ArrayList<RunningServiceInfo> runningService = (ArrayList<RunningServiceInfo>) myManager
+				.getRunningServices(30);
+		for (int i = 0; i < runningService.size(); i++) {
+			if (runningService.get(i).service.getClassName().toString()
+					.equals(service)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
@@ -625,20 +638,6 @@ public class DNSServer implements WrapServer {
 			}
 		}
 
-	}
-
-	public boolean isWorked(String service, Context context) {
-		ActivityManager myManager = (ActivityManager) context
-				.getSystemService(Context.ACTIVITY_SERVICE);
-		ArrayList<RunningServiceInfo> runningService = (ArrayList<RunningServiceInfo>) myManager
-				.getRunningServices(30);
-		for (int i = 0; i < runningService.size(); i++) {
-			if (runningService.get(i).service.getClassName().toString()
-					.equals(service)) {
-				return true;
-			}
-		}
-		return false;
 	}
 
 	/**

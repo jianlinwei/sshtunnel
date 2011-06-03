@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import android.app.Activity;
 import android.app.ListActivity;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
@@ -13,19 +12,11 @@ import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.view.View;
 import android.widget.ListView;
-import android.widget.Toast;
 
 public class FileChooser extends ListActivity {
 
 	private File currentDir;
 	private FileArrayAdapter adapter;
-
-	@Override
-	public void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
-		currentDir = new File("/sdcard/");
-		fill(currentDir);
-	}
 
 	private void fill(File f) {
 		File[] dirs = f.listFiles();
@@ -59,6 +50,22 @@ public class FileChooser extends ListActivity {
 	}
 
 	@Override
+	public void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		currentDir = new File("/sdcard/");
+		fill(currentDir);
+	}
+
+	private void onFileClick(Option o) {
+		SharedPreferences settings = PreferenceManager
+				.getDefaultSharedPreferences(this);
+		Editor ed = settings.edit();
+		ed.putString("key_path", o.getPath());
+		ed.commit();
+		finish();
+	}
+
+	@Override
 	protected void onListItemClick(ListView l, View v, int position, long id) {
 		super.onListItemClick(l, v, position, id);
 		Option o = adapter.getItem(position);
@@ -69,14 +76,5 @@ public class FileChooser extends ListActivity {
 		} else {
 			onFileClick(o);
 		}
-	}
-
-	private void onFileClick(Option o) {
-		SharedPreferences settings = PreferenceManager
-				.getDefaultSharedPreferences(this);
-		Editor ed = settings.edit();
-		ed.putString("key_path", o.getPath());
-		ed.commit();
-		finish();
 	}
 }

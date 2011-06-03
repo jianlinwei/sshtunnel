@@ -41,12 +41,14 @@ package org.sshtunnel;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -58,6 +60,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
+import android.location.Address;
+import android.location.Geocoder;
+import android.location.Location;
+import android.location.LocationManager;
 import android.media.AudioManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -106,6 +112,7 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 	private boolean isAutoReconnect = false;
 	private boolean isAutoSetProxy = false;
 	private boolean isSocks = false;
+	private boolean enableDNSProxy = true;
 	private LocalPortForwarder lpf = null;
 	private DynamicPortForwarder dpf = null;
 	private DNSServer dnsServer = null;
@@ -121,79 +128,19 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 	private volatile boolean connected = false;
 
 	private ProxyedApp apps[] = null;
-
-	// Flag indicating if this is an ARMv6 device (-1: unknown, 0: no, 1: yes)
-	private boolean hasRedirectSupport = true;
-
-	private String reason = "";
+	
 
 	public final static String BASE = "/data/data/org.sshtunnel/";
 
-	private static final Class<?>[] mStartForegroundSignature = new Class[] {
-			int.class, Notification.class };
-	private static final Class<?>[] mStopForegroundSignature = new Class[] { boolean.class };
+	final static String CMD_IPTABLES_REDIRECT_ADD = BASE
+			+ "iptables -t nat -A SSHTUNNEL -p tcp --dport 80 -j REDIRECT --to 8123\n"
+			+ BASE
+			+ "iptables -t nat -A SSHTUNNEL -p tcp --dport 443 -j REDIRECT --to 8124\n";
 
-	private Method mStartForeground;
-	private Method mStopForeground;
-
-	private Object[] mStartForegroundArgs = new Object[2];
-	private Object[] mStopForegroundArgs = new Object[1];
-
-	void invokeMethod(Method method, Object[] args) {
-		try {
-			method.invoke(this, mStartForegroundArgs);
-		} catch (InvocationTargetException e) {
-			// Should not happen.
-			Log.w("ApiDemos", "Unable to invoke method", e);
-		} catch (IllegalAccessException e) {
-			// Should not happen.
-			Log.w("ApiDemos", "Unable to invoke method", e);
-		}
-	}
-
-	/**
-	 * This is a wrapper around the new startForeground method, using the older
-	 * APIs if it is not available.
-	 */
-	void startForegroundCompat(int id, Notification notification) {
-		// If we have the new startForeground API, then use it.
-		if (mStartForeground != null) {
-			mStartForegroundArgs[0] = Integer.valueOf(id);
-			mStartForegroundArgs[1] = notification;
-			invokeMethod(mStartForeground, mStartForegroundArgs);
-			return;
-		}
-
-		// Fall back on the old API.
-		setForeground(true);
-		notificationManager.notify(id, notification);
-	}
-
-	/**
-	 * This is a wrapper around the new stopForeground method, using the older
-	 * APIs if it is not available.
-	 */
-	void stopForegroundCompat(int id) {
-		// If we have the new stopForeground API, then use it.
-		if (mStopForeground != null) {
-			mStopForegroundArgs[0] = Boolean.TRUE;
-			try {
-				mStopForeground.invoke(this, mStopForegroundArgs);
-			} catch (InvocationTargetException e) {
-				// Should not happen.
-				Log.w("ApiDemos", "Unable to invoke stopForeground", e);
-			} catch (IllegalAccessException e) {
-				// Should not happen.
-				Log.w("ApiDemos", "Unable to invoke stopForeground", e);
-			}
-			return;
-		}
-
-		// Fall back on the old API. Note to cancel BEFORE changing the
-		// foreground state, since we could be killed at that point.
-		notificationManager.cancel(id);
-		setForeground(false);
-	}
+	final static String CMD_IPTABLES_DNAT_ADD = BASE
+			+ "iptables -t nat -A SSHTUNNEL -p tcp --dport 80 -j DNAT --to-destination 127.0.0.1:8123\n"
+			+ BASE
+			+ "iptables -t nat -A SSHTUNNEL -p tcp --dport 443 -j DNAT --to-destination 127.0.0.1:8124\n";
 
 	public static boolean runRootCommand(String command) {
 		Process process = null;
@@ -224,51 +171,75 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 		return true;
 	}
 
-	private void initHasRedirectSupported() {
-		Process process = null;
-		DataOutputStream os = null;
-		DataInputStream es = null;
+	// Flag indicating if this is an ARMv6 device (-1: unknown, 0: no, 1: yes)
+	private boolean hasRedirectSupport = true;
+	private String reason = "";
 
-		String command;
-		String line = null;
+	private static final Class<?>[] mStartForegroundSignature = new Class[] {
+			int.class, Notification.class };
 
-		command = BASE
-				+ "iptables -t nat -A OUTPUT -p udp --dport 54 -j REDIRECT --to 8154";
+	private static final Class<?>[] mStopForegroundSignature = new Class[] { boolean.class };
+	private Method mStartForeground;
 
-		try {
-			process = Runtime.getRuntime().exec("su");
-			es = new DataInputStream(process.getErrorStream());
-			os = new DataOutputStream(process.getOutputStream());
-			os.writeBytes(command + "\n");
-			os.writeBytes("exit\n");
-			os.flush();
-			process.waitFor();
+	private Method mStopForeground;
 
-			while (null != (line = es.readLine())) {
-				Log.d(TAG, line);
-				if (line.contains("No chain/target/match")) {
-					this.hasRedirectSupport = false;
-					break;
+	private Object[] mStartForegroundArgs = new Object[2];
+
+	private Object[] mStopForegroundArgs = new Object[1];
+
+	final Handler handler = new Handler() {
+		@Override
+		public void handleMessage(Message msg) {
+			Editor ed = settings.edit();
+			switch (msg.what) {
+			case MSG_CONNECT_START:
+				ed.putBoolean("isConnecting", true);
+				break;
+			case MSG_CONNECT_FINISH:
+				ed.putBoolean("isConnecting", false);
+				ed.putBoolean("isSwitching", false);
+				break;
+			case MSG_CONNECT_SUCCESS:
+				ed.putBoolean("isRunning", true);
+				// stateChanged = new ConnectivityBroadcastReceiver();
+				// registerReceiver(stateChanged, new IntentFilter(
+				// ConnectivityManager.CONNECTIVITY_ACTION));
+				break;
+			case MSG_CONNECT_FAIL:
+				ed.putBoolean("isRunning", false);
+				break;
+			case MSG_DISCONNECT_FINISH:
+
+				ed.putBoolean("isRunning", false);
+				ed.putBoolean("isSwitching", false);
+
+				try {
+					notificationManager.cancel(0);
+					notificationManager.cancel(1);
+				} catch (Exception ignore) {
+					// Nothing
 				}
-			}
-		} catch (Exception e) {
-			Log.e(TAG, e.getMessage());
-		} finally {
-			try {
-				if (os != null) {
-					os.close();
+
+				// for widget, maybe exception here
+				try {
+					RemoteViews views = new RemoteViews(getPackageName(),
+							R.layout.sshtunnel_appwidget);
+					views.setImageViewResource(R.id.serviceToggle,
+							R.drawable.off);
+					AppWidgetManager awm = AppWidgetManager
+							.getInstance(SSHTunnelService.this);
+					awm.updateAppWidget(awm.getAppWidgetIds(new ComponentName(
+							SSHTunnelService.this,
+							SSHTunnelWidgetProvider.class)), views);
+				} catch (Exception ignore) {
+					// Nothing
 				}
-				if (es != null)
-					es.close();
-				process.destroy();
-			} catch (Exception e) {
-				// nothing
+				break;
 			}
+			ed.commit();
+			super.handleMessage(msg);
 		}
-
-		// flush the check command
-		runRootCommand(command.replace("-A", "-D"));
-	}
+	};
 
 	private void authenticate() {
 		try {
@@ -387,16 +358,6 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 
 	}
 
-	public void stopReconnect(SimpleDateFormat df) {
-		connected = false;
-		notifyAlert(
-				getString(R.string.reconnect_fail) + " "
-						+ df.format(new Date()),
-				getString(R.string.reconnect_fail),
-				Notification.FLAG_AUTO_CANCEL);
-		stopSelf();
-	}
-
 	public void connectionLost(Throwable reason) {
 
 		Log.d(TAG, "Connection Lost");
@@ -493,16 +454,6 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 		return true;
 	}
 
-	final static String CMD_IPTABLES_REDIRECT_ADD = BASE
-			+ "iptables -t nat -A SSHTUNNEL -p tcp --dport 80 -j REDIRECT --to 8123\n"
-			+ BASE
-			+ "iptables -t nat -A SSHTUNNEL -p tcp --dport 443 -j REDIRECT --to 8124\n";
-
-	final static String CMD_IPTABLES_DNAT_ADD = BASE
-			+ "iptables -t nat -A SSHTUNNEL -p tcp --dport 80 -j DNAT --to-destination 127.0.0.1:8123\n"
-			+ BASE
-			+ "iptables -t nat -A SSHTUNNEL -p tcp --dport 443 -j DNAT --to-destination 127.0.0.1:8124\n";
-
 	/**
 	 * Internal method to request actual PTY terminal once we've finished
 	 * authentication. If called before authenticated, it will just fail.
@@ -523,18 +474,21 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 		cmd.append(BASE + "iptables -t nat -N SSHTUNNELDNS\n");
 		cmd.append(BASE + "iptables -t nat -F SSHTUNNELDNS\n");
 
-		if (hasRedirectSupport)
-			cmd.append(BASE
-					+ "iptables "
-					+ "-t nat -A SSHTUNNELDNS -p udp --dport 53 -j REDIRECT --to "
-					+ dnsPort + "\n");
-		else
-			cmd.append(BASE
-					+ "iptables "
-					+ "-t nat -A SSHTUNNELDNS -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:"
-					+ dnsPort + "\n");
+		if (enableDNSProxy) {
+			if (hasRedirectSupport)
+				cmd.append(BASE
+						+ "iptables "
+						+ "-t nat -A SSHTUNNELDNS -p udp --dport 53 -j REDIRECT --to "
+						+ dnsPort + "\n");
+			else
+				cmd.append(BASE
+						+ "iptables "
+						+ "-t nat -A SSHTUNNELDNS -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:"
+						+ dnsPort + "\n");
 
-		cmd.append(BASE + "iptables -t nat -A OUTPUT -p udp -j SSHTUNNELDNS\n");
+			cmd.append(BASE
+					+ "iptables -t nat -A OUTPUT -p udp -j SSHTUNNELDNS\n");
+		}
 
 		cmd.append(hasRedirectSupport ? CMD_IPTABLES_REDIRECT_ADD
 				: CMD_IPTABLES_DNAT_ADD);
@@ -570,6 +524,91 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 
 	}
 
+	private void flushIptables() {
+
+		StringBuffer cmd = new StringBuffer();
+
+		cmd.append(BASE + "iptables -t nat -F SSHTUNNEL\n");
+		cmd.append(BASE + "iptables -t nat -F SSHTUNNELDNS\n");
+		cmd.append(BASE + "iptables -t nat -X SSHTUNNEL\n");
+		cmd.append(BASE + "iptables -t nat -X SSHTUNNELDNS\n");
+
+		cmd.append(BASE + "iptables -t nat -D OUTPUT -p udp -j SSHTUNNELDNS\n");
+
+		if (isAutoSetProxy) {
+			cmd.append(BASE + "iptables -t nat -D OUTPUT -p tcp -j SSHTUNNEL\n");
+		} else {
+
+			// for proxy specified apps
+			if (apps == null || apps.length <= 0)
+				apps = AppManager.getProxyedApps(this);
+
+			for (int i = 0; i < apps.length; i++) {
+				if (apps[i].isProxyed()) {
+					cmd.append(BASE + "iptables "
+							+ "-t nat -m owner --uid-owner " + apps[i].getUid()
+							+ " -D OUTPUT -p tcp -j SSHTUNNEL\n");
+				}
+			}
+		}
+
+		String rules = cmd.toString();
+
+		runRootCommand(rules);
+
+		if (isSocks)
+			runRootCommand(BASE + "proxy_socks.sh stop");
+		else
+			runRootCommand(BASE + "proxy_http.sh stop");
+
+	}
+
+	private void initHasRedirectSupported() {
+		Process process = null;
+		DataOutputStream os = null;
+		DataInputStream es = null;
+
+		String command;
+		String line = null;
+
+		command = BASE
+				+ "iptables -t nat -A OUTPUT -p udp --dport 54 -j REDIRECT --to 8154";
+
+		try {
+			process = Runtime.getRuntime().exec("su");
+			es = new DataInputStream(process.getErrorStream());
+			os = new DataOutputStream(process.getOutputStream());
+			os.writeBytes(command + "\n");
+			os.writeBytes("exit\n");
+			os.flush();
+			process.waitFor();
+
+			while (null != (line = es.readLine())) {
+				Log.d(TAG, line);
+				if (line.contains("No chain/target/match")) {
+					this.hasRedirectSupport = false;
+					break;
+				}
+			}
+		} catch (Exception e) {
+			Log.e(TAG, e.getMessage());
+		} finally {
+			try {
+				if (os != null) {
+					os.close();
+				}
+				if (es != null)
+					es.close();
+				process.destroy();
+			} catch (Exception e) {
+				// nothing
+			}
+		}
+
+		// flush the check command
+		runRootCommand(command.replace("-A", "-D"));
+	}
+
 	private void initSoundVibrateLights(Notification notification) {
 		final String ringtone = settings.getString(
 				"settings_key_notif_ringtone", null);
@@ -588,6 +627,30 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 		}
 
 		notification.defaults |= Notification.DEFAULT_LIGHTS;
+	}
+
+	void invokeMethod(Method method, Object[] args) {
+		try {
+			method.invoke(this, mStartForegroundArgs);
+		} catch (InvocationTargetException e) {
+			// Should not happen.
+			Log.w("ApiDemos", "Unable to invoke method", e);
+		} catch (IllegalAccessException e) {
+			// Should not happen.
+			Log.w("ApiDemos", "Unable to invoke method", e);
+		}
+	}
+
+	public boolean isOnline() {
+
+		ConnectivityManager manager = (ConnectivityManager) this
+				.getSystemService(CONNECTIVITY_SERVICE);
+		NetworkInfo networkInfo = manager.getActiveNetworkInfo();
+		if (networkInfo == null) {
+			reason = getString(R.string.fail_to_online);
+			return false;
+		}
+		return true;
 	}
 
 	private void notifyAlert(String title, String info) {
@@ -640,7 +703,7 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 			// Running on an older platform.
 			mStartForeground = mStopForeground = null;
 		}
-		
+
 		reason = getString(R.string.fail_to_connect);
 	}
 
@@ -664,13 +727,15 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 					Notification.FLAG_AUTO_CANCEL);
 		}
 
-		try {
-			if (dnsServer != null) {
-				dnsServer.close();
-				dnsServer = null;
+		if (enableDNSProxy) {
+			try {
+				if (dnsServer != null) {
+					dnsServer.close();
+					dnsServer = null;
+				}
+			} catch (Exception e) {
+				Log.e(TAG, "DNS Server close unexpected");
 			}
-		} catch (Exception e) {
-			Log.e(TAG, "DNS Server close unexpected");
 		}
 
 		new Thread() {
@@ -688,45 +753,6 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 		flushIptables();
 
 		super.onDestroy();
-	}
-
-	private void flushIptables() {
-
-		StringBuffer cmd = new StringBuffer();
-
-		cmd.append(BASE + "iptables -t nat -F SSHTUNNEL\n");
-		cmd.append(BASE + "iptables -t nat -F SSHTUNNELDNS\n");
-		cmd.append(BASE + "iptables -t nat -X SSHTUNNEL\n");
-		cmd.append(BASE + "iptables -t nat -X SSHTUNNELDNS\n");
-
-		cmd.append(BASE + "iptables -t nat -D OUTPUT -p udp -j SSHTUNNELDNS\n");
-
-		if (isAutoSetProxy) {
-			cmd.append(BASE + "iptables -t nat -D OUTPUT -p tcp -j SSHTUNNEL\n");
-		} else {
-
-			// for proxy specified apps
-			if (apps == null || apps.length <= 0)
-				apps = AppManager.getProxyedApps(this);
-
-			for (int i = 0; i < apps.length; i++) {
-				if (apps[i].isProxyed()) {
-					cmd.append(BASE + "iptables "
-							+ "-t nat -m owner --uid-owner " + apps[i].getUid()
-							+ " -D OUTPUT -p tcp -j SSHTUNNEL\n");
-				}
-			}
-		}
-
-		String rules = cmd.toString();
-
-		runRootCommand(rules);
-
-		if (isSocks)
-			runRootCommand(BASE + "proxy_socks.sh stop");
-		else
-			runRootCommand(BASE + "proxy_http.sh stop");
-
 	}
 
 	private synchronized void onDisconnect() {
@@ -753,60 +779,6 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 
 	}
 
-	final Handler handler = new Handler() {
-		@Override
-		public void handleMessage(Message msg) {
-			Editor ed = settings.edit();
-			switch (msg.what) {
-			case MSG_CONNECT_START:
-				ed.putBoolean("isConnecting", true);
-				break;
-			case MSG_CONNECT_FINISH:
-				ed.putBoolean("isConnecting", false);
-				ed.putBoolean("isSwitching", false);
-				break;
-			case MSG_CONNECT_SUCCESS:
-				ed.putBoolean("isRunning", true);
-				// stateChanged = new ConnectivityBroadcastReceiver();
-				// registerReceiver(stateChanged, new IntentFilter(
-				// ConnectivityManager.CONNECTIVITY_ACTION));
-				break;
-			case MSG_CONNECT_FAIL:
-				ed.putBoolean("isRunning", false);
-				break;
-			case MSG_DISCONNECT_FINISH:
-
-				ed.putBoolean("isRunning", false);
-				ed.putBoolean("isSwitching", false);
-
-				try {
-					notificationManager.cancel(0);
-					notificationManager.cancel(1);
-				} catch (Exception ignore) {
-					// Nothing
-				}
-
-				// for widget, maybe exception here
-				try {
-					RemoteViews views = new RemoteViews(getPackageName(),
-							R.layout.sshtunnel_appwidget);
-					views.setImageViewResource(R.id.serviceToggle,
-							R.drawable.off);
-					AppWidgetManager awm = AppWidgetManager
-							.getInstance(SSHTunnelService.this);
-					awm.updateAppWidget(awm.getAppWidgetIds(new ComponentName(
-							SSHTunnelService.this,
-							SSHTunnelWidgetProvider.class)), views);
-				} catch (Exception ignore) {
-					// Nothing
-				}
-				break;
-			}
-			ed.commit();
-			super.handleMessage(msg);
-		}
-	};
-
 	// This is the old onStart method that will be called on the pre-2.0
 	// platform. On 2.0 or later we override onStartCommand() so this
 	// method will not be called.
@@ -832,11 +804,37 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 		new Thread(new Runnable() {
 			public void run() {
 
-				if (dnsServer == null) {
-					dnsServer = new DNSServer("DNS Server", "8.8.4.4", 53,
-							SSHTunnelService.this);
-					dnsServer.setBasePath("/data/data/org.sshtunnel");
-					dnsPort = dnsServer.init();
+				// Acquire a reference to the system Location Manager
+				LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+
+				String locationProvider = LocationManager.NETWORK_PROVIDER;
+				// Or use LocationManager.GPS_PROVIDER
+
+				Location lastKnownLocation = locationManager
+						.getLastKnownLocation(locationProvider);
+				Geocoder geoCoder = new Geocoder(SSHTunnelService.this);
+				try {
+					List<Address> addrs = geoCoder.getFromLocation(
+							lastKnownLocation.getLatitude(),
+							lastKnownLocation.getLongitude(), 1);
+					if (addrs != null && addrs.size() > 0) {
+						Address addr = addrs.get(0);
+						Log.d(TAG, "Location: " + addr.getCountryName());
+						if (!addr.getCountryCode().equals("CN"))
+							enableDNSProxy = false;
+					}
+				} catch (IOException e) {
+					enableDNSProxy = true;
+					// Nothing
+				}
+
+				if (enableDNSProxy) {
+					if (dnsServer == null) {
+						dnsServer = new DNSServer("DNS Server", "8.8.4.4", 53,
+								SSHTunnelService.this);
+						dnsServer.setBasePath("/data/data/org.sshtunnel");
+						dnsPort = dnsServer.init();
+					}
 				}
 
 				try {
@@ -858,10 +856,12 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 					// Connection and forward successful
 					finishConnection();
 
-					// Start DNS Proxy
-					Thread dnsThread = new Thread(dnsServer);
-					dnsThread.setDaemon(true);
-					dnsThread.start();
+					if (enableDNSProxy) {
+						// Start DNS Proxy
+						Thread dnsThread = new Thread(dnsServer);
+						dnsThread.setDaemon(true);
+						dnsThread.start();
+					}
 
 					notifyAlert(getString(R.string.forward_success),
 							getString(R.string.service_running));
@@ -886,8 +886,8 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 
 				} else {
 					// Connection or forward unsuccessful
-					notifyAlert(getString(R.string.forward_fail) + ": " + reason,
-							getString(R.string.service_failed),
+					notifyAlert(getString(R.string.forward_fail) + ": "
+							+ reason, getString(R.string.service_failed),
 							Notification.FLAG_AUTO_CANCEL);
 
 					handler.sendEmptyMessage(MSG_CONNECT_FINISH);
@@ -906,18 +906,6 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 		}).start();
 	}
 
-	public boolean isOnline() {
-
-		ConnectivityManager manager = (ConnectivityManager) this
-				.getSystemService(CONNECTIVITY_SERVICE);
-		NetworkInfo networkInfo = manager.getActiveNetworkInfo();
-		if (networkInfo == null) {
-			reason = getString(R.string.fail_to_online);
-			return false;
-		}
-		return true;
-	}
-
 	@Override
 	public String[] replyToChallenge(String name, String instruction,
 			int numPrompts, String[] prompt, boolean[] echo) throws Exception {
@@ -928,5 +916,59 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 				responses[i] = password;
 		}
 		return responses;
+	}
+
+	/**
+	 * This is a wrapper around the new startForeground method, using the older
+	 * APIs if it is not available.
+	 */
+	void startForegroundCompat(int id, Notification notification) {
+		// If we have the new startForeground API, then use it.
+		if (mStartForeground != null) {
+			mStartForegroundArgs[0] = Integer.valueOf(id);
+			mStartForegroundArgs[1] = notification;
+			invokeMethod(mStartForeground, mStartForegroundArgs);
+			return;
+		}
+
+		// Fall back on the old API.
+		setForeground(true);
+		notificationManager.notify(id, notification);
+	}
+
+	/**
+	 * This is a wrapper around the new stopForeground method, using the older
+	 * APIs if it is not available.
+	 */
+	void stopForegroundCompat(int id) {
+		// If we have the new stopForeground API, then use it.
+		if (mStopForeground != null) {
+			mStopForegroundArgs[0] = Boolean.TRUE;
+			try {
+				mStopForeground.invoke(this, mStopForegroundArgs);
+			} catch (InvocationTargetException e) {
+				// Should not happen.
+				Log.w("ApiDemos", "Unable to invoke stopForeground", e);
+			} catch (IllegalAccessException e) {
+				// Should not happen.
+				Log.w("ApiDemos", "Unable to invoke stopForeground", e);
+			}
+			return;
+		}
+
+		// Fall back on the old API. Note to cancel BEFORE changing the
+		// foreground state, since we could be killed at that point.
+		notificationManager.cancel(id);
+		setForeground(false);
+	}
+
+	public void stopReconnect(SimpleDateFormat df) {
+		connected = false;
+		notifyAlert(
+				getString(R.string.reconnect_fail) + " "
+						+ df.format(new Date()),
+				getString(R.string.reconnect_fail),
+				Notification.FLAG_AUTO_CANCEL);
+		stopSelf();
 	}
 }
