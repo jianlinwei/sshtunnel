@@ -29,8 +29,6 @@ import java.net.NoRouteToHostException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-import android.util.Log;
-
 import net.sourceforge.jsocks.Proxy;
 import net.sourceforge.jsocks.ProxyMessage;
 import net.sourceforge.jsocks.Socks4Message;
@@ -38,6 +36,7 @@ import net.sourceforge.jsocks.Socks5Message;
 import net.sourceforge.jsocks.SocksException;
 import net.sourceforge.jsocks.server.ServerAuthenticator;
 import net.sourceforge.jsocks.server.ServerAuthenticatorNone;
+import android.util.Log;
 
 /**
  * DynamicAcceptThread.

@@ -3,24 +3,26 @@ package org.sshtunnel;
 import java.util.ArrayList;
 
 import android.app.ActivityManager;
-import android.app.AlertDialog;
-import android.app.Notification;
-import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.app.ActivityManager.RunningServiceInfo;
 import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.preference.PreferenceManager;
 import android.util.Log;
 
 public class ConnectivityBroadcastReceiver extends BroadcastReceiver {
 
 	private static final String TAG = "ConnectivityBroadcastReceiver";
+
+	public boolean isOnline(Context context) {
+		ConnectivityManager manager = (ConnectivityManager) context
+				.getSystemService(Context.CONNECTIVITY_SERVICE);
+		NetworkInfo networkInfo = manager.getActiveNetworkInfo();
+		if (networkInfo == null)
+			return false;
+		return true;
+	}
 
 	public boolean isWorked(Context context, String service) {
 		ActivityManager myManager = (ActivityManager) context
@@ -81,15 +83,6 @@ public class ConnectivityBroadcastReceiver extends BroadcastReceiver {
 			}
 		}
 
-	}
-
-	public boolean isOnline(Context context) {
-		ConnectivityManager manager = (ConnectivityManager) context
-				.getSystemService(Context.CONNECTIVITY_SERVICE);
-		NetworkInfo networkInfo = manager.getActiveNetworkInfo();
-		if (networkInfo == null)
-			return false;
-		return true;
 	}
 
 }

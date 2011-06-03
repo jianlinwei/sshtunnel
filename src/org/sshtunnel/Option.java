@@ -11,23 +11,23 @@ public class Option implements Comparable<Option>{
 		data = d;
 		path = p;
 	}
-	public String getName()
-	{
-		return name;
-	}
-	public String getData()
-	{
-		return data;
-	}
-	public String getPath()
-	{
-		return path;
-	}
 	@Override
 	public int compareTo(Option o) {
 		if(this.name != null)
 			return this.name.toLowerCase().compareTo(o.getName().toLowerCase()); 
 		else 
 			throw new IllegalArgumentException();
+	}
+	public String getData()
+	{
+		return data;
+	}
+	public String getName()
+	{
+		return name;
+	}
+	public String getPath()
+	{
+		return path;
 	}
 }
