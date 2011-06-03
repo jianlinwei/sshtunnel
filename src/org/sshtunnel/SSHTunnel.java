@@ -45,6 +45,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.List;
 
 import android.app.ActivityManager;
 import android.app.ActivityManager.RunningServiceInfo;
@@ -58,6 +59,10 @@ import android.content.SharedPreferences.Editor;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.AssetManager;
+import android.location.Address;
+import android.location.Geocoder;
+import android.location.Location;
+import android.location.LocationManager;
 import android.os.Bundle;
 import android.preference.CheckBoxPreference;
 import android.preference.EditTextPreference;
@@ -94,6 +99,7 @@ public class SSHTunnel extends PreferenceActivity implements
 		}
 		return true;
 	}
+
 	public static boolean runRootCommand(String command) {
 		Process process = null;
 		DataOutputStream os = null;
@@ -119,6 +125,7 @@ public class SSHTunnel extends PreferenceActivity implements
 		}
 		return true;
 	}
+
 	private ProgressDialog pd = null;
 	private String host = "";
 	private int port = 22;
@@ -410,7 +417,7 @@ public class SSHTunnel extends PreferenceActivity implements
 		menu.add(Menu.NONE, Menu.FIRST + 3, 3, getString(R.string.about))
 				.setIcon(android.R.drawable.ic_menu_info_details);
 		menu.add(Menu.NONE, Menu.FIRST + 4, 4, getString(R.string.key_manager))
-		.setIcon(android.R.drawable.ic_menu_edit);
+				.setIcon(android.R.drawable.ic_menu_edit);
 
 		// return true才会起作用
 		return true;
@@ -812,23 +819,32 @@ public class SSHTunnel extends PreferenceActivity implements
 	}
 
 	private void recovery() {
-		try {
-			stopService(new Intent(this, SSHTunnelService.class));
-		} catch (Exception e) {
-			// Nothing
-		}
 
-		try {
-			File cache = new File(SSHTunnelService.BASE + "cache/dnscache");
-			if (cache.exists())
-				cache.delete();
-		} catch (Exception ignore) {
-			// Nothing
-		}
+		new Thread() {
+			public void run() {
+				
+				try {
+					stopService(new Intent(SSHTunnel.this,
+							SSHTunnelService.class));
+				} catch (Exception e) {
+					// Nothing
+				}
 
-		runRootCommand(SSHTunnelService.BASE + "iptables -t nat -F OUTPUT");
+				try {
+					File cache = new File(SSHTunnelService.BASE
+							+ "cache/dnscache");
+					if (cache.exists())
+						cache.delete();
+				} catch (Exception ignore) {
+					// Nothing
+				}
 
-		runRootCommand(SSHTunnelService.BASE + "proxy_http.sh stop");
+				runRootCommand(SSHTunnelService.BASE
+						+ "iptables -t nat -F OUTPUT");
+
+				runRootCommand(SSHTunnelService.BASE + "proxy_http.sh stop");
+			}
+		}.start();
 	}
 
 	/** Called when connect button is clicked. */
