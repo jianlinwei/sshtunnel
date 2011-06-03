@@ -128,7 +128,6 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 	private volatile boolean connected = false;
 
 	private ProxyedApp apps[] = null;
-	
 
 	public final static String BASE = "/data/data/org.sshtunnel/";
 
@@ -823,7 +822,7 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 						if (!addr.getCountryCode().toLowerCase().equals("cn"))
 							enableDNSProxy = false;
 					}
-				} catch (IOException e) {
+				} catch (Exception e) {
 					enableDNSProxy = true;
 					// Nothing
 				}
