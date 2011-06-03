@@ -1,14 +1,21 @@
 package org.sshtunnel;
 
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
 import android.app.ActivityManager;
 import android.app.ActivityManager.RunningServiceInfo;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.location.Address;
+import android.location.Geocoder;
+import android.location.Location;
+import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.telephony.TelephonyManager;
 import android.util.Log;
 
 public class ConnectivityBroadcastReceiver extends BroadcastReceiver {
@@ -49,7 +56,45 @@ public class ConnectivityBroadcastReceiver extends BroadcastReceiver {
 
 		Log.e(TAG, "Connection Test");
 
-		
+		// Acquire a reference to the system Location Manager
+		LocationManager locationManager = (LocationManager) context
+				.getSystemService(Context.LOCATION_SERVICE);
+
+		String locationProvider = LocationManager.NETWORK_PROVIDER;
+		// Or use LocationManager.GPS_PROVIDER
+
+		Location lastKnownLocation = locationManager
+				.getLastKnownLocation(locationProvider);
+		Geocoder geoCoder = new Geocoder(context);
+
+		TelephonyManager tm = (TelephonyManager) context
+				.getSystemService(Context.TELEPHONY_SERVICE);
+		String countryCode = tm.getSimCountryIso();
+
+		try {
+			List<Address> addrs = geoCoder.getFromLocation(
+					lastKnownLocation.getLatitude(),
+					lastKnownLocation.getLongitude(), 1);
+			if (addrs != null && addrs.size() > 0) {
+				Address addr = addrs.get(0);
+				Log.d(TAG, "Location: " + addr.getCountryName());
+				if (addr.getCountryCode().toLowerCase().equals("cn")
+						&& countryCode.toLowerCase().equals("cn")) {
+					String command = "setprop gsm.sim.operator.numeric 31026\n"
+							+ "setprop gsm.operator.numeric 31026\n"
+							+ "setprop gsm.sim.operator.iso-country us\n"
+							+ "setprop gsm.operator.iso-country us\n"
+							+ "setprop gsm.operator.alpha T-Mobile\n"
+							+ "setprop gsm.sim.operator.alpha T-Mobile\n"
+							+ "kill $(ps | grep vending | tr -s  ' ' | cut -d ' ' -f2)\n"
+							+ "rm -rf /data/data/com.android.vending/cache/*\n";
+					SSHTunnel.runRootCommand(command);
+				}
+			}
+		} catch (IOException e) {
+			// Nothing
+		}
+
 		if (!isOnline(context)) {
 			if (isWorked(context, SSHTunnel.SERVICE_NAME)) {
 				try {
@@ -60,16 +105,16 @@ public class ConnectivityBroadcastReceiver extends BroadcastReceiver {
 				}
 			}
 		} else {
-			
-//			// Wait for connection stable
-//			try {
-//				Thread.sleep();
-//			} catch (InterruptedException ignore) {
-//				// Nothing
-//			}
-			
+
+			// // Wait for connection stable
+			// try {
+			// Thread.sleep();
+			// } catch (InterruptedException ignore) {
+			// // Nothing
+			// }
+
 			if (!isWorked(context, SSHTunnel.SERVICE_NAME)) {
-				
+
 				while (SSHTunnelService.isStopping) {
 					try {
 						Thread.sleep(1000);
@@ -77,7 +122,7 @@ public class ConnectivityBroadcastReceiver extends BroadcastReceiver {
 						break;
 					}
 				}
-				
+
 				SSHTunnelReceiver sshr = new SSHTunnelReceiver();
 				sshr.onReceive(context, intent, false);
 			}

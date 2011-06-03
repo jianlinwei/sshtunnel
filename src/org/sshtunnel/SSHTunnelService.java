@@ -820,7 +820,7 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 					if (addrs != null && addrs.size() > 0) {
 						Address addr = addrs.get(0);
 						Log.d(TAG, "Location: " + addr.getCountryName());
-						if (!addr.getCountryCode().equals("CN"))
+						if (!addr.getCountryCode().toLowerCase().equals("cn"))
 							enableDNSProxy = false;
 					}
 				} catch (IOException e) {
