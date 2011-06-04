@@ -177,8 +177,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 				mTermOut.flush();
 
 				byte[] data = new byte[256];
+				StringBuffer sb = new StringBuffer();
 				while ((mTermIn.read(data)) != -1) {
-					StringBuffer sb = new StringBuffer();
 					for (int i = 0; i < data.length; i++) {
 						char printableB = (char) data[i];
 						if (data[i] < 32 || data[i] > 126) {
@@ -187,19 +187,20 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 						sb.append(printableB);
 					}
 					String line = sb.toString();
-					if (line.toLowerCase().contains("yes")) {
-						mTermOut.write(("yes\n").getBytes());
-						mTermOut.flush();
-						continue;
-					}
 					if (line.toLowerCase().contains("password")) {
 						mTermOut.write((password + "\n").getBytes());
 						mTermOut.flush();
 						mTermFd.sync();
 						break;
 					} else {
-						Log.e(TAG, "Connect fail: " + line);
+						Log.e(TAG, "Output: " + line);
 					}
+					if (line.toLowerCase().contains("yes")) {
+						mTermOut.write(("yes\n").getBytes());
+						mTermOut.flush();
+						continue;
+					}
+
 				}
 
 			} catch (IOException e) {
