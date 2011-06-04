@@ -470,10 +470,12 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 
 		cmd.append(BASE + "iptables -t nat -N SSHTUNNEL\n");
 		cmd.append(BASE + "iptables -t nat -F SSHTUNNEL\n");
-		cmd.append(BASE + "iptables -t nat -N SSHTUNNELDNS\n");
-		cmd.append(BASE + "iptables -t nat -F SSHTUNNELDNS\n");
 
 		if (enableDNSProxy) {
+
+			cmd.append(BASE + "iptables -t nat -N SSHTUNNELDNS\n");
+			cmd.append(BASE + "iptables -t nat -F SSHTUNNELDNS\n");
+
 			if (hasRedirectSupport)
 				cmd.append(BASE
 						+ "iptables "
@@ -528,11 +530,15 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 		StringBuffer cmd = new StringBuffer();
 
 		cmd.append(BASE + "iptables -t nat -F SSHTUNNEL\n");
-		cmd.append(BASE + "iptables -t nat -F SSHTUNNELDNS\n");
 		cmd.append(BASE + "iptables -t nat -X SSHTUNNEL\n");
-		cmd.append(BASE + "iptables -t nat -X SSHTUNNELDNS\n");
 
-		cmd.append(BASE + "iptables -t nat -D OUTPUT -p udp -j SSHTUNNELDNS\n");
+
+		if (enableDNSProxy) {
+			cmd.append(BASE + "iptables -t nat -F SSHTUNNELDNS\n");
+			cmd.append(BASE + "iptables -t nat -X SSHTUNNELDNS\n");
+			cmd.append(BASE
+					+ "iptables -t nat -D OUTPUT -p udp -j SSHTUNNELDNS\n");
+		}
 
 		if (isAutoSetProxy) {
 			cmd.append(BASE + "iptables -t nat -D OUTPUT -p tcp -j SSHTUNNEL\n");
