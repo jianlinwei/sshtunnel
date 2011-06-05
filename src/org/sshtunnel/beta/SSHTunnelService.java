@@ -246,7 +246,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	private static final int MSG_CONNECT_FINISH = 1;
 	private static final int MSG_CONNECT_SUCCESS = 2;
 	private static final int MSG_CONNECT_FAIL = 3;
-	
+
 	private static final int CONNECT_TIMEOUT = 30000;
 
 	private final static String DEFAULT_SHELL = "/system/bin/sh -";
@@ -461,7 +461,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		} catch (InterruptedException ex) {
 			// Nothing
 		}
-		
+
 		// String cmd = "echo $$ > " + BASE + "shell.pid\n";
 
 		// FileInputStream mTermIn = new FileInputStream(mTermFd);
@@ -817,16 +817,22 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			cmd.append(hasRedirectSupport ? CMD_IPTABLES_REDIRECT_DEL
 					: CMD_IPTABLES_DNAT_DEL);
 		} else {
-			// for proxy specified apps
-			if (apps == null || apps.length <= 0)
-				apps = AppManager.getApps(this);
+			try {
+				// for proxy specified apps
+				if (apps == null || apps.length <= 0)
+					apps = AppManager.getProxyedApps(this);
 
-			for (int i = 0; i < apps.length; i++) {
-				if (apps[i].isProxyed()) {
-					cmd.append((hasRedirectSupport ? CMD_IPTABLES_REDIRECT_DEL
-							: CMD_IPTABLES_DNAT_DEL).replace("-t nat",
-							"-t nat -m owner --uid-owner " + apps[i].getUid()));
+				for (int i = 0; i < apps.length; i++) {
+					if (apps[i].isProxyed()) {
+						cmd.append((hasRedirectSupport ? CMD_IPTABLES_REDIRECT_DEL
+								: CMD_IPTABLES_DNAT_DEL).replace(
+								"-t nat",
+								"-t nat -m owner --uid-owner "
+										+ apps[i].getUid()));
+					}
 				}
+			} catch (Exception e) {
+				cmd.append(BASE + "iptables -t nat -F OUTPUT");
 			}
 		}
 
