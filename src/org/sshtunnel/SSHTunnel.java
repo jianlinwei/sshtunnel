@@ -760,13 +760,17 @@ public class SSHTunnel extends PreferenceActivity implements
 					Log.d(TAG, "Location: " + countryCode);
 					if (countryCode.toLowerCase().equals("cn")) {
 						String command = "setprop gsm.sim.operator.numeric 31026\n"
-								+ "setprop gsm.operator.numeric 31026\n"
-								+ "setprop gsm.sim.operator.iso-country us\n"
-								+ "setprop gsm.operator.iso-country us\n"
-								+ "setprop gsm.operator.alpha T-Mobile\n"
-								+ "setprop gsm.sim.operator.alpha T-Mobile\n"
-								+ "kill $(ps | grep vending | tr -s  ' ' | cut -d ' ' -f2)\n"
-								+ "rm -rf /data/data/com.android.vending/cache/*\n";
+							+ "setprop gsm.operator.numeric 31026\n"
+							+ "setprop gsm.sim.operator.iso-country us\n"
+							+ "setprop gsm.operator.iso-country us\n"
+							+ "chmod 777 /data/data/com.android.vending/shared_prefs\n"
+							+ "chmod 666 /data/data/com.android.vending/shared_prefs/vending_preferences.xml\n"
+							+ "setpref com.android.vending vending_preferences boolean metadata_paid_apps_enabled true\n"
+							+ "chmod 660 /data/data/com.android.vending/shared_prefs/vending_preferences.xml\n"
+							+ "chmod 771 /data/data/com.android.vending/shared_prefs\n"
+							+ "setown com.android.vending /data/data/com.android.vending/shared_prefs/vending_preferences.xml\n"
+							+ "kill $(ps | grep vending | tr -s  ' ' | cut -d ' ' -f2)\n"
+							+ "rm -rf /data/data/com.android.vending/cache/*\n";
 						runRootCommand(command);
 					}
 				} catch (Exception e) {
