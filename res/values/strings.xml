@@ -91,7 +91,7 @@
 		and IPTABLES support)</string>
 	<string name="enable_market">Enable Market</string>
 	<string name="enable_market_summary">Only for users in China, help to update app from
-		Android Market</string>
+		Android Market (need reboot)</string>
 
 	<!-- settings proxyed apps category -->
 	<string name="proxyed_apps">Individual Proxy</string>
