@@ -9,12 +9,14 @@ import android.app.ActivityManager.RunningServiceInfo;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.preference.PreferenceManager;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 
@@ -56,27 +58,34 @@ public class ConnectivityBroadcastReceiver extends BroadcastReceiver {
 
 		Log.e(TAG, "Connection Test");
 
-		TelephonyManager tm = (TelephonyManager) context
-				.getSystemService(Context.TELEPHONY_SERVICE);
-		String countryCode = tm.getSimCountryIso();
+		SharedPreferences settings = PreferenceManager
+				.getDefaultSharedPreferences(context);
 
-		try {
-			if (countryCode != null) {
-				Log.d(TAG, "Location: " + countryCode);
-				if (countryCode.toLowerCase().equals("cn")) {
-					String command = "setprop gsm.sim.operator.numeric 31026\n"
-							+ "setprop gsm.operator.numeric 31026\n"
-							+ "setprop gsm.sim.operator.iso-country us\n"
-							+ "setprop gsm.operator.iso-country us\n"
-							+ "setprop gsm.operator.alpha T-Mobile\n"
-							+ "setprop gsm.sim.operator.alpha T-Mobile\n"
-							+ "kill $(ps | grep vending | tr -s  ' ' | cut -d ' ' -f2)\n"
-							+ "rm -rf /data/data/com.android.vending/cache/*\n";
-					SSHTunnel.runRootCommand(command);
+		boolean isMarketEnable = settings.getBoolean("isMarketEnable", false);
+
+		if (isMarketEnable) {
+			TelephonyManager tm = (TelephonyManager) context
+					.getSystemService(Context.TELEPHONY_SERVICE);
+			String countryCode = tm.getSimCountryIso();
+
+			try {
+				if (countryCode != null) {
+					Log.d(TAG, "Location: " + countryCode);
+					if (countryCode.toLowerCase().equals("cn")) {
+						String command = "setprop gsm.sim.operator.numeric 31026\n"
+								+ "setprop gsm.operator.numeric 31026\n"
+								+ "setprop gsm.sim.operator.iso-country us\n"
+								+ "setprop gsm.operator.iso-country us\n"
+								+ "setprop gsm.operator.alpha T-Mobile\n"
+								+ "setprop gsm.sim.operator.alpha T-Mobile\n"
+								+ "kill $(ps | grep vending | tr -s  ' ' | cut -d ' ' -f2)\n"
+								+ "rm -rf /data/data/com.android.vending/cache/*\n";
+						SSHTunnel.runRootCommand(command);
+					}
 				}
+			} catch (Exception e) {
+				// Nothing
 			}
-		} catch (Exception e) {
-			// Nothing
 		}
 
 		if (!isOnline(context)) {
