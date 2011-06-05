@@ -71,6 +71,7 @@ import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 import android.preference.PreferenceScreen;
+import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.Menu;
@@ -750,6 +751,30 @@ public class SSHTunnel extends PreferenceActivity implements
 			}
 		}
 
+		if (key.equals("isMarketEnable")) {
+			if (settings.getBoolean("isMarketEnable", false)) {
+				TelephonyManager tm = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+				String countryCode = tm.getSimCountryIso();
+
+				try {
+					Log.d(TAG, "Location: " + countryCode);
+					if (countryCode.toLowerCase().equals("cn")) {
+						String command = "setprop gsm.sim.operator.numeric 31026\n"
+								+ "setprop gsm.operator.numeric 31026\n"
+								+ "setprop gsm.sim.operator.iso-country us\n"
+								+ "setprop gsm.operator.iso-country us\n"
+								+ "setprop gsm.operator.alpha T-Mobile\n"
+								+ "setprop gsm.sim.operator.alpha T-Mobile\n"
+								+ "kill $(ps | grep vending | tr -s  ' ' | cut -d ' ' -f2)\n"
+								+ "rm -rf /data/data/com.android.vending/cache/*\n";
+						runRootCommand(command);
+					}
+				} catch (Exception e) {
+					// Nothing
+				}
+			}
+		}
+
 		if (key.equals("isSocks")) {
 			if (settings.getBoolean("isSocks", false)) {
 				remotePortText.setEnabled(false);
@@ -822,7 +847,7 @@ public class SSHTunnel extends PreferenceActivity implements
 
 		new Thread() {
 			public void run() {
-				
+
 				try {
 					stopService(new Intent(SSHTunnel.this,
 							SSHTunnelService.class));
