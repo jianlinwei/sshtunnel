@@ -20,7 +20,7 @@
 		problem to the project page. \n\n(sshtunnel.googlecode.com)
 	</string>
 	<string name="require_root_alert">PLEASE ROOT YOUR DEVICE FIRST !!!</string>
-	
+
 	<!-- error string -->
 	<string name="fail_to_connect">cannot connect to the host</string>
 	<string name="fail_to_authenticate">incorrect user name or password</string>
@@ -89,6 +89,9 @@
 	<string name="auto_set_proxy">Global Proxy</string>
 	<string name="auto_set_proxy_summary">Auto set up the global proxy (needs ROOT permission
 		and IPTABLES support)</string>
+	<string name="enable_market">Enable Market</string>
+	<string name="enable_market_summary">Only for users in China, help to update app from
+		Android Market</string>
 
 	<!-- settings proxyed apps category -->
 	<string name="proxyed_apps">Individual Proxy</string>
@@ -99,9 +102,11 @@
 	<!-- menu bar category -->
 	<string name="recovery">Recover the connection</string>
 	<string name="copy_rights">:\n\nSSHTunnel is an open source project
-		published under
+		published
+		under
 		the GPLV3. \n\nIf you have any question, please visit
-		our project page on
+		our project
+		page on
 		googlecode. \n\n(sshtunnel.googlecode.com)</string>
 	<string name="about">About</string>
 
@@ -118,7 +123,7 @@
 	<string name="profile_new">New Profile</string>
 	<string name="profile_base">Profile</string>
 	<string name="profile_del">Remove current profile</string>
-	
+
 	<!-- file chooser -->
 	<string name="file_chooser">Choose your key file</string>
 	<string name="key_manager">Key File Manager</string>
