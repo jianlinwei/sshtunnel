@@ -12,6 +12,7 @@ import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.view.View;
 import android.widget.ListView;
+import android.widget.Toast;
 
 public class FileChooser extends ListActivity {
 
@@ -62,6 +63,8 @@ public class FileChooser extends ListActivity {
 		Editor ed = settings.edit();
 		ed.putString("key_path", o.getPath());
 		ed.commit();
+		Toast.makeText(this, getString(R.string.file_toast) + o.getPath(),
+				Toast.LENGTH_SHORT);
 		finish();
 	}
 

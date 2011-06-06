@@ -131,4 +131,5 @@
 	<string name="parent_dir">Parent Directory</string>
 	<string name="folder">Folder</string>
 	<string name="file_size">File Size</string>
+	<string name="file_toast">Use the key file: </string>
 </resources>
