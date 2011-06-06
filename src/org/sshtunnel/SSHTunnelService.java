@@ -255,6 +255,8 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 					"/sdcard/sshtunnel/key");
 			File f = new File(path);
 			if (f.exists())
+				if (password.equals(""))
+					password = null;
 				if (connection.authenticateWithPublicKey(user, f, password)) {
 					Log.d(TAG, "Authenticate with public key");
 					return;
