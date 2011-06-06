@@ -287,78 +287,79 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 
 	public boolean connect() {
 
-		synchronized (this) {
+		// try {
+		//
+		// connection.setCompression(true);
+		// connection.setTCPNoDelay(true);
+		//
+		// } catch (IOException e) {
+		// Log.e(TAG, "Could not enable compression!", e);
+		// }
+
+		try {
 			connection = new Connection(host, port);
 			connection.addConnectionMonitor(this);
 
-			// try {
-			//
-			// connection.setCompression(true);
-			// connection.setTCPNoDelay(true);
-			//
-			// } catch (IOException e) {
-			// Log.e(TAG, "Could not enable compression!", e);
-			// }
+			/*
+			 * Uncomment when debugging SSH protocol:
+			 */
 
-			try {
-				/*
-				 * Uncomment when debugging SSH protocol:
-				 */
+			/*
+			 * DebugLogger logger = new DebugLogger() {
+			 * 
+			 * public void log(int level, String className, String message) {
+			 * Log.d("SSH", message); }
+			 * 
+			 * };
+			 * 
+			 * Logger.enabled = true; Logger.logger = logger;
+			 */
 
-				/*
-				 * DebugLogger logger = new DebugLogger() {
-				 * 
-				 * public void log(int level, String className, String message)
-				 * { Log.d("SSH", message); }
-				 * 
-				 * };
-				 * 
-				 * Logger.enabled = true; Logger.logger = logger;
-				 */
+			connection.connect(null, 10 * 1000, 20 * 1000);
+			connected = true;
 
-				connection.connect(null, 10 * 1000, 20 * 1000);
-				connected = true;
+		} catch (Exception e) {
+			Log.e(TAG, "Problem in SSH connection thread during connecting", e);
 
-			} catch (Exception e) {
-				Log.e(TAG,
-						"Problem in SSH connection thread during connecting", e);
+			// Display the reason in the text.
 
-				// Display the reason in the text.
+			reason = getString(R.string.fail_to_connect);
 
-				reason = getString(R.string.fail_to_connect);
-
-				return false;
-			}
-
-			try {
-				// enter a loop to keep trying until authentication
-				int tries = 0;
-				while (connected && !connection.isAuthenticationComplete()
-						&& tries++ < AUTH_TRIES) {
-					authenticate();
-
-					// sleep to make sure we dont kill system
-					Thread.sleep(1000);
-				}
-			} catch (Exception e) {
-				Log.e(TAG,
-						"Problem in SSH connection thread during authentication",
-						e);
-
-				reason = getString(R.string.fail_to_authenticate);
-				return false;
-			}
-
-			if (connection.isAuthenticationComplete()) {
-
-				return enablePortForward();
-			}
-
-			reason = getString(R.string.fail_to_authenticate);
-			Log.e(TAG, "Cannot authenticate");
 			return false;
 		}
 
+		try {
+			// enter a loop to keep trying until authentication
+			int tries = 0;
+			while (connected && !connection.isAuthenticationComplete()
+					&& tries++ < AUTH_TRIES) {
+				authenticate();
+
+				// sleep to make sure we dont kill system
+				Thread.sleep(1000);
+			}
+		} catch (Exception e) {
+			Log.e(TAG,
+					"Problem in SSH connection thread during authentication", e);
+
+			reason = getString(R.string.fail_to_authenticate);
+			return false;
+		}
+
+		try {
+			if (connection.isAuthenticationComplete()) {
+				return enablePortForward();
+			}
+		} catch (Exception e) {
+			Log.e(TAG, "Problem in SSH connection thread during enabling port", e);
+
+			reason = getString(R.string.fail_to_connect);
+			return false;
+		}
+
+		reason = getString(R.string.fail_to_authenticate);
+		Log.e(TAG, "Cannot authenticate");
+		return false;
 	}
 
 	public void connectionLost(Throwable reason) {
@@ -764,26 +765,24 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 	}
 
 	private void onDisconnect() {
-		synchronized (this) {
-			connected = false;
+		connected = false;
 
-			try {
-				if (lpf != null) {
-					lpf.close();
-					lpf = null;
-				}
-				if (dpf != null) {
-					dpf.close();
-					dpf = null;
-				}
-			} catch (Exception ignore) {
-				// Nothing
+		try {
+			if (lpf != null) {
+				lpf.close();
+				lpf = null;
 			}
+			if (dpf != null) {
+				dpf.close();
+				dpf = null;
+			}
+		} catch (Exception ignore) {
+			// Nothing
+		}
 
-			if (connection != null) {
-				connection.close();
-				connection = null;
-			}
+		if (connection != null) {
+			connection.close();
+			connection = null;
 		}
 
 	}
