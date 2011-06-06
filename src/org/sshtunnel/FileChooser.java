@@ -64,7 +64,7 @@ public class FileChooser extends ListActivity {
 		ed.putString("key_path", o.getPath());
 		ed.commit();
 		Toast.makeText(this, getString(R.string.file_toast) + o.getPath(),
-				Toast.LENGTH_SHORT);
+				Toast.LENGTH_SHORT).show();
 		finish();
 	}
 
