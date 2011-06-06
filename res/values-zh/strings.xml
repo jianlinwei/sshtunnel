@@ -94,6 +94,7 @@
 	<string name="parent_dir">上级目录</string>
 	<string name="folder">目录</string>
 	<string name="file_size">文件大小</string>
+	<string name="file_toast">使用密钥文件: </string>
 
 	<!-- error string -->
 	<string name="fail_to_connect">无法连接到主机</string>
