@@ -156,12 +156,13 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		@Override
 		public void run() {
 
-			String cmd = "echo $$ > " + BASE + "shell.pid\n";
-
-			mTermIn = new FileInputStream(mTermFd);
-			mTermOut = new FileOutputStream(mTermFd);
-
 			try {
+				
+				String cmd = "echo $$ > " + BASE + "shell.pid\n";
+
+				mTermIn = new FileInputStream(mTermFd);
+				mTermOut = new FileOutputStream(mTermFd);
+				
 				if (isSocks)
 					cmd += "/data/data/org.sshtunnel.beta/ssh.sh dynamic "
 							+ port + " " + localPort + " " + user + " "
