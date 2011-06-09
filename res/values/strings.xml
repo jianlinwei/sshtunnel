@@ -92,6 +92,12 @@
 	<string name="enable_market">Enable Market</string>
 	<string name="enable_market_summary">Only for users in China, help to update app from
 		Android Market (need reboot)</string>
+	<string name="enable_dnsproxy">Enable DNS Proxy</string>
+	<string name="enable_dnsproxy_summary">Enable DNS Proxy for some users behind a firewall
+	</string>
+	<string name="dnsproxy_addr">Upstream DNS Address</string>
+	<string name="dnsproxy_addr_summary">The upstream DNS used by DNS Proxy, modify
+		it only if you know what it is</string>
 
 	<!-- settings proxyed apps category -->
 	<string name="proxyed_apps">Individual Proxy</string>
