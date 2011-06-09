@@ -38,13 +38,18 @@
 
 package org.sshtunnel;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.InetAddress;
+import java.net.URL;
 import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -257,10 +262,10 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 			if (f.exists())
 				if (password.equals(""))
 					password = null;
-				if (connection.authenticateWithPublicKey(user, f, password)) {
-					Log.d(TAG, "Authenticate with public key");
-					return;
-				}
+			if (connection.authenticateWithPublicKey(user, f, password)) {
+				Log.d(TAG, "Authenticate with public key");
+				return;
+			}
 		} catch (Exception e) {
 			Log.d(TAG, "Host does not support 'Public key' authentication.");
 		}
@@ -353,7 +358,8 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 				return enablePortForward();
 			}
 		} catch (Exception e) {
-			Log.e(TAG, "Problem in SSH connection thread during enabling port", e);
+			Log.e(TAG, "Problem in SSH connection thread during enabling port",
+					e);
 
 			reason = getString(R.string.fail_to_connect);
 			return false;
@@ -814,23 +820,15 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 		new Thread(new Runnable() {
 			public void run() {
 
-				// Acquire a reference to the system Location Manager
-				LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-
-				String locationProvider = LocationManager.NETWORK_PROVIDER;
-				// Or use LocationManager.GPS_PROVIDER
-
-				Location lastKnownLocation = locationManager
-						.getLastKnownLocation(locationProvider);
-				Geocoder geoCoder = new Geocoder(SSHTunnelService.this);
 				try {
-					List<Address> addrs = geoCoder.getFromLocation(
-							lastKnownLocation.getLatitude(),
-							lastKnownLocation.getLongitude(), 1);
-					if (addrs != null && addrs.size() > 0) {
-						Address addr = addrs.get(0);
-						Log.d(TAG, "Location: " + addr.getCountryName());
-						if (!addr.getCountryCode().toLowerCase().equals("cn"))
+					URL url = new URL("http://myhosts.sinaapp.com/ip.php");
+					BufferedReader input = new BufferedReader(
+							new InputStreamReader(url.openStream()));
+					String code = input.readLine();
+					if (code != null && code.length() > 0) {
+						Log.d(TAG, "Location: " + code);
+						if (!code.toLowerCase().equals("cn")
+								&& !code.toLowerCase().equals("xx"))
 							enableDNSProxy = false;
 					}
 				} catch (Exception e) {
