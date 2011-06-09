@@ -63,6 +63,12 @@
 	<string name="enable_market">启用电子市场</string>
 	<string name="enable_market_summary">帮助大陆用户从电子市场中获得程序更新(需要重启)</string>
 
+	<string name="enable_dnsproxy">启用DNS代理</string>
+	<string name="enable_dnsproxy_summary">开启DNS代理功能，以解决DNS污染或者受限的问题
+	</string>
+	<string name="dnsproxy_addr">上级DNS地址</string>
+	<string name="dnsproxy_addr_summary">为DNS代理指定上级DNS地址，除非你知道这是什么，否则请不要修改此地址</string>
+
 	<string name="remote_address">远程地址</string>
 	<string name="remote_address_summary">远程转发地址，默认 127.0.0.1
 	</string>
