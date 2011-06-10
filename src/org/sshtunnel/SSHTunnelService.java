@@ -537,8 +537,8 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 		String rules = cmd.toString();
 
 		if (hostAddress != null)
-			rules = rules.replace("-A SSHTUNNEL", "-A SSHTUNNEL" + " ! -d "
-					+ hostAddress);
+			rules = rules.replace(" -A SSHTUNNEL ", " -A SSHTUNNEL" + " ! -d "
+					+ hostAddress + " ");
 
 		runRootCommand(rules);
 
