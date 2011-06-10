@@ -68,8 +68,7 @@
 
 	<!-- settings port forwarding category -->
 	<string name="socks">Use socks proxy</string>
-	<string name="socks_summary">Enable dynamic port forwarding (Warning: More
-		Battery Use)</string>
+	<string name="socks_summary">Enable dynamic port forwarding， redirect all ports</string>
 	<string name="port_cat">Port Forwarding</string>
 	<string name="local_port">Local Port</string>
 	<string name="local_port_summary">Listening Port, default 1984</string>
