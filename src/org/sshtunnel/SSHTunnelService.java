@@ -38,13 +38,10 @@
 
 package org.sshtunnel;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -53,7 +50,6 @@ import java.net.URL;
 import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.List;
 
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -65,10 +61,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
-import android.location.Address;
-import android.location.Geocoder;
-import android.location.Location;
-import android.location.LocationManager;
 import android.media.AudioManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -136,21 +128,15 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 
 	public final static String BASE = "/data/data/org.sshtunnel/";
 
-	final static String CMD_IPTABLES_REDIRECT_ADD_HTTP = BASE
+	final static String CMD_IPTABLES_REDIRECT_ADD = BASE
 			+ "iptables -t nat -A SSHTUNNEL -p tcp --dport 80 -j REDIRECT --to 8123\n"
 			+ BASE
 			+ "iptables -t nat -A SSHTUNNEL -p tcp --dport 443 -j REDIRECT --to 8124\n";
 
-	final static String CMD_IPTABLES_DNAT_ADD_HTTP = BASE
+	final static String CMD_IPTABLES_DNAT_ADD = BASE
 			+ "iptables -t nat -A SSHTUNNEL -p tcp --dport 80 -j DNAT --to-destination 127.0.0.1:8123\n"
 			+ BASE
 			+ "iptables -t nat -A SSHTUNNEL -p tcp --dport 443 -j DNAT --to-destination 127.0.0.1:8124\n";
-
-	final static String CMD_IPTABLES_REDIRECT_ADD_SOCKS = BASE
-			+ "iptables -t nat -A SSHTUNNEL -p tcp -j REDIRECT --to 8123\n";
-
-	final static String CMD_IPTABLES_DNAT_ADD_SOCKS = BASE
-			+ "iptables -t nat -A SSHTUNNEL -p tcp -j DNAT --to-destination 127.0.0.1:8123\n";
 
 	public static boolean runRootCommand(String command) {
 		Process process = null;
@@ -510,12 +496,8 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 					+ "iptables -t nat -A OUTPUT -p udp -j SSHTUNNELDNS\n");
 		}
 
-		if (isSocks)
-			cmd.append(hasRedirectSupport ? CMD_IPTABLES_REDIRECT_ADD_SOCKS
-					: CMD_IPTABLES_DNAT_ADD_SOCKS);
-		else
-			cmd.append(hasRedirectSupport ? CMD_IPTABLES_REDIRECT_ADD_HTTP
-					: CMD_IPTABLES_DNAT_ADD_HTTP);
+		cmd.append(hasRedirectSupport ? CMD_IPTABLES_REDIRECT_ADD
+				: CMD_IPTABLES_DNAT_ADD);
 
 		if (isAutoSetProxy) {
 			cmd.append(BASE + "iptables -t nat -A OUTPUT -p tcp -j SSHTUNNEL\n");
@@ -537,10 +519,14 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 		String rules = cmd.toString();
 
 		if (hostAddress != null)
-			rules = rules.replace(" -A SSHTUNNEL ", " -A SSHTUNNEL" + " ! -d "
-					+ hostAddress + " ");
+			rules = rules.replace("--dport 443",
+					"! -d " + hostAddress + " --dport 443").replace(
+					"--dport 80", "! -d " + hostAddress + " --dport 80");
 
-		runRootCommand(rules);
+		if (isSocks)
+			runRootCommand(rules.replace("8124", "8123"));
+		else
+			runRootCommand(rules);
 
 	}
 
@@ -833,7 +819,8 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 					String code = input.readLine();
 					if (code != null && code.length() > 0) {
 						Log.d(TAG, "Location: " + code);
-						if (!code.equals("CN") && !code.equals("XX"))
+						if (!code.equals("CN")
+								&& !code.equals("XX"))
 							enableDNSProxy = false;
 					}
 				} catch (Exception e) {
