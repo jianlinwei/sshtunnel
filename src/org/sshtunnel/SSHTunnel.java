@@ -363,7 +363,7 @@ public class SSHTunnel extends PreferenceActivity implements
 			edit.putBoolean("isRunning", true);
 		} else {
 			if (settings.getBoolean("isRunning", false)) {
-				showAToast(getString(R.string.crash_alert));
+				//showAToast(getString(R.string.crash_alert));
 				recovery();
 			}
 			edit.putBoolean("isRunning", false);
@@ -392,8 +392,16 @@ public class SSHTunnel extends PreferenceActivity implements
 			proxyedApps.setEnabled(false);
 			showAToast(getString(R.string.require_root_alert));
 		}
+		
+		String versionName = "";
+		try {
+			versionName = getPackageManager().getPackageInfo(getPackageName(),
+					0).versionName;
+		} catch (NameNotFoundException e) {
+			versionName = "NONE";
+		}
 
-		if (!isWorked(SERVICE_NAME)) {
+		if (!settings.getBoolean(versionName, false)) {
 			CopyAssets();
 			runCommand("chmod 777 /data/data/org.sshtunnel/iptables");
 			runCommand("chmod 777 /data/data/org.sshtunnel/redsocks");
@@ -450,6 +458,11 @@ public class SSHTunnel extends PreferenceActivity implements
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch (item.getItemId()) {
 		case Menu.FIRST + 1:
+			CopyAssets();
+			runCommand("chmod 777 /data/data/org.sshtunnel/iptables");
+			runCommand("chmod 777 /data/data/org.sshtunnel/redsocks");
+			runCommand("chmod 777 /data/data/org.sshtunnel/proxy_http.sh");
+			runCommand("chmod 777 /data/data/org.sshtunnel/proxy_socks.sh");
 			recovery();
 			break;
 		case Menu.FIRST + 2:
