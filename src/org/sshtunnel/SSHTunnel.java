@@ -407,6 +407,9 @@ public class SSHTunnel extends PreferenceActivity implements
 			runCommand("chmod 777 /data/data/org.sshtunnel/redsocks");
 			runCommand("chmod 777 /data/data/org.sshtunnel/proxy_http.sh");
 			runCommand("chmod 777 /data/data/org.sshtunnel/proxy_socks.sh");
+			edit = settings.edit();
+			edit.putBoolean(versionName, true);
+			edit.commit();
 		}
 
 	}
