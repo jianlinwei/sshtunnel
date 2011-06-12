@@ -823,13 +823,13 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 			public void run() {
 
 				try {
-					URL url = new URL("http://myhosts.sinaapp.com/ip.php");
+					URL url = new URL("http://gae-ip-country.appspot.com");
 					BufferedReader input = new BufferedReader(
 							new InputStreamReader(url.openStream()));
 					String code = input.readLine();
 					if (code != null && code.length() > 0) {
 						Log.d(TAG, "Location: " + code);
-						if (!code.contains("CN") && !code.contains("XX"))
+						if (!code.contains("CN") && !code.contains("ZZ"))
 							enableDNSProxy = false;
 					}
 				} catch (Exception e) {
