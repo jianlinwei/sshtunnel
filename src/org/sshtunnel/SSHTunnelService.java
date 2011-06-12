@@ -823,6 +823,9 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 
 		new Thread(new Runnable() {
 			public void run() {
+				
+				handler.sendEmptyMessage(MSG_CONNECT_START);
+				isConnecting = true;
 
 				try {
 					URL url = new URL("http://gae-ip-country.appspot.com/");
@@ -840,6 +843,7 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 							enableDNSProxy = false;
 					}
 				} catch (Exception e) {
+					Log.d(TAG, "Cannot get country code");
 					enableDNSProxy = true;
 					// Nothing
 				}
@@ -858,9 +862,6 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 				} catch (UnknownHostException e) {
 					hostAddress = null;
 				}
-
-				handler.sendEmptyMessage(MSG_CONNECT_START);
-				isConnecting = true;
 
 				// Test for Redirect Support
 				initHasRedirectSupported();
