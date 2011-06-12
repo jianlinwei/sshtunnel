@@ -42,9 +42,11 @@ import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.HttpURLConnection;
 import java.net.InetAddress;
 import java.net.URL;
 import java.net.UnknownHostException;
@@ -823,9 +825,14 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 			public void run() {
 
 				try {
-					URL url = new URL("http://gae-ip-country.appspot.com");
+					URL url = new URL("http://gae-ip-country.appspot.com/");
+					HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+					conn.setConnectTimeout(1000);
+					conn.setReadTimeout(1000);
+					conn.connect();
+					InputStream is = conn.getInputStream();
 					BufferedReader input = new BufferedReader(
-							new InputStreamReader(url.openStream()));
+							new InputStreamReader(is));
 					String code = input.readLine();
 					if (code != null && code.length() > 0) {
 						Log.d(TAG, "Location: " + code);
