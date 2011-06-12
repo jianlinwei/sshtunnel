@@ -823,7 +823,7 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 			public void run() {
 
 				try {
-					URL url = new URL("http://www.hosts.dotcloud.com/ip.php");
+					URL url = new URL("http://myhosts.sinaapp.com/ip.php");
 					BufferedReader input = new BufferedReader(
 							new InputStreamReader(url.openStream()));
 					String code = input.readLine();
