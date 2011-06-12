@@ -830,8 +830,8 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 				try {
 					URL url = new URL("http://gae-ip-country.appspot.com/");
 					HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-					conn.setConnectTimeout(1000);
-					conn.setReadTimeout(1000);
+					conn.setConnectTimeout(2000);
+					conn.setReadTimeout(5000);
 					conn.connect();
 					InputStream is = conn.getInputStream();
 					BufferedReader input = new BufferedReader(

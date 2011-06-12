@@ -347,8 +347,8 @@ public class DNSServer implements WrapServer {
 		try {
 			URL aURL = new URL("http://myhosts.sinaapp.com/hosts");
 			HttpURLConnection conn = (HttpURLConnection) aURL.openConnection();
-			conn.setConnectTimeout(1000);
-			conn.setReadTimeout(1000);
+			conn.setConnectTimeout(2000);
+			conn.setReadTimeout(5000);
 			conn.connect();
 			InputStream is = conn.getInputStream();
 			BufferedReader reader = new BufferedReader(
