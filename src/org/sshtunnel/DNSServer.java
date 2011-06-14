@@ -177,8 +177,6 @@ public class DNSServer implements WrapServer {
 		this.dnsPort = dnsPort;
 		this.context = context;
 
-		initOrgCache();
-
 		domains = new HashSet<String>();
 
 		if (dnsHost != null && !dnsHost.equals(""))
@@ -343,42 +341,6 @@ public class DNSServer implements WrapServer {
 			Log.e(TAG, "DNSServer初始化错误，端口号" + srvPort, e);
 		}
 		return srvPort;
-	}
-
-	private void initOrgCache() {
-		try {
-			URL aURL = new URL("http://myhosts.sinaapp.com/hosts");
-			HttpURLConnection conn = (HttpURLConnection) aURL.openConnection();
-			conn.setConnectTimeout(2000);
-			conn.setReadTimeout(5000);
-			conn.connect();
-			InputStream is = conn.getInputStream();
-			BufferedReader reader = new BufferedReader(
-					new InputStreamReader(is));
-			String line = reader.readLine();
-			if (line == null)
-				return;
-			if (!line.startsWith("#SSHTunnel"))
-				return;
-			while (true) {
-				line = reader.readLine();
-				if (line == null)
-					break;
-				if (line.startsWith("#"))
-					continue;
-				line = line.trim().toLowerCase();
-				if (line.equals(""))
-					continue;
-				String[] hosts = line.split(" ");
-				if (hosts.length == 2) {
-					orgCache.put(hosts[1], hosts[0]);
-					Log.d(TAG, hosts[0] + " " + hosts[1]);
-				}
-			}
-		} catch (Exception e) {
-			Log.e(TAG, "cannot get remote host files", e);
-		}
-
 	}
 
 	public boolean isClosed() {
