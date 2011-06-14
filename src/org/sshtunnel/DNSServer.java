@@ -21,6 +21,7 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -168,6 +169,7 @@ public class DNSServer implements WrapServer {
 	private Hashtable<String, String> orgCache = new Hashtable<String, String>();
 
 	private String target = "8.8.8.8:53";
+	private static final String CANT_RESOLVE = "Error";
 
 	public DNSServer(String name, String dnsHost, int dnsPort, Context context) {
 		this.name = name;
@@ -558,6 +560,14 @@ public class DNSServer implements WrapServer {
 					addToCache(questDomain, answer);
 					sendDns(answer, dnsq, srvSocket);
 					Log.d(TAG, "自定义解析" + orgCache);
+				} else if (questDomain.toLowerCase().contains("gaednsproxy.appspot.com")) { // for
+					// gaednsproxy.appspot.com
+					byte[] ips = parseIPString("127.0.0.1");
+					byte[] answer = createDNSResponse(udpreq, ips);
+					addToCache(questDomain, answer);
+					sendDns(answer, dnsq, srvSocket);
+					Log.d(TAG, "Custom DNS resolver gaednsproxy.appspot.com");
+
 				} else {
 
 					synchronized (this) {
@@ -575,7 +585,7 @@ public class DNSServer implements WrapServer {
 						public void run() {
 							long startTime = System.currentTimeMillis();
 							try {
-								byte[] answer = fetchAnswer(udpreq);
+								byte[] answer = fetchAnswerHTTP(udpreq);
 								if (answer != null && answer.length != 0) {
 									addToCache(questDomain, answer);
 									sendDns(answer, dnsq, srvSocket);
@@ -638,6 +648,77 @@ public class DNSServer implements WrapServer {
 			}
 		}
 
+	}
+	
+	/*
+	 * Resolve host name by access a DNSRelay running on GAE:
+	 * 
+	 * Example:
+	 * 
+	 * http://www.hosts.dotcloud.com/lookup.php?(domain name encoded)
+	 * http://gaednsproxy.appspot.com/?d=(domain name encoded)
+	 */
+	private String resolveDomainName(String domain) {
+		String ip = null;
+
+		InputStream is;
+
+		String url = "http://gaednsproxy.appspot.com:" + dnsPort + "/?d="
+			+ URLEncoder.encode(Base64.encodeBytes(Base64
+					.encodeBytesToBytes(domain.getBytes())));
+		Log.d(TAG, "DNS Relay URL: " + url);
+
+		try {
+			URL aURL = new URL(url);
+			HttpURLConnection conn = (HttpURLConnection) aURL.openConnection();
+			conn.setConnectTimeout(2000);
+			conn.setConnectTimeout(5000);
+			conn.connect();
+			is = conn.getInputStream();
+			BufferedReader br = new BufferedReader(new InputStreamReader(is));
+			ip = br.readLine();
+		} catch (SocketException e) {
+			Log.e(TAG, "Failed to request URI: " + url, e);
+		} catch (IOException e) {
+			Log.e(TAG, "Failed to request URI: " + url, e);
+		} catch (NullPointerException e) {
+			Log.e(TAG, "Failed to request URI: " + url, e);
+		}
+
+		return ip;
+	}
+
+	/*
+	 * Implement with http based DNS.
+	 */
+
+	public byte[] fetchAnswerHTTP(byte[] quest) {
+		byte[] result = null;
+		String domain = getRequestDomain(quest);
+		String ip = null;
+
+		/* Not support reverse domain name query */
+		if (domain.endsWith("in-addr.arpa")) {
+			return null;
+		}
+
+		ip = resolveDomainName(domain);
+
+		if (ip == null) {
+			Log.e(TAG, "Failed to resolve domain name: " + domain);
+			return null;
+		}
+
+		if (ip.equals(CANT_RESOLVE)) {
+			return null;
+		}
+
+		byte[] ips = parseIPString(ip);
+		if (ips != null) {
+			result = createDNSResponse(quest, ips);
+		}
+
+		return result;
 	}
 
 	/**
