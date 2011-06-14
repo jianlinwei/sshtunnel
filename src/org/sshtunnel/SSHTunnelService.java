@@ -113,6 +113,7 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 	private boolean isSocks = false;
 	private boolean enableDNSProxy = true;
 	private LocalPortForwarder lpf = null;
+	private LocalPortForwarder dnspf = null;
 	private DynamicPortForwarder dpf = null;
 	private DNSServer dnsServer = null;
 	private int dnsPort = 0;
@@ -449,6 +450,8 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 		// LocalPortForwarder lpf1 = null;
 		try {
 
+			dnspf = connection.createLocalPortForwarder(8053, "www.google.com", 80);
+
 			if (isSocks) {
 				dpf = connection.createDynamicPortForwarder(localPort);
 			} else {
@@ -456,7 +459,6 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 						remoteAddress, remotePort);
 			}
 
-			// lpf2 = connection.createLocalPortForwarder(5353, "8.8.8.8", 53);
 		} catch (Exception e) {
 			Log.e(TAG, "Could not create local port forward", e);
 			reason = getString(R.string.fail_to_forward);
@@ -506,7 +508,7 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 
 		cmd.append(hasRedirectSupport ? CMD_IPTABLES_REDIRECT_ADD
 				: CMD_IPTABLES_DNAT_ADD);
-		
+
 		if (isSocks)
 			cmd.append(hasRedirectSupport ? CMD_IPTABLES_REDIRECT_ADD_SOCKS
 					: CMD_IPTABLES_DNAT_ADD_SOCKS);
@@ -788,6 +790,10 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 				dpf.close();
 				dpf = null;
 			}
+			if (dnspf != null) {
+				dnspf.close();
+				dnspf = null;
+			}
 		} catch (Exception ignore) {
 			// Nothing
 		}
@@ -823,13 +829,14 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 
 		new Thread(new Runnable() {
 			public void run() {
-				
+
 				handler.sendEmptyMessage(MSG_CONNECT_START);
 				isConnecting = true;
 
 				try {
 					URL url = new URL("http://gae-ip-country.appspot.com/");
-					HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+					HttpURLConnection conn = (HttpURLConnection) url
+							.openConnection();
 					conn.setConnectTimeout(2000);
 					conn.setReadTimeout(5000);
 					conn.connect();
@@ -850,8 +857,11 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 
 				if (enableDNSProxy) {
 					if (dnsServer == null) {
-						dnsServer = new DNSServer("DNS Server", "8.8.4.4", 53,
-								SSHTunnelService.this);
+						// dnsServer = new DNSServer("DNS Server", "8.8.4.4",
+						// 53,
+						// SSHTunnelService.this);
+						dnsServer = new DNSServer("DNS Server", "127.0.0.1",
+								8053, SSHTunnelService.this);
 						dnsServer.setBasePath("/data/data/org.sshtunnel");
 						dnsPort = dnsServer.init();
 					}

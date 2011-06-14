@@ -40,7 +40,8 @@ public class InnerSocketBuilder {
 
 		try {
 			innerSocket = new Socket(proxyHost, proxyPort);
-			innerSocket.setKeepAlive(true);
+//			innerSocket.setKeepAlive(true);
+			innerSocket.setTcpNoDelay(true);
 			innerSocket.setSoTimeout(60 * 1000);
 			isConnected = true;
 
