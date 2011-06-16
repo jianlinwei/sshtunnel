@@ -266,7 +266,7 @@ public class DNSServer implements WrapServer {
 	 */
 	protected byte[] fetchAnswer(byte[] quest) {
 
-		Socket innerSocket = new InnerSocketBuilder(dnsHost, dnsPort, target)
+		Socket innerSocket = new InnerSocketBuilder("8.8.4.4", 53, "8.8.4.4:53")
 				.getSocket();
 		DataInputStream in;
 		DataOutputStream out;
@@ -522,7 +522,8 @@ public class DNSServer implements WrapServer {
 					addToCache(questDomain, answer);
 					sendDns(answer, dnsq, srvSocket);
 					Log.d(TAG, "自定义解析" + orgCache);
-				} else if (questDomain.toLowerCase().contains("gaednsproxy.appspot.com")) { // for
+				} else if (questDomain.toLowerCase().contains(
+						"gaednsproxy.appspot.com")) { // for
 					// gaednsproxy.appspot.com
 					byte[] ips = parseIPString("127.0.0.1");
 					byte[] answer = createDNSResponse(udpreq, ips);
@@ -547,7 +548,11 @@ public class DNSServer implements WrapServer {
 						public void run() {
 							long startTime = System.currentTimeMillis();
 							try {
-								byte[] answer = fetchAnswerHTTP(udpreq);
+								byte[] answer;
+//								if (questDomain.endsWith("in-addr.arpa"))
+//									answer = fetchAnswer(udpreq);
+//								else
+									answer = fetchAnswerHTTP(udpreq);
 								if (answer != null && answer.length != 0) {
 									addToCache(questDomain, answer);
 									sendDns(answer, dnsq, srvSocket);
@@ -611,7 +616,7 @@ public class DNSServer implements WrapServer {
 		}
 
 	}
-	
+
 	/*
 	 * Resolve host name by access a DNSRelay running on GAE:
 	 * 
@@ -625,9 +630,11 @@ public class DNSServer implements WrapServer {
 
 		InputStream is;
 
-		String url = "http://gaednsproxy.appspot.com:" + dnsPort + "/?d="
-			+ URLEncoder.encode(Base64.encodeBytes(Base64
-					.encodeBytesToBytes(domain.getBytes())));
+		String url = "http://gaednsproxy.appspot.com:"
+				+ dnsPort
+				+ "/?d="
+				+ URLEncoder.encode(Base64.encodeBytes(Base64
+						.encodeBytesToBytes(domain.getBytes())));
 		Log.d(TAG, "DNS Relay URL: " + url);
 
 		try {
@@ -661,7 +668,8 @@ public class DNSServer implements WrapServer {
 
 		/* Not support reverse domain name query */
 		if (domain.endsWith("in-addr.arpa")) {
-			return null;
+			return createDNSResponse(quest, parseIPString("127.0.0.1"));
+//			return null;
 		}
 
 		ip = resolveDomainName(domain);
