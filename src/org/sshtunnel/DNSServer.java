@@ -666,8 +666,10 @@ public class DNSServer implements WrapServer {
 		String domain = getRequestDomain(quest);
 		String ip = null;
 
+		DomainValidator dv = DomainValidator.getInstance();
+		
 		/* Not support reverse domain name query */
-		if (domain.endsWith("in-addr.arpa")) {
+		if (domain.endsWith("in-addr.arpa") || !dv.isValid(domain)) {
 			return createDNSResponse(quest, parseIPString("127.0.0.1"));
 //			return null;
 		}
