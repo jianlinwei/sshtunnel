@@ -152,9 +152,12 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 		private FileInputStream mTermIn;
 		private FileOutputStream mTermOut;
+		private volatile boolean stopConnect = false;
 
 		private boolean waitForSuccess() throws InterruptedException {
 			while (true) {
+				if (stopConnect)
+					return false;
 				try {
 					FileInputStream in = new FileInputStream(BASE + "ssh.log");
 
@@ -266,6 +269,9 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		 * Destroy this script runner
 		 */
 		public synchronized void onDestroy() {
+			
+			stopConnect = true;
+			
 			if (mTermIn != null) {
 				try {
 					mTermIn.close();
