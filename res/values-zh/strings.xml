@@ -91,5 +91,7 @@
         <string name="parent_dir">上级目录</string>
         <string name="folder">目录</string>
         <string name="file_size">文件大小</string>
+        <string name="file_toast">使用密钥文件: </string>
+        <string name="file_error">不支持的密钥格式: </string>
 
 </resources>

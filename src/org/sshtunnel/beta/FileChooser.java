@@ -1,11 +1,13 @@
 package org.sshtunnel.beta;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -18,6 +20,7 @@ import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.view.View;
 import android.widget.ListView;
+import android.widget.Toast;
 
 public class FileChooser extends ListActivity {
 
@@ -71,13 +74,26 @@ public class FileChooser extends ListActivity {
 				folder.delete();
 				folder.mkdirs();
 			}
-			File outputFile = new File("/data/data/org.sshtunnel.beta/.ssh/" + o.getName());
+			File outputFile = new File(
+					"/data/data/org.sshtunnel.beta/.ssh/private_key");
 			if (!outputFile.exists())
 				outputFile.createNewFile();
+			File inputFile = new File(o.getPath());
 			FileInputStream input = new FileInputStream(o.getPath());
-			FileOutputStream output = new FileOutputStream(
-					"/data/data/org.sshtunnel.beta/.ssh/" + o.getName());
-			copyFile(input, output);
+			if (inputFile.exists() && inputFile.length() < 128 * 1024 && validateFile(input)) {
+				input = new FileInputStream(o.getPath());
+				FileOutputStream output = new FileOutputStream(
+				"/data/data/org.sshtunnel.beta/.ssh/private_key");
+				copyFile(input, output);
+				Toast.makeText(this,
+						getString(R.string.file_toast) + o.getPath(),
+						Toast.LENGTH_SHORT).show();
+			} else {
+				outputFile.delete();
+				Toast.makeText(this,
+						getString(R.string.file_error) + o.getPath(),
+						Toast.LENGTH_SHORT).show();
+			}
 		} catch (FileNotFoundException e) {
 			// Nothing
 		} catch (IOException e) {
@@ -85,6 +101,21 @@ public class FileChooser extends ListActivity {
 		}
 
 		finish();
+	}
+
+	private boolean validateFile(InputStream in) throws IOException {
+		int count = 0;
+		BufferedReader br = new BufferedReader(new InputStreamReader(in));
+		while (true) {
+			String line = br.readLine();
+			if (line == null)
+				break;
+			if (line.contains("PRIVATE KEY"))
+				return true;
+			if (count++ > 20)
+				return false;
+		}
+		return false;
 	}
 
 	private void copyFile(InputStream in, OutputStream out) throws IOException {

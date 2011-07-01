@@ -153,70 +153,119 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		private FileInputStream mTermIn;
 		private FileOutputStream mTermOut;
 
+		private boolean waitForSuccess() throws InterruptedException {
+			while (true) {
+				try {
+					FileInputStream in = new FileInputStream(BASE + "ssh.log");
+
+					BufferedReader reader = new BufferedReader(
+							new InputStreamReader(in));
+					while (true) {
+						String line = reader.readLine();
+						if (line == null)
+							break;
+						if (line.contains("succeeded"))
+							return true;
+						if (line.contains("denied"))
+							return false;
+					}
+					Thread.sleep(2000);
+				} catch (Exception ignore) {
+					Thread.sleep(2000);
+					continue;
+				}
+			}
+
+		}
+
 		@Override
 		public void run() {
 
-			try {
-				
-				String cmd = "echo $$ > " + BASE + "shell.pid\n";
+			new Thread() {
+				public void run() {
+					try {
 
-				mTermIn = new FileInputStream(mTermFd);
-				mTermOut = new FileOutputStream(mTermFd);
-				
-				if (isSocks)
-					cmd += "/data/data/org.sshtunnel.beta/ssh.sh dynamic "
-							+ port + " " + localPort + " " + user + " "
-							+ hostIP;
-				else
-					cmd += "/data/data/org.sshtunnel.beta/ssh.sh local " + port
-							+ " " + localPort + " " + "127.0.0.1" + " "
-							+ remotePort + " " + user + " " + hostIP;
+						String cmd = "echo $$ > " + BASE + "shell.pid\n";
 
-				Log.e(TAG, cmd);
+						mTermIn = new FileInputStream(mTermFd);
+						mTermOut = new FileOutputStream(mTermFd);
 
-				mTermOut.write((cmd + "\n").getBytes());
-				mTermOut.flush();
+						if (isSocks)
+							cmd += "/data/data/org.sshtunnel.beta/ssh.sh dynamic "
+									+ port
+									+ " "
+									+ localPort
+									+ " "
+									+ user
+									+ " "
+									+ hostIP;
+						else
+							cmd += "/data/data/org.sshtunnel.beta/ssh.sh local "
+									+ port
+									+ " "
+									+ localPort
+									+ " "
+									+ "127.0.0.1"
+									+ " "
+									+ remotePort
+									+ " "
+									+ user + " " + hostIP;
 
-				byte[] data = new byte[256];
-				StringBuffer sb = new StringBuffer();
-				while ((mTermIn.read(data)) != -1) {
-					for (int i = 0; i < data.length; i++) {
-						char printableB = (char) data[i];
-						if (data[i] < 32 || data[i] > 126) {
-							printableB = ' ';
+						Log.e(TAG, cmd);
+
+						mTermOut.write((cmd + "\n").getBytes());
+						mTermOut.flush();
+
+						byte[] data = new byte[256];
+						StringBuffer sb = new StringBuffer();
+						while ((mTermIn.read(data)) != -1) {
+							for (int i = 0; i < data.length; i++) {
+								char printableB = (char) data[i];
+								if (data[i] < 32 || data[i] > 126) {
+									printableB = ' ';
+								}
+								sb.append(printableB);
+							}
+							String line = sb.toString();
+							if (line.toLowerCase().contains("password")
+									|| line.toLowerCase()
+											.contains("passphrase")) {
+								mTermOut.write((password + "\n").getBytes());
+								mTermOut.flush();
+								mTermFd.sync();
+								Log.d(TAG, "Try autenticate with password");
+								break;
+							} else {
+								Log.d(TAG, "Output: " + line);
+							}
+							if (line.toLowerCase().contains("yes")) {
+								mTermOut.write(("yes\n").getBytes());
+								mTermOut.flush();
+								continue;
+							}
 						}
-						sb.append(printableB);
-					}
-					String line = sb.toString();
-					if (line.toLowerCase().contains("password")) {
-						mTermOut.write((password + "\n").getBytes());
-						mTermOut.flush();
-						mTermFd.sync();
-						break;
-					} else {
-						Log.e(TAG, "Output: " + line);
-					}
-					if (line.toLowerCase().contains("yes")) {
-						mTermOut.write(("yes\n").getBytes());
-						mTermOut.flush();
-						continue;
-					}
 
+					} catch (IOException e) {
+						Log.e(TAG, "Operation timed-out");
+					} catch (Exception e) {
+						Log.e(TAG, "Unexcepted error: ", e);
+					} finally {
+						onDestroy();
+					}
 				}
+			}.start();
 
-			} catch (IOException e) {
+			try {
+				isAuth = waitForSuccess();
+			} catch (InterruptedException e1) {
 				Log.e(TAG, "Operation timed-out");
-			} catch (Exception e) {
-				Log.e(TAG, "Unexcepted error: ", e);
-			} finally {
-				destroy();
 			}
 		}
 
 		/**
 		 * Destroy this script runner
 		 */
-		public synchronized void destroy() {
+		public synchronized void onDestroy() {
 			if (mTermIn != null) {
 				try {
 					mTermIn.close();
@@ -253,6 +302,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	private final static String DEFAULT_SHELL = "/system/bin/sh -";
 
 	private SharedPreferences settings = null;
+	private boolean isAuth = false;
 
 	// private Process proxyProcess = null;
 	// private DataOutputStream proxyOS = null;
@@ -445,6 +495,11 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 	public boolean connect(int timeout) {
 
+		isAuth = false;
+		File log = new File(BASE + "ssh.log");
+		if (log.exists())
+			log.delete();
+		
 		final ConnectRunner runner = new ConnectRunner();
 		runner.start();
 		try {
@@ -455,13 +510,16 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			}
 			if (runner.isAlive()) {
 				// Timed-out
-				runner.destroy();
+				runner.onDestroy();
 				runner.join(150);
 				return false;
 			}
 		} catch (InterruptedException ex) {
 			// Nothing
 		}
+
+		if (!isAuth)
+			return false;
 
 		// String cmd = "echo $$ > " + BASE + "shell.pid\n";
 
