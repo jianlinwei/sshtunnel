@@ -222,6 +222,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 						byte[] data = new byte[256];
 						StringBuffer sb = new StringBuffer();
 						while ((mTermIn.read(data)) != -1) {
+							if (stopConnect)
+								break;
 							for (int i = 0; i < data.length; i++) {
 								char printableB = (char) data[i];
 								if (data[i] < 32 || data[i] > 126) {
@@ -252,8 +254,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 						Log.e(TAG, "Operation timed-out");
 					} catch (Exception e) {
 						Log.e(TAG, "Unexcepted error: ", e);
-					} finally {
-						onDestroy();
 					}
 				}
 			}.start();
@@ -262,6 +262,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 				isAuth = waitForSuccess();
 			} catch (InterruptedException e1) {
 				Log.e(TAG, "Operation timed-out");
+			} finally {
+				onDestroy();
 			}
 		}
 
