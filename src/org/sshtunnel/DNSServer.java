@@ -549,10 +549,7 @@ public class DNSServer implements WrapServer {
 							long startTime = System.currentTimeMillis();
 							try {
 								byte[] answer;
-//								if (questDomain.endsWith("in-addr.arpa"))
-//									answer = fetchAnswer(udpreq);
-//								else
-									answer = fetchAnswerHTTP(udpreq);
+								answer = fetchAnswerHTTP(udpreq);
 								if (answer != null && answer.length != 0) {
 									addToCache(questDomain, answer);
 									sendDns(answer, dnsq, srvSocket);
@@ -589,16 +586,14 @@ public class DNSServer implements WrapServer {
 				 * Log.d(TAG, domain + " : " + resp.getIPString()); } }
 				 */
 
-			} catch (SocketException e) {
-				Log.e(TAG, "Socket Exception", e);
-				break;
 			} catch (IOException e) {
 				Log.e(TAG, "IO Exception", e);
 			} catch (NullPointerException e) {
 				Log.e(TAG, "Srvsocket wrong", e);
 				break;
-			} catch (Exception e) {
-				Log.e(TAG, "Unexpected Exception", e);
+			} catch ( InterruptedException e) {
+				Log.e(TAG, "Interuppted");
+				break;
 			}
 		}
 
@@ -667,11 +662,11 @@ public class DNSServer implements WrapServer {
 		String ip = null;
 
 		DomainValidator dv = DomainValidator.getInstance();
-		
+
 		/* Not support reverse domain name query */
 		if (domain.endsWith("in-addr.arpa") || !dv.isValid(domain)) {
 			return createDNSResponse(quest, parseIPString("127.0.0.1"));
-//			return null;
+			// return null;
 		}
 
 		ip = resolveDomainName(domain);

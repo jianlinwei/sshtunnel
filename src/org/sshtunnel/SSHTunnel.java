@@ -74,8 +74,11 @@ import android.preference.PreferenceScreen;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.KeyEvent;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.EditText;
 
 public class SSHTunnel extends PreferenceActivity implements
 		OnSharedPreferenceChangeListener {
@@ -159,6 +162,13 @@ public class SSHTunnel extends PreferenceActivity implements
 	private CheckBoxPreference isRunningCheck;
 
 	private Preference proxyedApps;
+
+	private String getProfileName(String profile) {
+		SharedPreferences settings = PreferenceManager
+				.getDefaultSharedPreferences(this);
+		return settings.getString("profile" + profile,
+				getString(R.string.profile_base) + " " + profile);
+	}
 
 	private void CopyAssets() {
 		AssetManager assetManager = getAssets();
@@ -363,7 +373,7 @@ public class SSHTunnel extends PreferenceActivity implements
 			edit.putBoolean("isRunning", true);
 		} else {
 			if (settings.getBoolean("isRunning", false)) {
-				//showAToast(getString(R.string.crash_alert));
+				// showAToast(getString(R.string.crash_alert));
 				recovery();
 			}
 			edit.putBoolean("isRunning", false);
@@ -392,7 +402,7 @@ public class SSHTunnel extends PreferenceActivity implements
 			proxyedApps.setEnabled(false);
 			showAToast(getString(R.string.require_root_alert));
 		}
-		
+
 		String versionName = "";
 		try {
 			versionName = getPackageManager().getPackageInfo(getPackageName(),
@@ -422,18 +432,96 @@ public class SSHTunnel extends PreferenceActivity implements
 		 * 2、Id，这个很重要，Android根据这个Id来确定不同的菜单 3、顺序，那个菜单现在在前面由这个参数的大小决定
 		 * 4、文本，菜单的显示文本
 		 */
-		menu.add(Menu.NONE, Menu.FIRST + 1, 1, getString(R.string.recovery))
-				.setIcon(android.R.drawable.ic_menu_close_clear_cancel);
-		menu.add(Menu.NONE, Menu.FIRST + 2, 2, getString(R.string.profile_del))
-				.setIcon(android.R.drawable.ic_menu_delete);
-		menu.add(Menu.NONE, Menu.FIRST + 3, 3, getString(R.string.about))
+		menu.add(Menu.NONE, Menu.FIRST + 3, 1, getString(R.string.about))
 				.setIcon(android.R.drawable.ic_menu_info_details);
-		menu.add(Menu.NONE, Menu.FIRST + 4, 4, getString(R.string.key_manager))
+		menu.add(Menu.NONE, Menu.FIRST + 4, 2, getString(R.string.key_manager))
+				.setIcon(android.R.drawable.ic_menu_manage);
+		menu.add(Menu.NONE, Menu.FIRST + 1, 3, getString(R.string.recovery))
+				.setIcon(android.R.drawable.ic_menu_close_clear_cancel);
+		menu.add(Menu.NONE, Menu.FIRST + 5, 4, getString(R.string.change_name))
 				.setIcon(android.R.drawable.ic_menu_edit);
+		menu.add(Menu.NONE, Menu.FIRST + 2, 5, getString(R.string.profile_del))
+				.setIcon(android.R.drawable.ic_menu_delete);
 
 		// return true才会起作用
 		return true;
 
+	}
+
+	private void rename() {
+		LayoutInflater factory = LayoutInflater.from(this);
+		final View textEntryView = factory.inflate(
+				R.layout.alert_dialog_text_entry, null);
+		final EditText profileName = (EditText) textEntryView
+				.findViewById(R.id.profile_name_edit);
+		profileName.setText(getProfileName(profile));
+
+		AlertDialog ad = new AlertDialog.Builder(this)
+				.setTitle(R.string.change_name)
+				.setView(textEntryView)
+				.setPositiveButton(R.string.alert_dialog_ok,
+						new DialogInterface.OnClickListener() {
+							public void onClick(DialogInterface dialog,
+									int whichButton) {
+								EditText profileName = (EditText) textEntryView
+										.findViewById(R.id.profile_name_edit);
+								SharedPreferences settings = PreferenceManager
+										.getDefaultSharedPreferences(SSHTunnel.this);
+								String name = profileName.getText().toString();
+								if (name == null)
+									return;
+								name = name.replace("|", "");
+								if (name.length() <= 0)
+									return;
+								Editor ed = settings.edit();
+								ed.putString("profile" + profile, name);
+								ed.commit();
+
+								profileList.setSummary(getProfileName(profile));
+
+								String[] profileEntries = settings.getString(
+										"profileEntries", "").split("\\|");
+								String[] profileValues = settings.getString(
+										"profileValues", "").split("\\|");
+
+								StringBuffer profileEntriesBuffer = new StringBuffer();
+								StringBuffer profileValuesBuffer = new StringBuffer();
+
+								for (int i = 0; i < profileValues.length - 1; i++) {
+									if (profileValues[i].equals(profile))
+										profileEntriesBuffer
+												.append(getProfileName(profile)
+														+ "|");
+									else
+										profileEntriesBuffer
+												.append(profileEntries[i] + "|");
+									profileValuesBuffer.append(profileValues[i]
+											+ "|");
+								}
+
+								profileEntriesBuffer
+										.append(getString(R.string.profile_new));
+								profileValuesBuffer.append("0");
+
+								ed = settings.edit();
+								ed.putString("profileEntries",
+										profileEntriesBuffer.toString());
+								ed.putString("profileValues",
+										profileValuesBuffer.toString());
+
+								ed.commit();
+
+								loadProfileList();
+							}
+						})
+				.setNegativeButton(R.string.alert_dialog_cancel,
+						new DialogInterface.OnClickListener() {
+							public void onClick(DialogInterface dialog,
+									int whichButton) {
+								/* User clicked cancel so do some stuff */
+							}
+						}).create();
+		ad.show();
 	}
 
 	/** Called when the activity is closed. */
@@ -485,6 +573,9 @@ public class SSHTunnel extends PreferenceActivity implements
 		case Menu.FIRST + 4:
 			Intent intent = new Intent(this, FileChooser.class);
 			startActivity(intent);
+			break;
+		case Menu.FIRST + 5:
+			rename();
 			break;
 		}
 
@@ -678,8 +769,7 @@ public class SSHTunnel extends PreferenceActivity implements
 		profile = settings.getString("profile", "1");
 		profileList.setValue(profile);
 
-		profileList.setSummary(getString(R.string.profile_base) + " "
-				+ settings.getString("profile", ""));
+		profileList.setSummary(getProfileName(profile));
 
 		if (!settings.getString("user", "").equals(""))
 			userText.setSummary(settings.getString("user",
@@ -746,8 +836,7 @@ public class SSHTunnel extends PreferenceActivity implements
 				profile = profileString;
 				profileList.setValue(profile);
 				onProfileChange(oldProfile);
-				profileList.setSummary(getString(R.string.profile_base) + " "
-						+ profileString);
+				profileList.setSummary(getProfileName(profile));
 			}
 		}
 
@@ -776,17 +865,17 @@ public class SSHTunnel extends PreferenceActivity implements
 					Log.d(TAG, "Location: " + countryCode);
 					if (countryCode.toLowerCase().equals("cn")) {
 						String command = "setprop gsm.sim.operator.numeric 31026\n"
-							+ "setprop gsm.operator.numeric 31026\n"
-							+ "setprop gsm.sim.operator.iso-country us\n"
-							+ "setprop gsm.operator.iso-country us\n"
-							+ "chmod 777 /data/data/com.android.vending/shared_prefs\n"
-							+ "chmod 666 /data/data/com.android.vending/shared_prefs/vending_preferences.xml\n"
-							+ "setpref com.android.vending vending_preferences boolean metadata_paid_apps_enabled true\n"
-							+ "chmod 660 /data/data/com.android.vending/shared_prefs/vending_preferences.xml\n"
-							+ "chmod 771 /data/data/com.android.vending/shared_prefs\n"
-							+ "setown com.android.vending /data/data/com.android.vending/shared_prefs/vending_preferences.xml\n"
-							+ "kill $(ps | grep vending | tr -s  ' ' | cut -d ' ' -f2)\n"
-							+ "rm -rf /data/data/com.android.vending/cache/*\n";
+								+ "setprop gsm.operator.numeric 31026\n"
+								+ "setprop gsm.sim.operator.iso-country us\n"
+								+ "setprop gsm.operator.iso-country us\n"
+								+ "chmod 777 /data/data/com.android.vending/shared_prefs\n"
+								+ "chmod 666 /data/data/com.android.vending/shared_prefs/vending_preferences.xml\n"
+								+ "setpref com.android.vending vending_preferences boolean metadata_paid_apps_enabled true\n"
+								+ "chmod 660 /data/data/com.android.vending/shared_prefs/vending_preferences.xml\n"
+								+ "chmod 771 /data/data/com.android.vending/shared_prefs\n"
+								+ "setown com.android.vending /data/data/com.android.vending/shared_prefs/vending_preferences.xml\n"
+								+ "kill $(ps | grep vending | tr -s  ' ' | cut -d ' ' -f2)\n"
+								+ "rm -rf /data/data/com.android.vending/cache/*\n";
 						runRootCommand(command);
 					}
 				} catch (Exception e) {

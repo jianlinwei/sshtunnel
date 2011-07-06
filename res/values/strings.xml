@@ -28,7 +28,7 @@
 	<string name="fail_to_online">no network available</string>
 
 	<!-- status string -->
-	<string name="service_running">SSHTunnel service is running now</string>
+	<string name="service_running">Running in the background</string>
 	<string name="forward_success">Connected</string>
 	<string name="forward_fail">Error</string>
 	<string name="service_stopped">SSHTunnel service stopped</string>
@@ -105,7 +105,7 @@
 	<string name="proxyed_help">Select apps to use with SSHTunnel:</string>
 
 	<!-- menu bar category -->
-	<string name="recovery">Recover the connection</string>
+	<string name="recovery">Reset</string>
 	<string name="copy_rights">:\n\nSSHTunnel is an open source project
 		published
 		under
@@ -114,6 +114,9 @@
 		page on
 		googlecode. \n\n(sshtunnel.googlecode.com)</string>
 	<string name="about">About</string>
+		<string name="change_name">Rename</string>
+	<string name="alert_dialog_ok">OK</string>
+	<string name="alert_dialog_cancel">Cancel</string>
 
 	<!-- settings notification category -->
 	<string name="notif_cat">Notification settings</string>
@@ -127,7 +130,7 @@
 	<string name="profile_default">Profile 1</string>
 	<string name="profile_new">New Profile</string>
 	<string name="profile_base">Profile</string>
-	<string name="profile_del">Remove current profile</string>
+	<string name="profile_del">Remove</string>
 
 	<!-- file chooser -->
 	<string name="file_chooser">Choose your key file</string>
