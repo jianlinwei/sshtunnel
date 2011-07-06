@@ -246,6 +246,14 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 		}
 	};
 
+	private String getProfileName() {
+		String profile = settings.getString("profile", "1");
+		SharedPreferences settings = PreferenceManager
+				.getDefaultSharedPreferences(this);
+		return settings.getString("profile" + profile,
+				getString(R.string.profile_base) + " " + profile);
+	}
+
 	private void authenticate() {
 		try {
 			if (connection.authenticateWithNone(user)) {
@@ -450,7 +458,8 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 		// LocalPortForwarder lpf1 = null;
 		try {
 
-			dnspf = connection.createLocalPortForwarder(8053, "www.google.com", 80);
+			dnspf = connection.createLocalPortForwarder(8053, "www.google.com",
+					80);
 
 			if (isSocks) {
 				dpf = connection.createDynamicPortForwarder(localPort);
@@ -682,8 +691,8 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 		notification.flags = Notification.FLAG_ONGOING_EVENT;
 		// notification.defaults = Notification.DEFAULT_SOUND;
 		initSoundVibrateLights(notification);
-		notification.setLatestEventInfo(this, getString(R.string.app_name),
-				info, pendIntent);
+		notification.setLatestEventInfo(this, getString(R.string.app_name)
+				+ " | " + getProfileName(), info, pendIntent);
 		notificationManager.cancel(1);
 		startForegroundCompat(1, notification);
 	}
@@ -693,8 +702,8 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 		notification.tickerText = title;
 		notification.flags = flags;
 		initSoundVibrateLights(notification);
-		notification.setLatestEventInfo(this, getString(R.string.app_name),
-				info, pendIntent);
+		notification.setLatestEventInfo(this, getString(R.string.app_name)
+				+ " | " + getProfileName(), info, pendIntent);
 		notificationManager.cancel(0);
 		notificationManager.notify(0, notification);
 	}
