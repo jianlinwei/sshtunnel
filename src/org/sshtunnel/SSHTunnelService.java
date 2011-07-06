@@ -872,7 +872,6 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 						dnsServer = new DNSServer("DNS Server", "127.0.0.1",
 								8053, SSHTunnelService.this);
 						dnsServer.setBasePath("/data/data/org.sshtunnel");
-						dnsPort = dnsServer.init();
 					}
 				}
 
@@ -894,6 +893,7 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 
 					if (enableDNSProxy) {
 						// Start DNS Proxy
+						dnsPort = dnsServer.init();
 						Thread dnsThread = new Thread(dnsServer);
 						dnsThread.setDaemon(true);
 						dnsThread.start();
