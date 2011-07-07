@@ -26,6 +26,7 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Hashtable;
+import java.util.Random;
 
 import android.app.ActivityManager;
 import android.app.ActivityManager.RunningServiceInfo;
@@ -523,7 +524,7 @@ public class DNSServer implements WrapServer {
 					sendDns(answer, dnsq, srvSocket);
 					Log.d(TAG, "自定义解析" + orgCache);
 				} else if (questDomain.toLowerCase().contains(
-						"gaednsproxy.appspot.com")) { // for
+						"appspot.com")) { // for
 					// gaednsproxy.appspot.com
 					byte[] ips = parseIPString("127.0.0.1");
 					byte[] answer = createDNSResponse(udpreq, ips);
@@ -625,11 +626,16 @@ public class DNSServer implements WrapServer {
 
 		InputStream is;
 
-		String url = "http://gaednsproxy.appspot.com:"
-				+ dnsPort
-				+ "/?d="
-				+ URLEncoder.encode(Base64.encodeBytes(Base64
-						.encodeBytesToBytes(domain.getBytes())));
+		String encode_host = URLEncoder.encode(Base64.encodeBytes(Base64
+				.encodeBytesToBytes(domain.getBytes())));
+
+		String url = "http://gaednsproxy.appspot.com/?d=" + encode_host;
+
+		Random random = new Random(System.currentTimeMillis());
+		int n = random.nextInt(1);
+		if (n == 1)
+			url = "http://gaednsproxy1.appspot.com/?d=" + encode_host;
+		
 		Log.d(TAG, "DNS Relay URL: " + url);
 
 		try {
