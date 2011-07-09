@@ -42,6 +42,7 @@ import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.reflect.InvocationTargetException;
@@ -795,15 +796,23 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 				lpf.close();
 				lpf = null;
 			}
+		} catch (IOException ignore) {
+			// Nothing
+		}
+		try {
 			if (dpf != null) {
 				dpf.close();
 				dpf = null;
 			}
+		} catch (IOException ignore) {
+			// Nothing
+		}
+		try {
 			if (dnspf != null) {
 				dnspf.close();
 				dnspf = null;
 			}
-		} catch (Exception ignore) {
+		} catch (IOException ignore) {
 			// Nothing
 		}
 
@@ -872,6 +881,7 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 						dnsServer = new DNSServer("DNS Server", "127.0.0.1",
 								8053, SSHTunnelService.this);
 						dnsServer.setBasePath("/data/data/org.sshtunnel");
+						dnsPort = dnsServer.init();
 					}
 				}
 
@@ -893,7 +903,7 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 
 					if (enableDNSProxy) {
 						// Start DNS Proxy
-						dnsPort = dnsServer.init();
+
 						Thread dnsThread = new Thread(dnsServer);
 						dnsThread.setDaemon(true);
 						dnsThread.start();
