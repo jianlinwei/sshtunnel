@@ -523,8 +523,7 @@ public class DNSServer implements WrapServer {
 					addToCache(questDomain, answer);
 					sendDns(answer, dnsq, srvSocket);
 					Log.d(TAG, "自定义解析" + orgCache);
-				} else if (questDomain.toLowerCase().contains(
-						"appspot.com")) { // for
+				} else if (questDomain.toLowerCase().contains("appspot.com")) { // for
 					// gaednsproxy.appspot.com
 					byte[] ips = parseIPString("127.0.0.1");
 					byte[] answer = createDNSResponse(udpreq, ips);
@@ -592,7 +591,7 @@ public class DNSServer implements WrapServer {
 			} catch (NullPointerException e) {
 				Log.e(TAG, "Srvsocket wrong", e);
 				break;
-			} catch ( InterruptedException e) {
+			} catch (InterruptedException e) {
 				Log.e(TAG, "Interuppted");
 				break;
 			}
@@ -629,13 +628,15 @@ public class DNSServer implements WrapServer {
 		String encode_host = URLEncoder.encode(Base64.encodeBytes(Base64
 				.encodeBytesToBytes(domain.getBytes())));
 
-		String url = "http://gaednsproxy.appspot.com/?d=" + encode_host;
+		String url = "http://gaednsproxy.appspot.com:" + dnsPort + "/?d="
+				+ encode_host;
 
 		Random random = new Random(System.currentTimeMillis());
 		int n = random.nextInt(2);
 		if (n == 1)
-			url = "http://gaednsproxy1.appspot.com/?d=" + encode_host;
-		
+			url = "http://gaednsproxy1.appspot.com:" + dnsPort + "/?d="
+					+ encode_host;
+
 		Log.d(TAG, "DNS Relay URL: " + url);
 
 		try {

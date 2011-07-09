@@ -459,7 +459,7 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 		// LocalPortForwarder lpf1 = null;
 		try {
 
-			dnspf = connection.createLocalPortForwarder(8053, "www.google.com",
+			dnspf = connection.createLocalPortForwarder(8053, "www.google.cn",
 					80);
 
 			if (isSocks) {
