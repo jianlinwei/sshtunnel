@@ -632,7 +632,7 @@ public class DNSServer implements WrapServer {
 		String url = "http://gaednsproxy.appspot.com/?d=" + encode_host;
 
 		Random random = new Random(System.currentTimeMillis());
-		int n = random.nextInt(1);
+		int n = random.nextInt(2);
 		if (n == 1)
 			url = "http://gaednsproxy1.appspot.com/?d=" + encode_host;
 		
