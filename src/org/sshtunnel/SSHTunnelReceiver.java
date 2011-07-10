@@ -73,7 +73,7 @@ public class SSHTunnelReceiver {
 		if (isAutoConnect || enable) {
 
 			NotificationManager notificationManager = (NotificationManager) context
-					.getSystemService(context.NOTIFICATION_SERVICE);
+					.getSystemService(Context.NOTIFICATION_SERVICE);
 			Notification notification = new Notification();
 			intent = new Intent(context, SSHTunnel.class);
 			intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
@@ -91,16 +91,16 @@ public class SSHTunnelReceiver {
 				host = settings.getString("host", "");
 				user = settings.getString("user", "");
 				password = settings.getString("password", "");
-				port = Integer.valueOf(settings.getString("port", "22"));
-				localPort = Integer.valueOf(settings.getString("localPort",
-						"1984"));
-				remotePort = Integer.valueOf(settings.getString("remotePort",
-						"3128"));
 				remoteAddress = settings
 						.getString("remoteAddress", "127.0.0.1");
 				isAutoReconnect = settings.getBoolean("isAutoReconnect", false);
 				isAutoSetProxy = settings.getBoolean("isAutoSetProxy", false);
 				isSocks = settings.getBoolean("isSocks", false);
+				port = Integer.valueOf(settings.getString("port", "22"));
+				localPort = Integer.valueOf(settings.getString("localPort",
+						"1984"));
+				remotePort = Integer.valueOf(settings.getString("remotePort",
+						"3128"));
 			} catch (Exception e) {
 				Log.e(TAG, "Exception when get preferences");
 			}
