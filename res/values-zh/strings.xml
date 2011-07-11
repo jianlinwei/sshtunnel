@@ -54,7 +54,7 @@
 	<string name="proxyed_apps_summary">为应用分别设置代理，需要 ROOT 权限以及 IPTABLES 的支持</string>
 	<string name="proxyed_help">选择使用安全隧道的应用:</string>
 	<string name="socks">使用SOCKS代理</string>
-	<string name="socks_summary">启用动态转口转发 ，可转发所有端口的流量</string>
+	<string name="socks_summary">启用动态端口转发 ，可转发所有端口的流量</string>
 	<string name="connecting">正在连接</string>
 	<string name="auto_connecting">连接中...</string>
 	<string name="loading">加载应用列表中...</string>
