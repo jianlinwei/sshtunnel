@@ -580,7 +580,15 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 					+ "iptables -t nat -D OUTPUT -p udp -j SSHTUNNELDNS\n");
 		}
 
-		if (isAutoSetProxy) {
+		if (isGFWList) {
+			String[] gfw_list = getResources().getStringArray(
+					R.array.gfw_list);
+
+			for (String item : gfw_list) {
+				cmd.append(BASE + "iptables -t nat -D OUTPUT -p tcp -d "
+						+ item + " -j SSHTUNNEL\n");
+			}
+		} else if (isAutoSetProxy) {
 			cmd.append(BASE + "iptables -t nat -D OUTPUT -p tcp -j SSHTUNNEL\n");
 		} else {
 
