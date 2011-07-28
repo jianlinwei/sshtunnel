@@ -47,6 +47,8 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.flurry.android.FlurryAgent;
+
 import android.app.ActivityManager;
 import android.app.ActivityManager.RunningServiceInfo;
 import android.app.AlertDialog;
@@ -323,6 +325,18 @@ public class SSHTunnel extends PreferenceActivity implements
 
 		profileList.setEntries(profileEntries);
 		profileList.setEntryValues(profileValues);
+	}
+
+	@Override
+	public void onStart() {
+		super.onStart();
+		FlurryAgent.onStartSession(this, "MBY4JL18FQK1DPEJ5Y39");
+	}
+
+	@Override
+	public void onStop() {
+		super.onStop();
+		FlurryAgent.onEndSession(this);
 	}
 
 	/** Called when the activity is first created. */
