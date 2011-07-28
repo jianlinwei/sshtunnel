@@ -110,10 +110,13 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 	private String remoteAddress = "127.0.0.1";
 	private String user;
 	private String password;
+	
 	private boolean isAutoReconnect = false;
 	private boolean isAutoSetProxy = false;
 	private boolean isSocks = false;
 	private boolean enableDNSProxy = true;
+	private boolean isGFWList = false;
+	
 	private LocalPortForwarder lpf = null;
 	private LocalPortForwarder dnspf = null;
 	private DynamicPortForwarder dpf = null;
@@ -524,7 +527,15 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 			cmd.append(hasRedirectSupport ? CMD_IPTABLES_REDIRECT_ADD_SOCKS
 					: CMD_IPTABLES_DNAT_ADD_SOCKS);
 
-		if (isAutoSetProxy) {
+		if (isGFWList) {
+			String[] gfw_list = getResources().getStringArray(
+					R.array.gfw_list);
+
+			for (String item : gfw_list) {
+				cmd.append(BASE + "iptables -t nat -A OUTPUT -p tcp -d "
+						+ item + " -j SSHTUNNEL\n");
+			}
+		} else if (isAutoSetProxy) {
 			cmd.append(BASE + "iptables -t nat -A OUTPUT -p tcp -j SSHTUNNEL\n");
 		} else {
 
@@ -849,6 +860,7 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 		isAutoReconnect = bundle.getBoolean("isAutoReconnect");
 		isAutoSetProxy = bundle.getBoolean("isAutoSetProxy");
 		isSocks = bundle.getBoolean("isSocks");
+		isGFWList = bundle.getBoolean("isGFWList");
 
 		new Thread(new Runnable() {
 			public void run() {
