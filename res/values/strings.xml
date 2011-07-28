@@ -68,7 +68,8 @@
 
 	<!-- settings port forwarding category -->
 	<string name="socks">Use socks proxy</string>
-	<string name="socks_summary">Enable dynamic port forwarding， redirect all ports</string>
+	<string name="socks_summary">Enable dynamic port forwarding， redirect all ports
+	</string>
 	<string name="port_cat">Port Forwarding</string>
 	<string name="local_port">Local Port</string>
 	<string name="local_port_summary">Listening Port, default 1984</string>
@@ -84,24 +85,34 @@
 	<string name="auto_connect_summary">Start SSH Tunnel when network available</string>
 	<string name="auto_reconnect">Auto Reconnect</string>
 	<string name="auto_reconnect_summary">Try to reconnect the SSH service, when connection
-		closed unexpected</string>
+		closed unexpected
+	</string>
+	<string name="auto_set_gfwlist">Enable GFW List</string>
+	<string name="auto_set_gfwlist_summary">Set proxy only for blocked sites (for users in
+		China only)
+	</string>
 	<string name="auto_set_proxy">Global Proxy</string>
 	<string name="auto_set_proxy_summary">Auto set up the global proxy (needs ROOT permission
-		and IPTABLES support)</string>
+		and IPTABLES support)
+	</string>
 	<string name="enable_market">Enable Market</string>
 	<string name="enable_market_summary">Only for users in China, help to update app from
-		Android Market (need reboot)</string>
+		Android Market (need reboot)
+	</string>
 	<string name="enable_dnsproxy">Enable DNS Proxy</string>
 	<string name="enable_dnsproxy_summary">Enable DNS Proxy for some users behind a firewall
 	</string>
 	<string name="dnsproxy_addr">Upstream DNS Address</string>
 	<string name="dnsproxy_addr_summary">The upstream DNS used by DNS Proxy, modify
-		it only if you know what it is</string>
+		it only
+		if you know what it is
+	</string>
 
 	<!-- settings proxyed apps category -->
 	<string name="proxyed_apps">Individual Proxy</string>
 	<string name="proxyed_apps_summary">Choose apps through proxy (needs ROOT permission
-		and IPTABLES support)</string>
+		and IPTABLES support)
+	</string>
 	<string name="proxyed_help">Select apps to use with SSHTunnel:</string>
 
 	<!-- menu bar category -->
@@ -112,9 +123,10 @@
 		the GPLV3. \n\nIf you have any question, please visit
 		our project
 		page on
-		googlecode. \n\n(sshtunnel.googlecode.com)</string>
+		googlecode. \n\n(sshtunnel.googlecode.com)
+	</string>
 	<string name="about">About</string>
-		<string name="change_name">Rename</string>
+	<string name="change_name">Rename</string>
 	<string name="alert_dialog_ok">OK</string>
 	<string name="alert_dialog_cancel">Cancel</string>
 
@@ -140,4 +152,19 @@
 	<string name="folder">Folder</string>
 	<string name="file_size">File Size</string>
 	<string name="file_toast">Use the key file: </string>
+
+	<!-- GFW List -->
+	<string-array name="gfw_list">
+		<item>209.0.0.0/8</item>
+		<item>72.0.0.0/8</item>
+		<item>74.0.0.0/8</item>
+		<item>68.0.0.0/8</item>
+		<item>69.0.0.0/8</item>
+		<item>199.0.0.0/8</item>
+		<item>168.0.0.0/8</item>
+		<item>67.0.0.0/8</item>
+		<item>173.0.0.0/8</item>
+		<item>202.248.0.0/16</item>
+	</string-array>
+
 </resources>

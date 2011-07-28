@@ -74,10 +74,12 @@
 	</string>
 
 	<string name="crash_alert">检测到本程序正在从一次崩溃中恢复。\n\n请将您的情况提交到项目网站，谢谢！
-		\n\n(sshtunnel.googlecode.com) </string>
+		\n\n(sshtunnel.googlecode.com)
+	</string>
 	<string name="copy_rights">：\n\n安全隧道是一款开源软件，基于 GPLV3
 		发布。\n\n如果您有任何问题，请前往项目网站进行反馈。
-		\n\n(sshtunnel.googlecode.com)</string>
+		\n\n(sshtunnel.googlecode.com)
+	</string>
 	<string name="about">关于</string>
 
 	<!-- settings notification category -->
@@ -112,5 +114,9 @@
 	<string name="change_name">更改帐号名称</string>
 	<string name="alert_dialog_ok">确认</string>
 	<string name="alert_dialog_cancel">取消</string>
+
+	<!-- GFW List -->
+	<string name="auto_set_gfwlist">启用GFW列表</string>
+	<string name="auto_set_gfwlist_summary">为部分被屏蔽网站设置代理（实验性）</string>
 
 </resources>

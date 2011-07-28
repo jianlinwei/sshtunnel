@@ -133,6 +133,8 @@ public class SSHTunnel extends PreferenceActivity implements
 	}
 
 	private ProgressDialog pd = null;
+	private static boolean isRoot = false;
+
 	private String host = "";
 	private int port = 22;
 	private int localPort = 1984;
@@ -141,18 +143,19 @@ public class SSHTunnel extends PreferenceActivity implements
 	private String user = "";
 	private String password = "";
 	private String profile;
-	public static boolean isAutoConnect = false;
-	public static boolean isAutoReconnect = false;
-	public static boolean isAutoSetProxy = false;
+	private boolean isAutoReconnect = false;
+	private boolean isAutoSetProxy = false;
+	private boolean isGFWList = false;
+	private boolean isSocks = false;
 
-	public static boolean isSocks = false;
-	public static boolean isRoot = false;
 	private CheckBoxPreference isAutoConnectCheck;
 	private CheckBoxPreference isAutoReconnectCheck;
 	private CheckBoxPreference isAutoSetProxyCheck;
-
 	private CheckBoxPreference isSocksCheck;
+	private CheckBoxPreference isGFWListCheck;
+
 	private ListPreference profileList;
+
 	private EditTextPreference hostText;
 	private EditTextPreference portText;
 	private EditTextPreference userText;
@@ -272,6 +275,7 @@ public class SSHTunnel extends PreferenceActivity implements
 		isAutoSetProxyCheck.setEnabled(false);
 		isAutoConnectCheck.setEnabled(false);
 		isAutoReconnectCheck.setEnabled(false);
+		isGFWListCheck.setEnabled(false);
 	}
 
 	private void enableAll() {
@@ -284,11 +288,14 @@ public class SSHTunnel extends PreferenceActivity implements
 			remotePortText.setEnabled(true);
 			remoteAddressText.setEnabled(true);
 		}
-		if (!isAutoSetProxyCheck.isChecked())
-			proxyedApps.setEnabled(true);
+		if (!isGFWListCheck.isChecked()) {
+			isAutoSetProxyCheck.setEnabled(true);
+			if (!isAutoSetProxyCheck.isChecked())
+				proxyedApps.setEnabled(true);
+		}
 
 		profileList.setEnabled(true);
-		isAutoSetProxyCheck.setEnabled(true);
+		isGFWListCheck.setEnabled(true);
 		isSocksCheck.setEnabled(true);
 		isAutoConnectCheck.setEnabled(true);
 		isAutoReconnectCheck.setEnabled(true);
@@ -361,6 +368,7 @@ public class SSHTunnel extends PreferenceActivity implements
 		isSocksCheck = (CheckBoxPreference) findPreference("isSocks");
 		isAutoConnectCheck = (CheckBoxPreference) findPreference("isAutoConnect");
 		isAutoReconnectCheck = (CheckBoxPreference) findPreference("isAutoReconnect");
+		isGFWListCheck = (CheckBoxPreference) findPreference("isGFWList");
 
 		SharedPreferences settings = PreferenceManager
 				.getDefaultSharedPreferences(this);
@@ -639,7 +647,6 @@ public class SSHTunnel extends PreferenceActivity implements
 		SharedPreferences settings = PreferenceManager
 				.getDefaultSharedPreferences(SSHTunnel.this);
 
-		isAutoConnect = settings.getBoolean("isAutoConnect", false);
 		isAutoSetProxy = settings.getBoolean("isAutoSetProxy", false);
 		isAutoReconnect = settings.getBoolean("isAutoReconnect", false);
 		isSocks = settings.getBoolean("isSocks", false);
@@ -742,10 +749,16 @@ public class SSHTunnel extends PreferenceActivity implements
 		SharedPreferences settings = PreferenceManager
 				.getDefaultSharedPreferences(this);
 
-		if (settings.getBoolean("isAutoSetProxy", false))
+		if (settings.getBoolean("isGFWList", false)) {
+			isAutoSetProxyCheck.setEnabled(false);
 			proxyedApps.setEnabled(false);
-		else
-			proxyedApps.setEnabled(true);
+		} else {
+			isAutoSetProxyCheck.setEnabled(true);
+			if (settings.getBoolean("isGlobalProxy", false))
+				proxyedApps.setEnabled(false);
+			else
+				proxyedApps.setEnabled(true);
+		}
 
 		if (settings.getBoolean("isSocks", false)) {
 			remotePortText.setEnabled(false);
@@ -908,11 +921,26 @@ public class SSHTunnel extends PreferenceActivity implements
 			}
 		}
 
-		if (key.equals("isAutoSetProxy")) {
-			if (settings.getBoolean("isAutoSetProxy", false))
+		if (key.equals("isGFWList")) {
+			if (settings.getBoolean("isGFWList", false)) {
+				isAutoSetProxyCheck.setEnabled(false);
 				proxyedApps.setEnabled(false);
-			else
-				proxyedApps.setEnabled(true);
+			} else {
+				isAutoSetProxyCheck.setEnabled(true);
+				if (settings.getBoolean("isGlobalProxy", false))
+					proxyedApps.setEnabled(false);
+				else
+					proxyedApps.setEnabled(true);
+			}
+		}
+
+		if (key.equals("isAutoSetProxy")) {
+			if (!settings.getBoolean("isGFWList", false)) {
+				if (settings.getBoolean("isAutoSetProxy", false))
+					proxyedApps.setEnabled(false);
+				else
+					proxyedApps.setEnabled(true);
+			}
 		}
 
 		if (key.equals("isRunning")) {
@@ -1012,10 +1040,10 @@ public class SSHTunnel extends PreferenceActivity implements
 		SharedPreferences settings = PreferenceManager
 				.getDefaultSharedPreferences(this);
 
-		isAutoConnect = settings.getBoolean("isAutoConnect", false);
 		isAutoSetProxy = settings.getBoolean("isAutoSetProxy", false);
 		isAutoReconnect = settings.getBoolean("isAutoReconnect", false);
 		isSocks = settings.getBoolean("isSocks", false);
+		isGFWList = settings.getBoolean("isGFWList", false);
 
 		host = settings.getString("host", "");
 		if (isTextEmpty(host, getString(R.string.host_empty)))
@@ -1074,6 +1102,7 @@ public class SSHTunnel extends PreferenceActivity implements
 			bundle.putBoolean("isAutoReconnect", isAutoReconnect);
 			bundle.putBoolean("isAutoSetProxy", isAutoSetProxy);
 			bundle.putBoolean("isSocks", isSocks);
+			bundle.putBoolean("isGFWList", isGFWList);
 
 			it.putExtras(bundle);
 			startService(it);
