@@ -76,6 +76,7 @@ import android.preference.PreferenceManager;
 import android.util.Log;
 import android.widget.RemoteViews;
 
+import com.flurry.android.FlurryAgent;
 import com.trilead.ssh2.Connection;
 import com.trilead.ssh2.ConnectionMonitor;
 import com.trilead.ssh2.DynamicPortForwarder;
@@ -747,6 +748,8 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 		isStopping = true;
 
 		stopForegroundCompat(1);
+		
+		FlurryAgent.onEndSession(this);
 
 		// if (stateChanged != null) {
 		// unregisterReceiver(stateChanged);
@@ -830,8 +833,10 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 	public void onStart(Intent intent, int startId) {
 
 		super.onStart(intent, startId);
+		
+		FlurryAgent.onStartSession(this, "MBY4JL18FQK1DPEJ5Y39");
 
-		Log.e(TAG, "Service Start");
+		Log.d(TAG, "Service Start");
 
 		Bundle bundle = intent.getExtras();
 		host = bundle.getString("host");
