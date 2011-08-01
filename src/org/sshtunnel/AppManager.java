@@ -82,6 +82,14 @@ public class AppManager extends Activity implements OnCheckedChangeListener,
 		while (itAppInfo.hasNext()) {
 			aInfo = itAppInfo.next();
 
+			if (aInfo.processName == null)
+				continue;
+			if (pMgr.getApplicationLabel(aInfo) == null
+					|| pMgr.getApplicationLabel(aInfo).toString().equals(""))
+				continue;
+			if (pMgr.getApplicationIcon(aInfo) == null)
+				continue;
+
 			apps[appIdx] = new ProxyedApp();
 
 			apps[appIdx].setEnabled(aInfo.enabled);
@@ -89,8 +97,7 @@ public class AppManager extends Activity implements OnCheckedChangeListener,
 			apps[appIdx].setUsername(pMgr.getNameForUid(apps[appIdx].getUid()));
 			apps[appIdx].setProcname(aInfo.processName);
 			apps[appIdx].setName(pMgr.getApplicationLabel(aInfo).toString());
-			if (pMgr.getApplicationIcon(aInfo) != null)
-				apps[appIdx].setIcon(pMgr.getApplicationIcon(aInfo));
+			apps[appIdx].setIcon(pMgr.getApplicationIcon(aInfo));
 
 			// check if this application is allowed
 			if (Arrays.binarySearch(tordApps, apps[appIdx].getUsername()) >= 0) {
