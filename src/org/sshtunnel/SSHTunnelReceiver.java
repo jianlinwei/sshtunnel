@@ -61,6 +61,7 @@ public class SSHTunnelReceiver {
 	private boolean isAutoReconnect = false;
 	private boolean isAutoSetProxy = false;
 	private boolean isSocks = false;
+	private boolean isGFWList = false;
 	private static final String TAG = "SSHTunnelReceiver";
 
 	public void onReceive(Context context, Intent intent, boolean enable) {
@@ -96,6 +97,7 @@ public class SSHTunnelReceiver {
 				isAutoReconnect = settings.getBoolean("isAutoReconnect", false);
 				isAutoSetProxy = settings.getBoolean("isAutoSetProxy", false);
 				isSocks = settings.getBoolean("isSocks", false);
+				isGFWList = settings.getBoolean("isGFWList", false);
 				port = Integer.valueOf(settings.getString("port", "22"));
 				localPort = Integer.valueOf(settings.getString("localPort",
 						"1984"));
@@ -117,6 +119,7 @@ public class SSHTunnelReceiver {
 			bundle.putBoolean("isAutoReconnect", isAutoReconnect);
 			bundle.putBoolean("isAutoSetProxy", isAutoSetProxy);
 			bundle.putBoolean("isSocks", isSocks);
+			bundle.putBoolean("isGFWList", isGFWList);
 
 			it.putExtras(bundle);
 			context.startService(it);
