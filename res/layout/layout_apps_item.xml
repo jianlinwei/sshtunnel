@@ -9,7 +9,7 @@
 			android:padding="3dip"></ImageView>
 
 		<TextView android:layout_height="wrap_content" android:id="@+id/itemtext"
-			android:text="uid:packages" android:textSize="18sp" android:padding="3dip"></TextView>
+			android:text="uid:packages" android:maxLength="25" android:textSize="18sp" android:padding="3dip"></TextView>
 
 		<CheckBox android:layout_width="wrap_content"
 			android:layout_height="wrap_content" android:id="@+id/itemcheck"></CheckBox>
