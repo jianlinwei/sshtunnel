@@ -38,6 +38,10 @@
 
 package org.sshtunnel;
 
+import org.sshtunnel.db.Profile;
+import org.sshtunnel.db.ProfileFactory;
+import org.sshtunnel.utils.Constraints;
+
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -50,28 +54,18 @@ import android.util.Log;
 
 public class SSHTunnelReceiver {
 
-	private String host;
-	private int port;
-	private int localPort;
-	private int remotePort;
-	private String remoteAddress;
-	private String user;
-	private String password;
-	private boolean isAutoConnect = false;
-	private boolean isAutoReconnect = false;
-	private boolean isAutoSetProxy = false;
-	private boolean isSocks = false;
-	private boolean isGFWList = false;
 	private static final String TAG = "SSHTunnelReceiver";
 
 	public void onReceive(Context context, Intent intent, boolean enable) {
 
-		SharedPreferences settings = PreferenceManager
-				.getDefaultSharedPreferences(context);
+		Profile profile = ProfileFactory.getProfile(context);
+		
+		if (profile == null) {
+			Log.e(TAG, "Exception when get preferences");
+			return;
+		}
 
-		isAutoConnect = settings.getBoolean("isAutoConnect", false);
-
-		if (isAutoConnect || enable) {
+		if (profile.isAutoConnect() || enable) {
 
 			NotificationManager notificationManager = (NotificationManager) context
 					.getSystemService(Context.NOTIFICATION_SERVICE);
@@ -87,39 +81,10 @@ public class SSHTunnelReceiver {
 			notification.setLatestEventInfo(context, context.getString(R.string.app_name),
 					context.getString(R.string.auto_connecting), pendIntent);
 			notificationManager.notify(1, notification);
-			
-			try {
-				host = settings.getString("host", "");
-				user = settings.getString("user", "");
-				password = settings.getString("password", "");
-				remoteAddress = settings
-						.getString("remoteAddress", "127.0.0.1");
-				isAutoReconnect = settings.getBoolean("isAutoReconnect", false);
-				isAutoSetProxy = settings.getBoolean("isAutoSetProxy", false);
-				isSocks = settings.getBoolean("isSocks", false);
-				isGFWList = settings.getBoolean("isGFWList", false);
-				port = Integer.valueOf(settings.getString("port", "22"));
-				localPort = Integer.valueOf(settings.getString("localPort",
-						"1984"));
-				remotePort = Integer.valueOf(settings.getString("remotePort",
-						"3128"));
-			} catch (Exception e) {
-				Log.e(TAG, "Exception when get preferences");
-			}
 
 			Intent it = new Intent(context, SSHTunnelService.class);
 			Bundle bundle = new Bundle();
-			bundle.putString("host", host);
-			bundle.putString("user", user);
-			bundle.putString("password", password);
-			bundle.putInt("port", port);
-			bundle.putInt("localPort", localPort);
-			bundle.putInt("remotePort", remotePort);
-			bundle.putString("remoteAddress", remoteAddress);
-			bundle.putBoolean("isAutoReconnect", isAutoReconnect);
-			bundle.putBoolean("isAutoSetProxy", isAutoSetProxy);
-			bundle.putBoolean("isSocks", isSocks);
-			bundle.putBoolean("isGFWList", isGFWList);
+			bundle.putInt(Constraints.ID, profile.getId());
 
 			it.putExtras(bundle);
 			context.startService(it);

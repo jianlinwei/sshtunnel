@@ -1,4 +1,4 @@
-package org.sshtunnel;
+package org.sshtunnel.utils;
 
 /**
  * <p>Encodes and decodes to and from Base64 notation.</p>

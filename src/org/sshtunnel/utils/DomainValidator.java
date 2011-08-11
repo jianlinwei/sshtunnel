@@ -14,12 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.sshtunnel;
+package org.sshtunnel.utils;
 
 
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.List;
+
 
 /**
  * <p><b>Domain name</b> validation routines.</p>
