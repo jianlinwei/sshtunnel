@@ -64,7 +64,9 @@ public class ProfileFactory {
 	}
 
 	public static void loadFromPreference(Context ctx) {
-
+		
+		initHelper(ctx);
+		
 		SharedPreferences settings = PreferenceManager
 				.getDefaultSharedPreferences(ctx);
 
