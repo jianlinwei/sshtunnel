@@ -30,6 +30,26 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
 	}
 
 	/**
+	 * Close the database connections and clear any cached DAOs.
+	 */
+	@Override
+	public void close() {
+		super.close();
+		profileDao = null;
+	}
+
+	/**
+	 * Returns the Database Access Object (DAO) for our SimpleData class. It will create it or just give the cached
+	 * value.
+	 */
+	public Dao<Profile, Integer> getProfileDao() throws SQLException {
+		if (profileDao == null) {
+			profileDao = getDao(Profile.class);
+		}
+		return profileDao;
+	}
+
+	/**
 	 * This is called when the database is first created. Usually you should call createTable statements here to create
 	 * the tables that will store your data.
 	 */
@@ -59,25 +79,5 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
 			Log.e(DatabaseHelper.class.getName(), "Can't drop databases", e);
 			throw new RuntimeException(e);
 		}
-	}
-
-	/**
-	 * Returns the Database Access Object (DAO) for our SimpleData class. It will create it or just give the cached
-	 * value.
-	 */
-	public Dao<Profile, Integer> getProfileDao() throws SQLException {
-		if (profileDao == null) {
-			profileDao = getDao(Profile.class);
-		}
-		return profileDao;
-	}
-
-	/**
-	 * Close the database connections and clear any cached DAOs.
-	 */
-	@Override
-	public void close() {
-		super.close();
-		profileDao = null;
 	}
 }

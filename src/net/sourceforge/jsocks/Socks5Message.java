@@ -184,6 +184,7 @@ public class Socks5Message extends ProxyMessage {
 	 * @throws UnknownHostException
 	 *             if host can't be resolved.
 	 */
+	@Override
 	public InetAddress getInetAddress() throws UnknownHostException {
 		if (ip != null)
 			return ip;
@@ -202,6 +203,7 @@ public class Socks5Message extends ProxyMessage {
 	 * @throws IOException
 	 *             If any error happens with I/O.
 	 */
+	@Override
 	public void read(InputStream in) throws SocksException, IOException {
 		read(in, true);
 	}
@@ -219,6 +221,7 @@ public class Socks5Message extends ProxyMessage {
 	 * @throws IOException
 	 *             If any error happens with I/O.
 	 */
+	@Override
 	public void read(InputStream in, boolean clientMode) throws SocksException,
 			IOException {
 		data = null;
@@ -271,6 +274,7 @@ public class Socks5Message extends ProxyMessage {
 	/**
 	 * Returns string representation of the message.
 	 */
+	@Override
 	public String toString() {
 		String s = "Socks5Message:" + "\n" + "VN   " + version + "\n" + "CMD  "
 				+ command + "\n" + "ATYP " + addrType + "\n" + "ADDR " + host
@@ -284,6 +288,7 @@ public class Socks5Message extends ProxyMessage {
 	 * @param out
 	 *            Output stream to which message should be written.
 	 */
+	@Override
 	public void write(OutputStream out) throws SocksException, IOException {
 		if (data == null) {
 			Socks5Message msg;

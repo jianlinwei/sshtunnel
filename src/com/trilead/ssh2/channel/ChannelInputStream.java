@@ -22,6 +22,7 @@ public final class ChannelInputStream extends InputStream {
 		this.extendedFlag = isExtended;
 	}
 
+	@Override
 	public int available() throws IOException {
 		if (isEOF)
 			return 0;
@@ -33,10 +34,12 @@ public final class ChannelInputStream extends InputStream {
 		return (avail > 0) ? avail : 0;
 	}
 
+	@Override
 	public void close() throws IOException {
 		isClosed = true;
 	}
 
+	@Override
 	public int read() throws IOException {
 		/* Yes, this stream is pure and unbuffered, a single byte read() is slow */
 
@@ -50,10 +53,12 @@ public final class ChannelInputStream extends InputStream {
 		return b[0] & 0xff;
 	}
 
+	@Override
 	public int read(byte[] b) throws IOException {
 		return read(b, 0, b.length);
 	}
 
+	@Override
 	public int read(byte[] b, int off, int len) throws IOException {
 		if (b == null)
 			throw new NullPointerException();

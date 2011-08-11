@@ -72,6 +72,7 @@ public class SocksServerSocket extends ServerSocket {
 	/**
 	 * Accepts the incoming connection.
 	 */
+	@Override
 	public Socket accept() throws IOException {
 		Socket s;
 
@@ -109,6 +110,7 @@ public class SocksServerSocket extends ServerSocket {
 	 * direct connection is used, closes direct ServerSocket. If the client
 	 * socket have been allready accepted, does nothing.
 	 */
+	@Override
 	public void close() throws IOException {
 		super.close();
 		if (proxy != null)
@@ -140,6 +142,7 @@ public class SocksServerSocket extends ServerSocket {
 	 * Get address assigned by proxy to listen for incomming connections, or the
 	 * local machine address if doing direct connection.
 	 */
+	@Override
 	public InetAddress getInetAddress() {
 		if (localIP == null) {
 			try {
@@ -155,6 +158,7 @@ public class SocksServerSocket extends ServerSocket {
 	 * Get port assigned by proxy to listen for incoming connections, or the
 	 * port chosen by local system, if accepting directly.
 	 */
+	@Override
 	public int getLocalPort() {
 		return localPort;
 	}
@@ -170,6 +174,7 @@ public class SocksServerSocket extends ServerSocket {
 	 *            incoming connection before failing with exception. Zero
 	 *            timeout implies infinity.
 	 */
+	@Override
 	public void setSoTimeout(int timeout) throws SocketException {
 		super.setSoTimeout(timeout);
 		if (!doing_direct)

@@ -371,6 +371,7 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 		return false;
 	}
 
+	@Override
 	public void connectionLost(Throwable reason) {
 
 		Log.d(TAG, "Connection Lost");
@@ -781,6 +782,7 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 		}
 
 		new Thread() {
+			@Override
 			public void run() {
 
 				// Make sure the connection is closed, important here
@@ -849,6 +851,7 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 		profile = ProfileFactory.loadProfileFromDao(this, id);
 
 		new Thread(new Runnable() {
+			@Override
 			public void run() {
 
 				handler.sendEmptyMessage(MSG_CONNECT_START);

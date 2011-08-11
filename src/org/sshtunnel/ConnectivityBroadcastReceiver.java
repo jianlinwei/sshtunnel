@@ -8,8 +8,6 @@ import org.sshtunnel.db.ProfileFactory;
 import org.sshtunnel.utils.Constraints;
 import org.sshtunnel.utils.Utils;
 
-import com.ksmaze.android.preference.ListPreferenceMultiSelect;
-
 import android.app.ActivityManager;
 import android.app.ActivityManager.RunningServiceInfo;
 import android.content.BroadcastReceiver;
@@ -25,7 +23,8 @@ import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.telephony.TelephonyManager;
 import android.util.Log;
-import android.widget.Toast;
+
+import com.ksmaze.android.preference.ListPreferenceMultiSelect;
 
 public class ConnectivityBroadcastReceiver extends BroadcastReceiver {
 
@@ -43,6 +42,39 @@ public class ConnectivityBroadcastReceiver extends BroadcastReceiver {
 			}
 		}
 		return false;
+	}
+
+	public String onlineSSID(Context context, String ssid) {
+		String ssids[] = ListPreferenceMultiSelect.parseStoredValue(ssid);
+		if (ssids == null)
+			return null;
+		if (ssids.length < 1)
+			return null;
+		ConnectivityManager manager = (ConnectivityManager) context
+				.getSystemService(Context.CONNECTIVITY_SERVICE);
+		NetworkInfo networkInfo = manager.getActiveNetworkInfo();
+		if (networkInfo == null)
+			return null;
+		if (!networkInfo.getTypeName().equals("WIFI")) {
+			for (String item : ssids) {
+				if (item.equals("2G/3G"))
+					return "2G/3G";
+			}
+			return null;
+		}
+		WifiManager wm = (WifiManager) context
+				.getSystemService(Context.WIFI_SERVICE);
+		WifiInfo wInfo = wm.getConnectionInfo();
+		if (wInfo == null)
+			return null;
+		String current = wInfo.getSSID();
+		if (current == null || current.equals(""))
+			return null;
+		for (String item : ssids) {
+			if (item.equals(current))
+				return item;
+		}
+		return null;
 	}
 
 	@Override
@@ -173,39 +205,6 @@ public class ConnectivityBroadcastReceiver extends BroadcastReceiver {
 			}
 		}
 
-	}
-
-	public String onlineSSID(Context context, String ssid) {
-		String ssids[] = ListPreferenceMultiSelect.parseStoredValue(ssid);
-		if (ssids == null)
-			return null;
-		if (ssids.length < 1)
-			return null;
-		ConnectivityManager manager = (ConnectivityManager) context
-				.getSystemService(Context.CONNECTIVITY_SERVICE);
-		NetworkInfo networkInfo = manager.getActiveNetworkInfo();
-		if (networkInfo == null)
-			return null;
-		if (!networkInfo.getTypeName().equals("WIFI")) {
-			for (String item : ssids) {
-				if (item.equals("2G/3G"))
-					return "2G/3G";
-			}
-			return null;
-		}
-		WifiManager wm = (WifiManager) context
-				.getSystemService(Context.WIFI_SERVICE);
-		WifiInfo wInfo = wm.getConnectionInfo();
-		if (wInfo == null)
-			return null;
-		String current = wInfo.getSSID();
-		if (current == null || current.equals(""))
-			return null;
-		for (String item : ssids) {
-			if (item.equals(current))
-				return item;
-		}
-		return null;
 	}
 
 }

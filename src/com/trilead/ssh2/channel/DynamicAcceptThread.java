@@ -164,6 +164,7 @@ public class DynamicAcceptThread extends Thread implements IChannelWorkerThread 
 			return msg;
 		}
 
+		@Override
 		public void run() {
 			try {
 				startSession();
@@ -298,6 +299,7 @@ public class DynamicAcceptThread extends Thread implements IChannelWorkerThread 
 	 * 
 	 * @see com.trilead.ssh2.channel.IChannelWorkerThread#stopWorking()
 	 */
+	@Override
 	public void stopWorking() {
 		try {
 			/* This will lead to an IOException in the ss.accept() call */

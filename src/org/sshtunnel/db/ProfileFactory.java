@@ -5,14 +5,14 @@ import java.util.List;
 
 import org.sshtunnel.utils.Constraints;
 
-import com.j256.ormlite.android.apptools.OpenHelperManager;
-import com.j256.ormlite.dao.Dao;
-
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.preference.PreferenceManager;
 import android.util.Log;
+
+import com.j256.ormlite.android.apptools.OpenHelperManager;
+import com.j256.ormlite.dao.Dao;
 
 public class ProfileFactory {
 
@@ -24,9 +24,17 @@ public class ProfileFactory {
 		OpenHelperManager.setOpenHelperClass(DatabaseHelper.class);
 	}
 
-	private static void initHelper(Context ctx) {
-		if (helper == null) {
-			helper = ((DatabaseHelper) OpenHelperManager.getHelper(ctx));
+	public static boolean delFromDao(Context ctx) {
+		initHelper(ctx);
+		try {
+			Dao<Profile, Integer> profileDao = helper.getProfileDao();
+			int result = profileDao.delete(profile);
+			if (result != 1)
+				return false;
+			return true;
+		} catch (SQLException e) {
+			Log.e(TAG, "Cannot open DAO");
+			return false;
 		}
 	}
 
@@ -39,10 +47,10 @@ public class ProfileFactory {
 		return profile;
 	}
 
-	public static void newProfile(Context ctx) {
-		initHelper(ctx);
-		profile = new Profile();
-		saveToDao(ctx);
+	private static void initHelper(Context ctx) {
+		if (helper == null) {
+			helper = ((DatabaseHelper) OpenHelperManager.getHelper(ctx));
+		}
 	}
 
 	private static void initProfile(Context ctx) {
@@ -61,6 +69,30 @@ public class ProfileFactory {
 			} catch (SQLException e) {
 				Log.e(TAG, "Cannot open DAO");
 			}
+	}
+
+	public static List<Profile> loadFromDao(Context ctx) {
+		initHelper(ctx);
+		try {
+			Dao<Profile, Integer> profileDao = helper.getProfileDao();
+			List<Profile> list = profileDao.queryForAll();
+			return list;
+		} catch (SQLException e) {
+			Log.e(TAG, "Cannot open DAO");
+		}
+		return null;
+	}
+
+	public static void loadFromDaoToPreference(Context ctx, int profileId) {
+		initHelper(ctx);
+		try {
+			Dao<Profile, Integer> profileDao = helper.getProfileDao();
+			profile = profileDao.queryForId(profileId);
+		} catch (SQLException e) {
+			Log.e(TAG, "Cannot open DAO");
+			return;
+		}
+		saveToPreference(ctx);
 	}
 
 	public static void loadFromPreference(Context ctx) {
@@ -106,6 +138,34 @@ public class ProfileFactory {
 		saveToDao(ctx);
 	}
 
+	public static Profile loadProfileFromDao(Context ctx, int profileId) {
+		initHelper(ctx);
+		try {
+			Dao<Profile, Integer> profileDao = helper.getProfileDao();
+			Profile profile = profileDao.queryForId(profileId);
+			return profile;
+		} catch (SQLException e) {
+			Log.e(TAG, "Cannot open DAO");
+		}
+		return null;
+	}
+
+	public static void newProfile(Context ctx) {
+		initHelper(ctx);
+		profile = new Profile();
+		saveToDao(ctx);
+	}
+
+	public static void saveToDao(Context ctx) {
+		initHelper(ctx);
+		try {
+			Dao<Profile, Integer> profileDao = helper.getProfileDao();
+			profileDao.createOrUpdate(profile);
+		} catch (SQLException e) {
+			Log.e(TAG, "Cannot open DAO");
+		}
+	}
+
 	private static void saveToPreference(Context ctx) {
 		SharedPreferences settings = PreferenceManager
 				.getDefaultSharedPreferences(ctx);
@@ -136,65 +196,5 @@ public class ProfileFactory {
 		ed.putBoolean(Constraints.IS_GFW_LIST, profile.isGFWList);
 
 		ed.commit();
-	}
-
-	public static void saveToDao(Context ctx) {
-		initHelper(ctx);
-		try {
-			Dao<Profile, Integer> profileDao = helper.getProfileDao();
-			profileDao.createOrUpdate(profile);
-		} catch (SQLException e) {
-			Log.e(TAG, "Cannot open DAO");
-		}
-	}
-
-	public static List<Profile> loadFromDao(Context ctx) {
-		initHelper(ctx);
-		try {
-			Dao<Profile, Integer> profileDao = helper.getProfileDao();
-			List<Profile> list = profileDao.queryForAll();
-			return list;
-		} catch (SQLException e) {
-			Log.e(TAG, "Cannot open DAO");
-		}
-		return null;
-	}
-
-	public static Profile loadProfileFromDao(Context ctx, int profileId) {
-		initHelper(ctx);
-		try {
-			Dao<Profile, Integer> profileDao = helper.getProfileDao();
-			Profile profile = profileDao.queryForId(profileId);
-			return profile;
-		} catch (SQLException e) {
-			Log.e(TAG, "Cannot open DAO");
-		}
-		return null;
-	}
-
-	public static boolean delFromDao(Context ctx) {
-		initHelper(ctx);
-		try {
-			Dao<Profile, Integer> profileDao = helper.getProfileDao();
-			int result = profileDao.delete(profile);
-			if (result != 1)
-				return false;
-			return true;
-		} catch (SQLException e) {
-			Log.e(TAG, "Cannot open DAO");
-			return false;
-		}
-	}
-
-	public static void loadFromDaoToPreference(Context ctx, int profileId) {
-		initHelper(ctx);
-		try {
-			Dao<Profile, Integer> profileDao = helper.getProfileDao();
-			profile = profileDao.queryForId(profileId);
-		} catch (SQLException e) {
-			Log.e(TAG, "Cannot open DAO");
-			return;
-		}
-		saveToPreference(ctx);
 	}
 }

@@ -360,6 +360,7 @@ public class DES implements BlockCipher {
 		return "DES";
 	}
 
+	@Override
 	public int getBlockSize() {
 		return 8;
 	}
@@ -374,6 +375,7 @@ public class DES implements BlockCipher {
 	 * @exception IllegalArgumentException
 	 *                if the params argument is inappropriate.
 	 */
+	@Override
 	public void init(boolean encrypting, byte[] key) {
 		this.workingKey = generateWorkingKey(encrypting, key, 0);
 	}
@@ -381,6 +383,7 @@ public class DES implements BlockCipher {
 	public void reset() {
 	}
 
+	@Override
 	public void transformBlock(byte[] in, int inOff, byte[] out, int outOff) {
 		if (workingKey == null) {
 			throw new IllegalStateException("DES engine not initialised!");

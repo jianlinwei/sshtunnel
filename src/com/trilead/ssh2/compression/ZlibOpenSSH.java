@@ -27,6 +27,7 @@ package com.trilead.ssh2.compression;
  */
 public class ZlibOpenSSH extends Zlib {
 
+	@Override
 	public boolean canCompressPreauth() {
 		return false;
 	}

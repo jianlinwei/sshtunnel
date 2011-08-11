@@ -44,6 +44,7 @@ public class RemoteAcceptThread extends Thread {
 					+ "/" + remoteOriginatorPort);
 	}
 
+	@Override
 	public void run() {
 		try {
 			c.cm.sendOpenConfirmation(c);

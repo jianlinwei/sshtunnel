@@ -37,6 +37,7 @@ public class LocalAcceptThread extends Thread implements IChannelWorkerThread {
 		ss = new ServerSocket(local_port);
 	}
 
+	@Override
 	public void run() {
 		try {
 			cm.registerThread(this);
@@ -108,6 +109,7 @@ public class LocalAcceptThread extends Thread implements IChannelWorkerThread {
 		}
 	}
 
+	@Override
 	public void stopWorking() {
 		try {
 			/* This will lead to an IOException in the ss.accept() call */

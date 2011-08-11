@@ -17,8 +17,8 @@
 package org.sshtunnel.utils;
 
 import java.io.Serializable;
-import java.util.regex.Pattern;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * <b>Regular Expression</b> validation (using JDK 1.4+ regex support).
@@ -163,6 +163,24 @@ public class RegexValidator implements Serializable {
 
 
     /**
+     * Provide a String representation of this validator.
+     * @return A String representation of this validator
+     */
+    @Override
+	public String toString() {
+        StringBuffer buffer = new StringBuffer();
+        buffer.append("RegexValidator{");
+        for (int i = 0; i < patterns.length; i++) {
+            if (i > 0) {
+                buffer.append(",");
+            }
+            buffer.append(patterns[i].pattern());
+        }
+        buffer.append("}");
+        return buffer.toString();
+    }
+
+    /**
      * Validate a value against the set of regular expressions
      * returning a String value of the aggregated groups.
      *
@@ -192,23 +210,6 @@ public class RegexValidator implements Serializable {
             }
         }
         return null;
-    }
-
-    /**
-     * Provide a String representation of this validator.
-     * @return A String representation of this validator
-     */
-    public String toString() {
-        StringBuffer buffer = new StringBuffer();
-        buffer.append("RegexValidator{");
-        for (int i = 0; i < patterns.length; i++) {
-            if (i > 0) {
-                buffer.append(",");
-            }
-            buffer.append(patterns[i].pattern());
-        }
-        buffer.append("}");
-        return buffer.toString();
     }
 
 }

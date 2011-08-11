@@ -71,6 +71,7 @@ public class SocksException extends java.io.IOException {
 	 * 
 	 * @return String represntation of this exception.
 	 */
+	@Override
 	public String toString() {
 		return errString;
 	}

@@ -5,6 +5,7 @@ package net.sourceforge.jsocks;
  */
 public class AuthenticationNone implements Authentication {
 
+	@Override
 	public Object[] doSocksAuthentication(int methodId,
 			java.net.Socket proxySocket) throws java.io.IOException {
 

@@ -188,6 +188,7 @@ public class Connection {
 	 *             wrapper for it and will disappear in future builds.
 	 * 
 	 */
+	@Deprecated
 	public synchronized boolean authenticateWithDSA(String user, String pem,
 			String password) throws IOException {
 		if (tm == null)
@@ -786,6 +787,7 @@ public class Connection {
 
 			if (kexTimeout > 0) {
 				final Runnable timeoutHandler = new Runnable() {
+					@Override
 					public void run() {
 						synchronized (state) {
 							if (state.isCancelled)
@@ -1065,6 +1067,7 @@ public class Connection {
 			if (logger == null) {
 				logger = new DebugLogger() {
 
+					@Override
 					public void log(int level, String className, String message) {
 						long now = System.currentTimeMillis();
 						System.err.println(now + " : " + className + ": "

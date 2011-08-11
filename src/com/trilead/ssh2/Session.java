@@ -517,6 +517,7 @@ public class Session {
 	 *             wrapper.
 	 * 
 	 */
+	@Deprecated
 	public int waitUntilDataAvailable(long timeout) throws IOException {
 		if (timeout < 0)
 			throw new IllegalArgumentException("timeout must not be negative!");

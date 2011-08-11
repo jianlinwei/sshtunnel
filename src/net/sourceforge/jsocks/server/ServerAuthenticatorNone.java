@@ -112,6 +112,7 @@ public class ServerAuthenticatorNone implements ServerAuthenticator {
 	/**
 	 * Allways returns true.
 	 */
+	@Override
 	public boolean checkRequest(java.net.DatagramPacket dp, boolean out) {
 		return true;
 	}
@@ -119,6 +120,7 @@ public class ServerAuthenticatorNone implements ServerAuthenticator {
 	/**
 	 * Allways returns true.
 	 */
+	@Override
 	public boolean checkRequest(ProxyMessage msg) {
 		return true;
 	}
@@ -126,6 +128,7 @@ public class ServerAuthenticatorNone implements ServerAuthenticator {
 	/**
 	 * Does nothing.
 	 */
+	@Override
 	public void endSession() {
 	}
 
@@ -134,6 +137,7 @@ public class ServerAuthenticatorNone implements ServerAuthenticator {
 	 * 
 	 * @return Input stream speciefied in the constructor.
 	 */
+	@Override
 	public InputStream getInputStream() {
 		return in;
 	}
@@ -143,6 +147,7 @@ public class ServerAuthenticatorNone implements ServerAuthenticator {
 	 * 
 	 * @return Output stream speciefied in the constructor.
 	 */
+	@Override
 	public OutputStream getOutputStream() {
 		return out;
 	}
@@ -152,6 +157,7 @@ public class ServerAuthenticatorNone implements ServerAuthenticator {
 	 * 
 	 * @return null
 	 */
+	@Override
 	public UDPEncapsulation getUdpEncapsulation() {
 		return null;
 	}
@@ -161,6 +167,7 @@ public class ServerAuthenticatorNone implements ServerAuthenticator {
 	 * stream, when a SOCKS5 connection is being made, selects an authentication
 	 * NONE.
 	 */
+	@Override
 	public ServerAuthenticator startSession(Socket s) throws IOException {
 
 		PushbackInputStream in = new PushbackInputStream(s.getInputStream());

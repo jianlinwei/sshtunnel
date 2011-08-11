@@ -802,6 +802,7 @@ public class AES implements BlockCipher {
 		return "AES";
 	}
 
+	@Override
 	public final int getBlockSize() {
 		return BLOCK_SIZE;
 	}
@@ -817,6 +818,7 @@ public class AES implements BlockCipher {
 	 *                if the params argument is inappropriate.
 	 */
 
+	@Override
 	public final void init(boolean forEncryption, byte[] key) {
 		WorkingKey = generateWorkingKey(key, forEncryption);
 		this.doEncrypt = forEncryption;
@@ -894,6 +896,7 @@ public class AES implements BlockCipher {
 				| ((S[(x >> 16) & 255] & 255) << 16) | S[(x >> 24) & 255] << 24);
 	}
 
+	@Override
 	public void transformBlock(byte[] src, int srcoff, byte[] dst, int dstoff) {
 		processBlock(src, srcoff, dst, dstoff);
 	}

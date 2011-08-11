@@ -132,6 +132,7 @@ public class Socks5DatagramSocket extends DatagramSocket {
 	/**
 	 * Closes datagram socket, and proxy connection.
 	 */
+	@Override
 	public void close() {
 		if (!server_mode)
 			proxy.endSession();
@@ -151,6 +152,7 @@ public class Socks5DatagramSocket extends DatagramSocket {
 	 * 
 	 * @return Address to which datagrams are send for association.
 	 */
+	@Override
 	public InetAddress getLocalAddress() {
 		if (server_mode)
 			return super.getLocalAddress();
@@ -164,6 +166,7 @@ public class Socks5DatagramSocket extends DatagramSocket {
 	 * @return Port assigned by socks server to which datagrams are send for
 	 *         association.
 	 */
+	@Override
 	public int getLocalPort() {
 		if (server_mode)
 			return super.getLocalPort();
@@ -230,6 +233,7 @@ public class Socks5DatagramSocket extends DatagramSocket {
 	 * @param dp
 	 *            Datagram in which all relevent information will be copied.
 	 */
+	@Override
 	public void receive(DatagramPacket dp) throws IOException {
 		super.receive(dp);
 
@@ -310,6 +314,7 @@ public class Socks5DatagramSocket extends DatagramSocket {
 	 * @throws IOException
 	 *             If error happens with I/O.
 	 */
+	@Override
 	public void send(DatagramPacket dp) throws IOException {
 		// If the host should be accessed directly, send it as is.
 		if (!server_mode) {

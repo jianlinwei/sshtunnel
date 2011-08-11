@@ -21,6 +21,7 @@ import com.trilead.ssh2.log.Logger;
  */
 public class TimeoutService {
 	private static class TimeoutThread extends Thread {
+		@Override
 		public void run() {
 			synchronized (todolist) {
 				while (true) {
@@ -76,6 +77,7 @@ public class TimeoutService {
 			this.handler = handler;
 		}
 
+		@Override
 		public int compareTo(Object o) {
 			TimeoutToken t = (TimeoutToken) o;
 			if (runTime > t.runTime)
