@@ -1,4 +1,4 @@
-package org.sshtunnel;
+package org.sshtunnel.utils;
 
 import android.graphics.drawable.Drawable;
 

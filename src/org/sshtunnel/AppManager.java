@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.StringTokenizer;
 import java.util.Vector;
 
+import org.sshtunnel.utils.ProxyedApp;
+
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Context;

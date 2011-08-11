@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.sshtunnel.utils.Constraints;
+
 import android.app.ListActivity;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
@@ -61,7 +63,7 @@ public class FileChooser extends ListActivity {
 		SharedPreferences settings = PreferenceManager
 				.getDefaultSharedPreferences(this);
 		Editor ed = settings.edit();
-		ed.putString("key_path", o.getPath());
+		ed.putString(Constraints.KEY_PATH, o.getPath());
 		ed.commit();
 		Toast.makeText(this, getString(R.string.file_toast) + o.getPath(),
 				Toast.LENGTH_SHORT).show();

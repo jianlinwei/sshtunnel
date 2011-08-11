@@ -28,6 +28,10 @@ import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Random;
 
+import org.sshtunnel.utils.Base64;
+import org.sshtunnel.utils.DomainValidator;
+import org.sshtunnel.utils.InnerSocketBuilder;
+
 import android.app.ActivityManager;
 import android.app.ActivityManager.RunningServiceInfo;
 import android.content.Context;
