@@ -23,7 +23,6 @@ import java.net.SocketException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Random;
@@ -33,8 +32,6 @@ import org.sshtunnel.utils.DomainValidator;
 import org.sshtunnel.utils.InnerSocketBuilder;
 import org.sshtunnel.utils.Utils;
 
-import android.app.ActivityManager;
-import android.app.ActivityManager.RunningServiceInfo;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -85,10 +82,10 @@ class DnsResponse implements Serializable {
 			return null;
 		}
 
-		ip = "" + (int) (dnsResponse[i] & 0xFF); /* Unsigned byte to int */
+		ip = "" + (dnsResponse[i] & 0xFF); /* Unsigned byte to int */
 
 		for (i++; i < dnsResponse.length; i++) {
-			ip += "." + (int) (dnsResponse[i] & 0xFF);
+			ip += "." + (dnsResponse[i] & 0xFF);
 		}
 
 		return ip;
@@ -204,6 +201,7 @@ public class DNSServer implements WrapServer {
 		saveCache();
 	}
 
+	@Override
 	public void close() throws IOException {
 		inService = false;
 		if (srvSocket != null) {
@@ -310,6 +308,38 @@ public class DNSServer implements WrapServer {
 		return result;
 	}
 
+	public byte[] fetchAnswerHTTP(byte[] quest) {
+		byte[] result = null;
+		String domain = getRequestDomain(quest);
+		String ip = null;
+
+		DomainValidator dv = DomainValidator.getInstance();
+
+		/* Not support reverse domain name query */
+		if (domain.endsWith("in-addr.arpa") || !dv.isValid(domain)) {
+			return createDNSResponse(quest, parseIPString("127.0.0.1"));
+			// return null;
+		}
+
+		ip = resolveDomainName(domain);
+
+		if (ip == null) {
+			Log.e(TAG, "Failed to resolve domain name: " + domain);
+			return null;
+		}
+
+		if (ip.equals(CANT_RESOLVE)) {
+			return null;
+		}
+
+		byte[] ips = parseIPString(ip);
+		if (ips != null) {
+			result = createDNSResponse(quest, ips);
+		}
+
+		return result;
+	}
+
 	/**
 	 * 获取UDP DNS请求的域名
 	 * 
@@ -330,6 +360,7 @@ public class DNSServer implements WrapServer {
 		return requestDomain;
 	}
 
+	@Override
 	public int getServPort() {
 		return this.srvPort;
 	}
@@ -349,6 +380,7 @@ public class DNSServer implements WrapServer {
 		return srvPort;
 	}
 
+	@Override
 	public boolean isClosed() {
 		return srvSocket.isClosed();
 	}
@@ -471,6 +503,58 @@ public class DNSServer implements WrapServer {
 		return result;
 	}
 
+	/*
+	 * Resolve host name by access a DNSRelay running on GAE:
+	 * 
+	 * Example:
+	 * 
+	 * http://www.hosts.dotcloud.com/lookup.php?(domain name encoded)
+	 * http://gaednsproxy.appspot.com/?d=(domain name encoded)
+	 */
+	private String resolveDomainName(String domain) {
+		String ip = null;
+
+		InputStream is;
+
+		String encode_host = URLEncoder.encode(Base64.encodeBytes(Base64
+				.encodeBytesToBytes(domain.getBytes())));
+
+		String url = "http://gaednsproxy.appspot.com:" + dnsPort + "/?d="
+				+ encode_host;
+
+		Random random = new Random(System.currentTimeMillis());
+		int n = random.nextInt(2);
+		if (n == 1)
+			url = "http://gaednsproxy1.appspot.com:" + dnsPort + "/?d="
+					+ encode_host;
+
+		Log.d(TAG, "DNS Relay URL: " + url);
+
+		try {
+			URL aURL = new URL(url);
+			HttpURLConnection conn = (HttpURLConnection) aURL.openConnection();
+			conn.setConnectTimeout(2000);
+			conn.setConnectTimeout(5000);
+			conn.connect();
+			is = conn.getInputStream();
+			BufferedReader br = new BufferedReader(new InputStreamReader(is));
+			ip = br.readLine();
+		} catch (SocketException e) {
+			Log.e(TAG, "Failed to request URI: " + url, e);
+		} catch (IOException e) {
+			Log.e(TAG, "Failed to request URI: " + url, e);
+		} catch (NullPointerException e) {
+			Log.e(TAG, "Failed to request URI: " + url, e);
+		}
+
+		return ip;
+	}
+
+	/*
+	 * Implement with http based DNS.
+	 */
+
+	@Override
 	public void run() {
 
 		loadCache();
@@ -536,6 +620,7 @@ public class DNSServer implements WrapServer {
 					}
 					threadNum++;
 					new Thread() {
+						@Override
 						public void run() {
 							long startTime = System.currentTimeMillis();
 							try {
@@ -601,89 +686,6 @@ public class DNSServer implements WrapServer {
 			}
 		}
 
-	}
-
-	/*
-	 * Resolve host name by access a DNSRelay running on GAE:
-	 * 
-	 * Example:
-	 * 
-	 * http://www.hosts.dotcloud.com/lookup.php?(domain name encoded)
-	 * http://gaednsproxy.appspot.com/?d=(domain name encoded)
-	 */
-	private String resolveDomainName(String domain) {
-		String ip = null;
-
-		InputStream is;
-
-		String encode_host = URLEncoder.encode(Base64.encodeBytes(Base64
-				.encodeBytesToBytes(domain.getBytes())));
-
-		String url = "http://gaednsproxy.appspot.com:" + dnsPort + "/?d="
-				+ encode_host;
-
-		Random random = new Random(System.currentTimeMillis());
-		int n = random.nextInt(2);
-		if (n == 1)
-			url = "http://gaednsproxy1.appspot.com:" + dnsPort + "/?d="
-					+ encode_host;
-
-		Log.d(TAG, "DNS Relay URL: " + url);
-
-		try {
-			URL aURL = new URL(url);
-			HttpURLConnection conn = (HttpURLConnection) aURL.openConnection();
-			conn.setConnectTimeout(2000);
-			conn.setConnectTimeout(5000);
-			conn.connect();
-			is = conn.getInputStream();
-			BufferedReader br = new BufferedReader(new InputStreamReader(is));
-			ip = br.readLine();
-		} catch (SocketException e) {
-			Log.e(TAG, "Failed to request URI: " + url, e);
-		} catch (IOException e) {
-			Log.e(TAG, "Failed to request URI: " + url, e);
-		} catch (NullPointerException e) {
-			Log.e(TAG, "Failed to request URI: " + url, e);
-		}
-
-		return ip;
-	}
-
-	/*
-	 * Implement with http based DNS.
-	 */
-
-	public byte[] fetchAnswerHTTP(byte[] quest) {
-		byte[] result = null;
-		String domain = getRequestDomain(quest);
-		String ip = null;
-
-		DomainValidator dv = DomainValidator.getInstance();
-
-		/* Not support reverse domain name query */
-		if (domain.endsWith("in-addr.arpa") || !dv.isValid(domain)) {
-			return createDNSResponse(quest, parseIPString("127.0.0.1"));
-			// return null;
-		}
-
-		ip = resolveDomainName(domain);
-
-		if (ip == null) {
-			Log.e(TAG, "Failed to resolve domain name: " + domain);
-			return null;
-		}
-
-		if (ip.equals(CANT_RESOLVE)) {
-			return null;
-		}
-
-		byte[] ips = parseIPString(ip);
-		if (ips != null) {
-			result = createDNSResponse(quest, ips);
-		}
-
-		return result;
 	}
 
 	/**
@@ -761,6 +763,7 @@ public class DNSServer implements WrapServer {
 
 	}
 
+	@Override
 	public void setTarget(String target) {
 		this.target = target;
 	}

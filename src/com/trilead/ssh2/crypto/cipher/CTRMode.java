@@ -32,13 +32,16 @@ public class CTRMode implements BlockCipher {
 		System.arraycopy(iv, 0, X, 0, blockSize);
 	}
 
+	@Override
 	public final int getBlockSize() {
 		return blockSize;
 	}
 
+	@Override
 	public void init(boolean forEncryption, byte[] key) {
 	}
 
+	@Override
 	public final void transformBlock(byte[] src, int srcoff, byte[] dst,
 			int dstoff) {
 		bc.transformBlock(X, 0, Xenc, 0);

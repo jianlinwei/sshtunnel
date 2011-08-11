@@ -95,6 +95,7 @@ public class SFTPv3Client {
 	 * @deprecated this constructor (debug version) will disappear in the
 	 *             future, use {@link #SFTPv3Client(Connection)} instead.
 	 */
+	@Deprecated
 	public SFTPv3Client(Connection conn, PrintStream debug) throws IOException {
 		if (conn == null)
 			throw new IllegalArgumentException("Cannot accept null argument!");
@@ -950,8 +951,8 @@ public class SFTPv3Client {
 		if ((flags & AttribFlags.SSH_FILEXFER_ATTR_V3_ACMODTIME) != 0) {
 			if (debug != null)
 				debug.println("SSH_FILEXFER_ATTR_V3_ACMODTIME");
-			fa.atime = new Long(((long) tr.readUINT32()) & 0xffffffffl);
-			fa.mtime = new Long(((long) tr.readUINT32()) & 0xffffffffl);
+			fa.atime = new Long(tr.readUINT32() & 0xffffffffl);
+			fa.mtime = new Long(tr.readUINT32() & 0xffffffffl);
 
 		}
 

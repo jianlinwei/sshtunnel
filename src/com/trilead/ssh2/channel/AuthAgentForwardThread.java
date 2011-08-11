@@ -439,6 +439,7 @@ public class AuthAgentForwardThread extends Thread implements
 		os.write(packet.getBytes());
 	}
 
+	@Override
 	public void stopWorking() {
 		try {
 			/* This will lead to an IOException in the is.read() call */

@@ -51,12 +51,6 @@ import org.sshtunnel.db.ProfileFactory;
 import org.sshtunnel.utils.Constraints;
 import org.sshtunnel.utils.Utils;
 
-import com.flurry.android.FlurryAgent;
-import com.j256.ormlite.android.apptools.OpenHelperManager;
-import com.ksmaze.android.preference.ListPreferenceMultiSelect;
-
-import android.app.ActivityManager;
-import android.app.ActivityManager.RunningServiceInfo;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
@@ -69,10 +63,6 @@ import android.content.SharedPreferences.Editor;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.AssetManager;
-import android.location.Address;
-import android.location.Geocoder;
-import android.location.Location;
-import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiManager;
@@ -83,7 +73,6 @@ import android.preference.CheckBoxPreference;
 import android.preference.EditTextPreference;
 import android.preference.ListPreference;
 import android.preference.Preference;
-import android.preference.Preference.OnPreferenceClickListener;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 import android.preference.PreferenceScreen;
@@ -97,24 +86,13 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import com.flurry.android.FlurryAgent;
+import com.ksmaze.android.preference.ListPreferenceMultiSelect;
+
 public class SSHTunnel extends PreferenceActivity implements
 		OnSharedPreferenceChangeListener {
 
 	private static final String TAG = "SSHTunnel";
-
-	private BroadcastReceiver ssidReceiver = new BroadcastReceiver() {
-		@Override
-		public void onReceive(Context context, Intent intent) {
-			String action = intent.getAction();
-
-			if (!action.equals(ConnectivityManager.CONNECTIVITY_ACTION)) {
-				Log.w(TAG, "onReceived() called uncorrectly");
-				return;
-			}
-
-			loadNetworkList();
-		}
-	};
 
 	public static boolean runCommand(String command) {
 		Process process = null;
@@ -159,6 +137,20 @@ public class SSHTunnel extends PreferenceActivity implements
 		}
 		return true;
 	}
+
+	private BroadcastReceiver ssidReceiver = new BroadcastReceiver() {
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			String action = intent.getAction();
+
+			if (!action.equals(ConnectivityManager.CONNECTIVITY_ACTION)) {
+				Log.w(TAG, "onReceived() called uncorrectly");
+				return;
+			}
+
+			loadNetworkList();
+		}
+	};
 
 	private ProgressDialog pd = null;
 	private static boolean isRoot = false;
@@ -319,12 +311,57 @@ public class SSHTunnel extends PreferenceActivity implements
 		isAutoReconnectCheck.setEnabled(true);
 	}
 
+	private String getVersionName() {
+		try {
+			return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+		} catch (NameNotFoundException e) {
+			return "NONE";
+		}
+	}
+
+	private void initProfileList() {
+		profileList = ProfileFactory.loadFromDao(this);
+
+		if (profileList == null || profileList.size() == 0) {
+			ProfileFactory.newProfile(this);
+			Profile profile = ProfileFactory.getProfile(this);
+			profile.setName(getString(R.string.profile_default));
+
+			SharedPreferences settings = PreferenceManager
+					.getDefaultSharedPreferences(this);
+			Editor ed = settings.edit();
+			ed.putString(Constraints.NAME, profile.getName());
+			ed.commit();
+			ProfileFactory.saveToDao(this);
+			profileList = ProfileFactory.loadFromDao(this);
+		}
+
+		loadProfileList();
+	}
+
 	private boolean isTextEmpty(String s, String msg) {
 		if (s == null || s.length() <= 0) {
 			showAToast(msg);
 			return true;
 		}
 		return false;
+	}
+
+	private void loadNetworkList() {
+		WifiManager wm = (WifiManager) this
+				.getSystemService(Context.WIFI_SERVICE);
+		List<WifiConfiguration> wcs = wm.getConfiguredNetworks();
+		String[] ssidEntries = new String[wcs.size() + 1];
+		ssidEntries[0] = "2G/3G";
+		int n = 1;
+		for (WifiConfiguration wc : wcs) {
+			if (wc != null && wc.SSID != null)
+				ssidEntries[n++] = wc.SSID.replace("\"", "");
+			else
+				ssidEntries[n++] = "unknown";
+		}
+		ssidListPreference.setEntries(ssidEntries);
+		ssidListPreference.setEntryValues(ssidEntries);
 	}
 
 	private void loadProfileList() {
@@ -345,35 +382,6 @@ public class SSHTunnel extends PreferenceActivity implements
 		profileListPreference.setEntryValues(profileValues);
 	}
 
-	private void loadNetworkList() {
-		WifiManager wm = (WifiManager) this
-				.getSystemService(Context.WIFI_SERVICE);
-		List<WifiConfiguration> wcs = wm.getConfiguredNetworks();
-		String[] ssidEntries = new String[wcs.size() + 1];
-		ssidEntries[0] = "2G/3G";
-		int n = 1;
-		for (WifiConfiguration wc : wcs) {
-			if (wc != null && wc.SSID != null)
-				ssidEntries[n++] = wc.SSID.replace("\"", "");
-			else
-				ssidEntries[n++] = "unknown";
-		}
-		ssidListPreference.setEntries(ssidEntries);
-		ssidListPreference.setEntryValues(ssidEntries);
-	}
-
-	@Override
-	public void onStart() {
-		super.onStart();
-		FlurryAgent.onStartSession(this, "MBY4JL18FQK1DPEJ5Y39");
-	}
-
-	@Override
-	public void onStop() {
-		super.onStop();
-		FlurryAgent.onEndSession(this);
-	}
-
 	/** Called when the activity is first created. */
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -388,7 +396,7 @@ public class SSHTunnel extends PreferenceActivity implements
 		localPortText = (EditTextPreference) findPreference("localPort");
 		remotePortText = (EditTextPreference) findPreference("remotePort");
 		remoteAddressText = (EditTextPreference) findPreference("remoteAddress");
-		proxyedApps = (Preference) findPreference("proxyedApps");
+		proxyedApps = findPreference("proxyedApps");
 		profileListPreference = (ListPreference) findPreference("profile");
 		ssidListPreference = (ListPreferenceMultiSelect) findPreference("ssid");
 
@@ -444,6 +452,7 @@ public class SSHTunnel extends PreferenceActivity implements
 
 		if (!settings.getBoolean(getVersionName(), false)) {
 			new Thread() {
+				@Override
 				public void run() {
 
 					CopyAssets();
@@ -473,34 +482,6 @@ public class SSHTunnel extends PreferenceActivity implements
 
 	}
 
-	private String getVersionName() {
-		try {
-			return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
-		} catch (NameNotFoundException e) {
-			return "NONE";
-		}
-	}
-
-	private void initProfileList() {
-		profileList = ProfileFactory.loadFromDao(this);
-
-		if (profileList == null || profileList.size() == 0) {
-			ProfileFactory.newProfile(this);
-			Profile profile = ProfileFactory.getProfile(this);
-			profile.setName(getString(R.string.profile_default));
-
-			SharedPreferences settings = PreferenceManager
-					.getDefaultSharedPreferences(this);
-			Editor ed = settings.edit();
-			ed.putString(Constraints.NAME, profile.getName());
-			ed.commit();
-			ProfileFactory.saveToDao(this);
-			profileList = ProfileFactory.loadFromDao(this);
-		}
-
-		loadProfileList();
-	}
-
 	// 点击Menu时，系统调用当前Activity的onCreateOptionsMenu方法，并传一个实现了一个Menu接口的menu对象供你使用
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
@@ -523,60 +504,6 @@ public class SSHTunnel extends PreferenceActivity implements
 		// return true才会起作用
 		return true;
 
-	}
-
-	private void rename() {
-		LayoutInflater factory = LayoutInflater.from(this);
-		final View textEntryView = factory.inflate(
-				R.layout.alert_dialog_text_entry, null);
-		final EditText profileName = (EditText) textEntryView
-				.findViewById(R.id.profile_name_edit);
-		final Profile profile = ProfileFactory.getProfile(this);
-		profileName.setText(Utils.getProfileName(this, profile));
-
-		AlertDialog ad = new AlertDialog.Builder(this)
-				.setTitle(R.string.change_name)
-				.setView(textEntryView)
-				.setPositiveButton(R.string.alert_dialog_ok,
-						new DialogInterface.OnClickListener() {
-							public void onClick(DialogInterface dialog,
-									int whichButton) {
-								EditText profileName = (EditText) textEntryView
-										.findViewById(R.id.profile_name_edit);
-
-								String name = profileName.getText().toString();
-								if (name == null)
-									return;
-								name = name.replace("|", "");
-								if (name.length() <= 0)
-									return;
-
-								profile.setName(name);
-								ProfileFactory.saveToDao(SSHTunnel.this);
-
-								SharedPreferences settings = PreferenceManager
-										.getDefaultSharedPreferences(SSHTunnel.this);
-								Editor ed = settings.edit();
-								ed.putString(Constraints.NAME,
-										profile.getName());
-								ed.commit();
-
-								profileListPreference.setSummary(Utils
-										.getProfileName(SSHTunnel.this, profile));
-
-								profileList = ProfileFactory
-										.loadFromDao(SSHTunnel.this);
-								loadProfileList();
-							}
-						})
-				.setNegativeButton(R.string.alert_dialog_cancel,
-						new DialogInterface.OnClickListener() {
-							public void onClick(DialogInterface dialog,
-									int whichButton) {
-								/* User clicked cancel so do some stuff */
-							}
-						}).create();
-		ad.show();
 	}
 
 	/** Called when the activity is closed. */
@@ -764,6 +691,7 @@ public class SSHTunnel extends PreferenceActivity implements
 				.registerOnSharedPreferenceChangeListener(this);
 	}
 
+	@Override
 	public void onSharedPreferenceChanged(SharedPreferences settings, String key) {
 		// Let's do something a preference value changes
 
@@ -954,9 +882,22 @@ public class SSHTunnel extends PreferenceActivity implements
 				passwordText.setSummary(getString(R.string.password_summary));
 	}
 
+	@Override
+	public void onStart() {
+		super.onStart();
+		FlurryAgent.onStartSession(this, "MBY4JL18FQK1DPEJ5Y39");
+	}
+
+	@Override
+	public void onStop() {
+		super.onStop();
+		FlurryAgent.onEndSession(this);
+	}
+
 	private void recovery() {
 
 		new Thread() {
+			@Override
 			public void run() {
 
 				try {
@@ -981,6 +922,62 @@ public class SSHTunnel extends PreferenceActivity implements
 				runRootCommand(SSHTunnelService.BASE + "proxy_http.sh stop");
 			}
 		}.start();
+	}
+
+	private void rename() {
+		LayoutInflater factory = LayoutInflater.from(this);
+		final View textEntryView = factory.inflate(
+				R.layout.alert_dialog_text_entry, null);
+		final EditText profileName = (EditText) textEntryView
+				.findViewById(R.id.profile_name_edit);
+		final Profile profile = ProfileFactory.getProfile(this);
+		profileName.setText(Utils.getProfileName(this, profile));
+
+		AlertDialog ad = new AlertDialog.Builder(this)
+				.setTitle(R.string.change_name)
+				.setView(textEntryView)
+				.setPositiveButton(R.string.alert_dialog_ok,
+						new DialogInterface.OnClickListener() {
+							@Override
+							public void onClick(DialogInterface dialog,
+									int whichButton) {
+								EditText profileName = (EditText) textEntryView
+										.findViewById(R.id.profile_name_edit);
+
+								String name = profileName.getText().toString();
+								if (name == null)
+									return;
+								name = name.replace("|", "");
+								if (name.length() <= 0)
+									return;
+
+								profile.setName(name);
+								ProfileFactory.saveToDao(SSHTunnel.this);
+
+								SharedPreferences settings = PreferenceManager
+										.getDefaultSharedPreferences(SSHTunnel.this);
+								Editor ed = settings.edit();
+								ed.putString(Constraints.NAME,
+										profile.getName());
+								ed.commit();
+
+								profileListPreference.setSummary(Utils
+										.getProfileName(SSHTunnel.this, profile));
+
+								profileList = ProfileFactory
+										.loadFromDao(SSHTunnel.this);
+								loadProfileList();
+							}
+						})
+				.setNegativeButton(R.string.alert_dialog_cancel,
+						new DialogInterface.OnClickListener() {
+							@Override
+							public void onClick(DialogInterface dialog,
+									int whichButton) {
+								/* User clicked cancel so do some stuff */
+							}
+						}).create();
+		ad.show();
 	}
 
 	/** Called when connect button is clicked. */
@@ -1049,6 +1046,7 @@ public class SSHTunnel extends PreferenceActivity implements
 				.setCancelable(false)
 				.setNegativeButton(getString(R.string.ok_iknow),
 						new DialogInterface.OnClickListener() {
+							@Override
 							public void onClick(DialogInterface dialog, int id) {
 								dialog.cancel();
 							}

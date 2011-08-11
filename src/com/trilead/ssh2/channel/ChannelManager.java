@@ -269,6 +269,7 @@ public class ChannelManager implements MessageHandler {
 		return copylen;
 	}
 
+	@Override
 	public void handleMessage(byte[] msg, int msglen) throws IOException {
 		if (msg == null) {
 			if (log.isEnabled())

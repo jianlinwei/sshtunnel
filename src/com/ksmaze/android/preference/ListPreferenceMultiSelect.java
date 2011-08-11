@@ -39,22 +39,47 @@ public class ListPreferenceMultiSelect extends ListPreference {
 	//Not using any fancy symbols because this is interpreted as a regex for splitting strings.
 	private static final String SEPARATOR = " , ";
 	
-    private boolean[] mClickedDialogEntryIndices;
+    public static String[] parseStoredValue(CharSequence val) {
+    	if (val == null)
+    		return null;
+		if ( "".equals(val) )
+			return null;
+		else
+			return ((String)val).split(SEPARATOR);
+    }
 
+    private boolean[] mClickedDialogEntryIndices;
+ 
+    public ListPreferenceMultiSelect(Context context) {
+        this(context, null);
+    }
+    
     public ListPreferenceMultiSelect(Context context, AttributeSet attrs) {
         super(context, attrs);
         
         mClickedDialogEntryIndices = new boolean[getEntries().length];
     }
- 
+
     @Override
-    public void setEntries(CharSequence[] entries) {
-    	super.setEntries(entries);
-        mClickedDialogEntryIndices = new boolean[entries.length];
-    }
-    
-    public ListPreferenceMultiSelect(Context context) {
-        this(context, null);
+    protected void onDialogClosed(boolean positiveResult) {
+//        super.onDialogClosed(positiveResult);
+        
+    	CharSequence[] entryValues = getEntryValues();
+        if (positiveResult && entryValues != null) {
+        	StringBuffer value = new StringBuffer();
+        	for ( int i=0; i<entryValues.length; i++ ) {
+        		if ( mClickedDialogEntryIndices[i] ) {
+        			value.append(entryValues[i]).append(SEPARATOR);
+        		}
+        	}
+        	
+            if (callChangeListener(value)) {
+            	String val = value.toString();
+            	if ( val.length() > 0 )
+            		val = val.substring(0, val.length()-SEPARATOR.length());
+            	setValue(val);
+            }
+        }
     }
 
     @Override
@@ -70,19 +95,11 @@ public class ListPreferenceMultiSelect extends ListPreference {
         restoreCheckedEntries();
         builder.setMultiChoiceItems(entries, mClickedDialogEntryIndices, 
                 new DialogInterface.OnMultiChoiceClickListener() {
+					@Override
 					public void onClick(DialogInterface dialog, int which, boolean val) {
                     	mClickedDialogEntryIndices[which] = val;
 					}
         });
-    }
-
-    public static String[] parseStoredValue(CharSequence val) {
-    	if (val == null)
-    		return null;
-		if ( "".equals(val) )
-			return null;
-		else
-			return ((String)val).split(SEPARATOR);
     }
     
     private void restoreCheckedEntries() {
@@ -104,24 +121,8 @@ public class ListPreferenceMultiSelect extends ListPreference {
     }
 
 	@Override
-    protected void onDialogClosed(boolean positiveResult) {
-//        super.onDialogClosed(positiveResult);
-        
-    	CharSequence[] entryValues = getEntryValues();
-        if (positiveResult && entryValues != null) {
-        	StringBuffer value = new StringBuffer();
-        	for ( int i=0; i<entryValues.length; i++ ) {
-        		if ( mClickedDialogEntryIndices[i] ) {
-        			value.append(entryValues[i]).append(SEPARATOR);
-        		}
-        	}
-        	
-            if (callChangeListener(value)) {
-            	String val = value.toString();
-            	if ( val.length() > 0 )
-            		val = val.substring(0, val.length()-SEPARATOR.length());
-            	setValue(val);
-            }
-        }
+    public void setEntries(CharSequence[] entries) {
+    	super.setEntries(entries);
+        mClickedDialogEntryIndices = new boolean[entries.length];
     }
 }

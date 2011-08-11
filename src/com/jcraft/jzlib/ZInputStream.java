@@ -79,6 +79,7 @@ public class ZInputStream extends FilterInputStream {
 		z.avail_in = 0;
 	}
 
+	@Override
 	public void close() throws IOException {
 		in.close();
 	}
@@ -101,12 +102,14 @@ public class ZInputStream extends FilterInputStream {
 		return z.total_out;
 	}
 
+	@Override
 	public int read() throws IOException {
 		if (read(buf1, 0, 1) == -1)
 			return (-1);
 		return (buf1[0] & 0xFF);
 	}
 
+	@Override
 	public int read(byte[] b, int off, int len) throws IOException {
 		if (len == 0)
 			return (0);
@@ -148,11 +151,12 @@ public class ZInputStream extends FilterInputStream {
 		this.flush = flush;
 	}
 
+	@Override
 	public long skip(long n) throws IOException {
 		int len = 512;
 		if (n < len)
 			len = (int) n;
 		byte[] tmp = new byte[len];
-		return ((long) read(tmp));
+		return read(tmp);
 	}
 }

@@ -63,6 +63,7 @@ public class Socks5Proxy extends Proxy implements Cloneable {
 	/**
 	 * Creates a clone of this Proxy.
 	 */
+	@Override
 	@SuppressWarnings("unchecked")
 	public Object clone() {
 		Socks5Proxy newProxy = new Socks5Proxy(proxyIP, proxyPort);
@@ -73,6 +74,7 @@ public class Socks5Proxy extends Proxy implements Cloneable {
 		return newProxy;
 	}
 
+	@Override
 	protected Proxy copy() {
 		Socks5Proxy copy = new Socks5Proxy(proxyIP, proxyPort);
 		copy.authMethods = this.authMethods; // same Hash, no copy
@@ -81,15 +83,18 @@ public class Socks5Proxy extends Proxy implements Cloneable {
 		return copy;
 	}
 
+	@Override
 	protected ProxyMessage formMessage(InputStream in) throws SocksException,
 			IOException {
 		return new Socks5Message(in);
 	}
 
+	@Override
 	protected ProxyMessage formMessage(int cmd, InetAddress ip, int port) {
 		return new Socks5Message(cmd, ip, port);
 	}
 
+	@Override
 	protected ProxyMessage formMessage(int cmd, String host, int port)
 			throws UnknownHostException {
 		if (resolveAddrLocally)
@@ -170,6 +175,7 @@ public class Socks5Proxy extends Proxy implements Cloneable {
     *
     *
     */
+	@Override
 	protected void startSession() throws SocksException {
 		super.startSession();
 		Authentication auth;
@@ -186,7 +192,7 @@ public class Socks5Proxy extends Proxy implements Cloneable {
 
 			Enumeration<Integer> ids = authMethods.keys();
 			while (ids.hasMoreElements())
-				buf[i++] = (byte) ((Integer) ids.nextElement()).intValue();
+				buf[i++] = (byte) ids.nextElement().intValue();
 
 			out.write(buf);
 			out.flush();

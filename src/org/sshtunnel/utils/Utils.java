@@ -8,19 +8,26 @@ import org.sshtunnel.db.Profile;
 import org.sshtunnel.db.ProfileFactory;
 
 import android.app.ActivityManager;
+import android.app.ActivityManager.RunningServiceInfo;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
-import android.app.ActivityManager.RunningServiceInfo;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.SharedPreferences.Editor;
 import android.preference.PreferenceManager;
 
 public class Utils {
 
 	public static final String SERVICE_NAME = "org.sshtunnel.SSHTunnelService";
+
+	public static String getProfileName(Context context, Profile profile) {
+		if (profile.getName() == null || profile.getName().equals("")) {
+			return context.getString(R.string.profile_base) + " "
+					+ profile.getId();
+		}
+		return profile.getName();
+	}
 
 	public static boolean isWorked(Context context) {
 		ActivityManager myManager = (ActivityManager) context
@@ -53,14 +60,6 @@ public class Utils {
 				context.getString(R.string.app_name),
 				context.getString(R.string.auto_connecting), pendIntent);
 		notificationManager.notify(1, notification);
-	}
-
-	public static String getProfileName(Context context, Profile profile) {
-		if (profile.getName() == null || profile.getName().equals("")) {
-			return context.getString(R.string.profile_base) + " "
-					+ profile.getId();
-		}
-		return profile.getName();
 	}
 
 	public static void updateProfiles(Context context) {

@@ -52,6 +52,7 @@ import com.trilead.ssh2.util.Tokenizer;
  */
 public class TransportManager {
 	class AsynchronousWorker extends Thread {
+		@Override
 		public void run() {
 			while (true) {
 				byte[] msg = null;
@@ -407,6 +408,7 @@ public class TransportManager {
 		km.initiateKEX(cwl, dhgex);
 
 		receiveThread = new Thread(new Runnable() {
+			@Override
 			public void run() {
 				try {
 					receiveLoop();

@@ -384,6 +384,7 @@ public abstract class Proxy {
 	 * 
 	 * @returns string in the form:proxyHost:proxyPort \t Version versionNumber
 	 */
+	@Override
 	public String toString() {
 		return ("" + proxyIP.getHostName() + ":" + proxyPort + "\tVersion " + version);
 	}

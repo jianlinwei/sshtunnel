@@ -463,7 +463,7 @@ public final class Deflate {
 			int in_length = strstart - block_start;
 			int dcode;
 			for (dcode = 0; dcode < D_CODES; dcode++) {
-				out_length += (int) dyn_dtree[dcode * 2]
+				out_length += dyn_dtree[dcode * 2]
 						* (5L + Tree.extra_dbits[dcode]);
 			}
 			out_length >>>= 3;
@@ -1039,8 +1039,8 @@ public final class Deflate {
 			max_start = block_start + max_block_size;
 			if (strstart == 0 || strstart >= max_start) {
 				// strstart == 0 is possible when wraparound on 16-bit machine
-				lookahead = (int) (strstart - max_start);
-				strstart = (int) max_start;
+				lookahead = (strstart - max_start);
+				strstart = max_start;
 
 				flush_block_only(false);
 				if (strm.avail_out == 0)
@@ -1115,7 +1115,7 @@ public final class Deflate {
 			return Z_STREAM_ERROR;
 		}
 
-		strm.dstate = (Deflate) this;
+		strm.dstate = this;
 
 		this.noheader = noheader;
 		w_bits = windowBits;
@@ -1434,7 +1434,7 @@ public final class Deflate {
 					&& window[++scan] == window[++match]
 					&& window[++scan] == window[++match] && scan < strend);
 
-			len = MAX_MATCH - (int) (strend - scan);
+			len = MAX_MATCH - (strend - scan);
 			scan = strend - MAX_MATCH;
 
 			if (len > best_len) {
@@ -1571,7 +1571,7 @@ public final class Deflate {
 
 	void send_bits(int value, int length) {
 		int len = length;
-		if (bi_valid > (int) Buf_size - len) {
+		if (bi_valid > Buf_size - len) {
 			int val = value;
 			// bi_buf |= (val << bi_valid);
 			bi_buf |= ((val << bi_valid) & 0xffff);

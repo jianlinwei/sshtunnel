@@ -465,6 +465,7 @@ public class ProxyServer implements Runnable {
 
 	// Runnable interface
 	// //////////////////
+	@Override
 	public void run() {
 		switch (mode) {
 		case START_MODE:

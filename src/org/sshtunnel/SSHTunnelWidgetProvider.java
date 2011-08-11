@@ -125,6 +125,7 @@ public class SSHTunnelWidgetProvider extends AppWidgetProvider {
 		}
 	}
 
+	@Override
 	public void onUpdate(Context context, AppWidgetManager appWidgetManager,
 			int[] appWidgetIds) {
 		final int N = appWidgetIds.length;

@@ -365,7 +365,7 @@ final class Tree {
 					continue;
 				if (tree[m * 2 + 1] != bits) {
 					s.opt_len += ((long) bits - (long) tree[m * 2 + 1])
-							* (long) tree[m * 2];
+							* tree[m * 2];
 					tree[m * 2 + 1] = (short) bits;
 				}
 				n--;

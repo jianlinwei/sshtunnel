@@ -156,6 +156,7 @@ public class SocksSocket extends Socket {
 	/**
 	 * Same as Socket
 	 */
+	@Override
 	public void close() throws IOException {
 		if (proxy != null)
 			proxy.endSession();
@@ -195,6 +196,7 @@ public class SocksSocket extends Socket {
 	 *         address was returned by the proxy as DOMAINNAME and can't be
 	 *         resolved locally.
 	 */
+	@Override
 	public InetAddress getInetAddress() {
 		if (remoteIP == null) {
 			try {
@@ -209,6 +211,7 @@ public class SocksSocket extends Socket {
 	/**
 	 * Same as Socket
 	 */
+	@Override
 	public InputStream getInputStream() {
 		return proxy.in;
 	}
@@ -221,6 +224,7 @@ public class SocksSocket extends Socket {
 	 * 
 	 * @return Address proxy is using to make a connection.
 	 */
+	@Override
 	public InetAddress getLocalAddress() {
 		if (localIP == null) {
 			try {
@@ -249,6 +253,7 @@ public class SocksSocket extends Socket {
 	 * 
 	 * @return Port of the socket used on the proxy server.
 	 */
+	@Override
 	public int getLocalPort() {
 		return localPort;
 	}
@@ -256,6 +261,7 @@ public class SocksSocket extends Socket {
 	/**
 	 * Same as Socket
 	 */
+	@Override
 	public OutputStream getOutputStream() {
 		return proxy.out;
 	}
@@ -263,6 +269,7 @@ public class SocksSocket extends Socket {
 	/**
 	 * Same as Socket
 	 */
+	@Override
 	public int getPort() {
 		return remotePort;
 	}
@@ -284,6 +291,7 @@ public class SocksSocket extends Socket {
 	/**
 	 * Same as socket.
 	 */
+	@Override
 	public boolean getTcpNoDelay() throws SocketException {
 		return proxy.proxySocket.getTcpNoDelay();
 	}
@@ -291,6 +299,7 @@ public class SocksSocket extends Socket {
 	/**
 	 * Same as socket.
 	 */
+	@Override
 	public void setSoLinger(boolean on, int val) throws SocketException {
 		proxy.proxySocket.setSoLinger(on, val);
 	}
@@ -298,6 +307,7 @@ public class SocksSocket extends Socket {
 	/**
 	 * Same as socket.
 	 */
+	@Override
 	public void setSoTimeout(int timeout) throws SocketException {
 		proxy.proxySocket.setSoTimeout(timeout);
 	}
@@ -305,6 +315,7 @@ public class SocksSocket extends Socket {
 	/**
 	 * Same as socket.
 	 */
+	@Override
 	public void setTcpNoDelay(boolean on) throws SocketException {
 		proxy.proxySocket.setTcpNoDelay(on);
 	}
@@ -315,6 +326,7 @@ public class SocksSocket extends Socket {
 	/**
 	 * Get string representation of the socket.
 	 */
+	@Override
 	public String toString() {
 		if (directSock != null)
 			return "Direct connection:" + directSock;

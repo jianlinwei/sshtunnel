@@ -345,6 +345,7 @@ public class BlowFish implements BlockCipher {
 		return "Blowfish";
 	}
 
+	@Override
 	public int getBlockSize() {
 		return BLOCK_SIZE;
 	}
@@ -359,6 +360,7 @@ public class BlowFish implements BlockCipher {
 	 * @exception IllegalArgumentException
 	 *                if the params argument is inappropriate.
 	 */
+	@Override
 	public void init(boolean encrypting, byte[] key) {
 		this.doEncrypt = encrypting;
 		this.workingKey = key;
@@ -456,6 +458,7 @@ public class BlowFish implements BlockCipher {
 		processTable(S2[SBOX_SK - 2], S2[SBOX_SK - 1], S3);
 	}
 
+	@Override
 	public final void transformBlock(byte[] in, int inOff, byte[] out,
 			int outOff) {
 		if (workingKey == null) {

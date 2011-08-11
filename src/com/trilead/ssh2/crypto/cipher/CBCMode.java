@@ -55,13 +55,16 @@ public class CBCMode implements BlockCipher {
 		System.arraycopy(dst, dstoff, cbc_vector, 0, blockSize);
 	}
 
+	@Override
 	public int getBlockSize() {
 		return blockSize;
 	}
 
+	@Override
 	public void init(boolean forEncryption, byte[] key) {
 	}
 
+	@Override
 	public void transformBlock(byte[] src, int srcoff, byte[] dst, int dstoff) {
 		if (doEncrypt)
 			encryptBlock(src, srcoff, dst, dstoff);

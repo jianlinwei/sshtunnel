@@ -75,98 +75,6 @@ public class DomainValidator implements Serializable {
      */
     private static final DomainValidator DOMAIN_VALIDATOR = new DomainValidator();
 
-    /**
-     * RegexValidator for matching domains.
-     */
-    private final RegexValidator domainRegex =
-            new RegexValidator(DOMAIN_NAME_REGEX);
-
-    /**
-     * Returns the singleton instance of this validator.
-     * @return the singleton instance of this validator
-     */
-    public static DomainValidator getInstance() {
-        return DOMAIN_VALIDATOR;
-    }
-
-    /** Private constructor. */
-    private DomainValidator() {}
-
-    /**
-     * Returns true if the specified <code>String</code> parses
-     * as a valid domain name with a recognized top-level domain.
-     * The parsing is case-sensitive.
-     * @param domain the parameter to check for domain name syntax
-     * @return true if the parameter is a valid domain name
-     */
-    public boolean isValid(String domain) {
-        String[] groups = domainRegex.match(domain);
-        if (groups != null && groups.length > 0) {
-            return isValidTld(groups[0]);
-        } else {
-            return false;
-        }
-    }
-
-    /**
-     * Returns true if the specified <code>String</code> matches any
-     * IANA-defined top-level domain. Leading dots are ignored if present.
-     * The search is case-sensitive.
-     * @param tld the parameter to check for TLD status
-     * @return true if the parameter is a TLD
-     */
-    public boolean isValidTld(String tld) {
-        return isValidInfrastructureTld(tld)
-                || isValidGenericTld(tld)
-                || isValidCountryCodeTld(tld);
-    }
-
-    /**
-     * Returns true if the specified <code>String</code> matches any
-     * IANA-defined infrastructure top-level domain. Leading dots are
-     * ignored if present. The search is case-sensitive.
-     * @param iTld the parameter to check for infrastructure TLD status
-     * @return true if the parameter is an infrastructure TLD
-     */
-    public boolean isValidInfrastructureTld(String iTld) {
-        return INFRASTRUCTURE_TLD_LIST.contains(chompLeadingDot(iTld.toLowerCase()));
-    }
-
-    /**
-     * Returns true if the specified <code>String</code> matches any
-     * IANA-defined generic top-level domain. Leading dots are ignored
-     * if present. The search is case-sensitive.
-     * @param gTld the parameter to check for generic TLD status
-     * @return true if the parameter is a generic TLD
-     */
-    public boolean isValidGenericTld(String gTld) {
-        return GENERIC_TLD_LIST.contains(chompLeadingDot(gTld.toLowerCase()));
-    }
-
-    /**
-     * Returns true if the specified <code>String</code> matches any
-     * IANA-defined country code top-level domain. Leading dots are
-     * ignored if present. The search is case-sensitive.
-     * @param ccTld the parameter to check for country code TLD status
-     * @return true if the parameter is a country code TLD
-     */
-    public boolean isValidCountryCodeTld(String ccTld) {
-        return COUNTRY_CODE_TLD_LIST.contains(chompLeadingDot(ccTld.toLowerCase()));
-    }
-
-    private String chompLeadingDot(String str) {
-        if (str.startsWith(".")) {
-            return str.substring(1);
-        } else {
-            return str;
-        }
-    }
-
-    // ---------------------------------------------
-    // ----- TLDs defined by IANA
-    // ----- Authoritative and comprehensive list at:
-    // ----- http://data.iana.org/TLD/tlds-alpha-by-domain.txt
-
     private static final String[] INFRASTRUCTURE_TLDS = new String[] {
         "arpa",               // internet infrastructure
         "root"                // diagnostic marker for non-truncated root zone
@@ -448,6 +356,98 @@ public class DomainValidator implements Serializable {
     };
 
     private static final List INFRASTRUCTURE_TLD_LIST = Arrays.asList(INFRASTRUCTURE_TLDS);
+
     private static final List GENERIC_TLD_LIST = Arrays.asList(GENERIC_TLDS);
+
     private static final List COUNTRY_CODE_TLD_LIST = Arrays.asList(COUNTRY_CODE_TLDS);
+
+    /**
+     * Returns the singleton instance of this validator.
+     * @return the singleton instance of this validator
+     */
+    public static DomainValidator getInstance() {
+        return DOMAIN_VALIDATOR;
+    }
+
+    /**
+     * RegexValidator for matching domains.
+     */
+    private final RegexValidator domainRegex =
+            new RegexValidator(DOMAIN_NAME_REGEX);
+
+    /** Private constructor. */
+    private DomainValidator() {}
+
+    // ---------------------------------------------
+    // ----- TLDs defined by IANA
+    // ----- Authoritative and comprehensive list at:
+    // ----- http://data.iana.org/TLD/tlds-alpha-by-domain.txt
+
+    private String chompLeadingDot(String str) {
+        if (str.startsWith(".")) {
+            return str.substring(1);
+        } else {
+            return str;
+        }
+    }
+
+    /**
+     * Returns true if the specified <code>String</code> parses
+     * as a valid domain name with a recognized top-level domain.
+     * The parsing is case-sensitive.
+     * @param domain the parameter to check for domain name syntax
+     * @return true if the parameter is a valid domain name
+     */
+    public boolean isValid(String domain) {
+        String[] groups = domainRegex.match(domain);
+        if (groups != null && groups.length > 0) {
+            return isValidTld(groups[0]);
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * Returns true if the specified <code>String</code> matches any
+     * IANA-defined country code top-level domain. Leading dots are
+     * ignored if present. The search is case-sensitive.
+     * @param ccTld the parameter to check for country code TLD status
+     * @return true if the parameter is a country code TLD
+     */
+    public boolean isValidCountryCodeTld(String ccTld) {
+        return COUNTRY_CODE_TLD_LIST.contains(chompLeadingDot(ccTld.toLowerCase()));
+    }
+
+    /**
+     * Returns true if the specified <code>String</code> matches any
+     * IANA-defined generic top-level domain. Leading dots are ignored
+     * if present. The search is case-sensitive.
+     * @param gTld the parameter to check for generic TLD status
+     * @return true if the parameter is a generic TLD
+     */
+    public boolean isValidGenericTld(String gTld) {
+        return GENERIC_TLD_LIST.contains(chompLeadingDot(gTld.toLowerCase()));
+    }
+    /**
+     * Returns true if the specified <code>String</code> matches any
+     * IANA-defined infrastructure top-level domain. Leading dots are
+     * ignored if present. The search is case-sensitive.
+     * @param iTld the parameter to check for infrastructure TLD status
+     * @return true if the parameter is an infrastructure TLD
+     */
+    public boolean isValidInfrastructureTld(String iTld) {
+        return INFRASTRUCTURE_TLD_LIST.contains(chompLeadingDot(iTld.toLowerCase()));
+    }
+    /**
+     * Returns true if the specified <code>String</code> matches any
+     * IANA-defined top-level domain. Leading dots are ignored if present.
+     * The search is case-sensitive.
+     * @param tld the parameter to check for TLD status
+     * @return true if the parameter is a TLD
+     */
+    public boolean isValidTld(String tld) {
+        return isValidInfrastructureTld(tld)
+                || isValidGenericTld(tld)
+                || isValidCountryCodeTld(tld);
+    }
 }

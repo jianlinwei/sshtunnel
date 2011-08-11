@@ -65,6 +65,7 @@ public class ZOutputStream extends OutputStream {
 		compress = true;
 	}
 
+	@Override
 	public void close() throws IOException {
 		try {
 			try {
@@ -111,6 +112,7 @@ public class ZOutputStream extends OutputStream {
 		flush();
 	}
 
+	@Override
 	public void flush() throws IOException {
 		out.flush();
 	}
@@ -137,6 +139,7 @@ public class ZOutputStream extends OutputStream {
 		this.flush = flush;
 	}
 
+	@Override
 	public void write(byte b[], int off, int len) throws IOException {
 		if (len == 0)
 			return;
@@ -159,6 +162,7 @@ public class ZOutputStream extends OutputStream {
 		} while (z.avail_in > 0 || z.avail_out == 0);
 	}
 
+	@Override
 	public void write(int b) throws IOException {
 		buf1[0] = (byte) b;
 		write(buf1, 0, 1);

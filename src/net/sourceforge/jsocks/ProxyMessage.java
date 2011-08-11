@@ -93,6 +93,7 @@ public abstract class ProxyMessage {
 	 * 
 	 * @return string representation of this message.
 	 */
+	@Override
 	public String toString() {
 		return "Proxy Message:\n" + "Version:" + version + "\n" + "Command:"
 				+ command + "\n" + "IP:     " + ip + "\n" + "Port:   " + port

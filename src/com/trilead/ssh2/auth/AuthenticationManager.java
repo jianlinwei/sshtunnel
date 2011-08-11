@@ -325,6 +325,7 @@ public class AuthenticationManager implements MessageHandler {
 		return remainingMethods;
 	}
 
+	@Override
 	public void handleMessage(byte[] msg, int msglen) throws IOException {
 		synchronized (packets) {
 			if (msg == null) {

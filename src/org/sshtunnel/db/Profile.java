@@ -69,148 +69,148 @@ public class Profile {
 		this.proxyedApps = "";
 	}
 
-	@Override
-	public String toString() {
-		StringBuilder sb = new StringBuilder();
-		sb.append("id=").append(id);
-		sb.append(", ").append("name=").append(name);
-		return sb.toString();
+	public String getHost() {
+		return host;
 	}
 
 	public int getId() {
 		return id;
 	}
 
-	public void setId(int id) {
-		this.id = id;
-	}
-
-	public String getName() {
-		return name;
-	}
-
-	public void setName(String name) {
-		this.name = name;
-	}
-
-	public String getHost() {
-		return host;
-	}
-
-	public void setHost(String host) {
-		this.host = host;
-	}
-
-	public String getRemoteAddress() {
-		return remoteAddress;
-	}
-
-	public void setRemoteAddress(String remoteAddress) {
-		this.remoteAddress = remoteAddress;
-	}
-
-	public String getUser() {
-		return user;
-	}
-
-	public void setUser(String user) {
-		this.user = user;
-	}
-
-	public String getPassword() {
-		return password;
-	}
-
-	public void setPassword(String password) {
-		this.password = password;
-	}
-
 	public String getKeyPath() {
 		return keyPath;
-	}
-
-	public void setKeyPath(String keyPath) {
-		this.keyPath = keyPath;
-	}
-
-	public String getSsid() {
-		return ssid;
-	}
-
-	public void setSsid(String ssid) {
-		this.ssid = ssid;
-	}
-
-	public String getProxyedApps() {
-		return proxyedApps;
-	}
-
-	public void setProxyedApps(String proxyedApps) {
-		this.proxyedApps = proxyedApps;
-	}
-
-	public int getPort() {
-		return port;
-	}
-
-	public void setPort(int port) {
-		this.port = port;
 	}
 
 	public int getLocalPort() {
 		return localPort;
 	}
 
-	public void setLocalPort(int localPort) {
-		this.localPort = localPort;
+	public String getName() {
+		return name;
+	}
+
+	public String getPassword() {
+		return password;
+	}
+
+	public int getPort() {
+		return port;
+	}
+
+	public String getProxyedApps() {
+		return proxyedApps;
+	}
+
+	public String getRemoteAddress() {
+		return remoteAddress;
 	}
 
 	public int getRemotePort() {
 		return remotePort;
 	}
 
-	public void setRemotePort(int remotePort) {
-		this.remotePort = remotePort;
+	public String getSsid() {
+		return ssid;
 	}
 
-	public boolean isAutoReconnect() {
-		return isAutoReconnect;
-	}
-
-	public void setAutoReconnect(boolean isAutoReconnect) {
-		this.isAutoReconnect = isAutoReconnect;
+	public String getUser() {
+		return user;
 	}
 
 	public boolean isAutoConnect() {
 		return isAutoConnect;
 	}
 
-	public void setAutoConnect(boolean isAutoConnect) {
-		this.isAutoConnect = isAutoConnect;
+	public boolean isAutoReconnect() {
+		return isAutoReconnect;
 	}
 
 	public boolean isAutoSetProxy() {
 		return isAutoSetProxy;
 	}
 
-	public void setAutoSetProxy(boolean isAutoSetProxy) {
-		this.isAutoSetProxy = isAutoSetProxy;
-	}
-
 	public boolean isGFWList() {
 		return isGFWList;
-	}
-
-	public void setGFWList(boolean isGFWList) {
-		this.isGFWList = isGFWList;
 	}
 
 	public boolean isSocks() {
 		return isSocks;
 	}
 
+	public void setAutoConnect(boolean isAutoConnect) {
+		this.isAutoConnect = isAutoConnect;
+	}
+
+	public void setAutoReconnect(boolean isAutoReconnect) {
+		this.isAutoReconnect = isAutoReconnect;
+	}
+
+	public void setAutoSetProxy(boolean isAutoSetProxy) {
+		this.isAutoSetProxy = isAutoSetProxy;
+	}
+
+	public void setGFWList(boolean isGFWList) {
+		this.isGFWList = isGFWList;
+	}
+
+	public void setHost(String host) {
+		this.host = host;
+	}
+
+	public void setId(int id) {
+		this.id = id;
+	}
+
+	public void setKeyPath(String keyPath) {
+		this.keyPath = keyPath;
+	}
+
+	public void setLocalPort(int localPort) {
+		this.localPort = localPort;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public void setPassword(String password) {
+		this.password = password;
+	}
+
+	public void setPort(int port) {
+		this.port = port;
+	}
+
+	public void setProxyedApps(String proxyedApps) {
+		this.proxyedApps = proxyedApps;
+	}
+
+	public void setRemoteAddress(String remoteAddress) {
+		this.remoteAddress = remoteAddress;
+	}
+
+	public void setRemotePort(int remotePort) {
+		this.remotePort = remotePort;
+	}
+
 	public void setSocks(boolean isSocks) {
 		this.isSocks = isSocks;
+	}
+
+	public void setSsid(String ssid) {
+		this.ssid = ssid;
+	}
+
+	public void setUser(String user) {
+		this.user = user;
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("id=").append(id);
+		sb.append(", ").append("name=").append(name);
+		return sb.toString();
 	}
 	
 	
