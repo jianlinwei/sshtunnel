@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import org.sshtunnel.R;
 import org.sshtunnel.SSHTunnel;
 import org.sshtunnel.db.Profile;
+import org.sshtunnel.db.ProfileFactory;
 
 import android.app.ActivityManager;
 import android.app.Notification;
@@ -13,11 +14,14 @@ import android.app.PendingIntent;
 import android.app.ActivityManager.RunningServiceInfo;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
+import android.preference.PreferenceManager;
 
 public class Utils {
-	
+
 	public static final String SERVICE_NAME = "org.sshtunnel.SSHTunnelService";
-	
+
 	public static boolean isWorked(Context context) {
 		ActivityManager myManager = (ActivityManager) context
 				.getSystemService(Context.ACTIVITY_SERVICE);
@@ -31,28 +35,74 @@ public class Utils {
 		}
 		return false;
 	}
-	
+
 	public static void notifyConnect(Context context) {
 		NotificationManager notificationManager = (NotificationManager) context
 				.getSystemService(Context.NOTIFICATION_SERVICE);
 		Notification notification = new Notification();
 		Intent intent = new Intent(context, SSHTunnel.class);
 		intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-		PendingIntent pendIntent = PendingIntent.getActivity(context, 0, intent, 0);
-		
+		PendingIntent pendIntent = PendingIntent.getActivity(context, 0,
+				intent, 0);
+
 		notification.icon = R.drawable.ic_stat;
 		notification.tickerText = context.getString(R.string.auto_connecting);
 		notification.flags = Notification.FLAG_ONGOING_EVENT;
-		
-		notification.setLatestEventInfo(context, context.getString(R.string.app_name),
+
+		notification.setLatestEventInfo(context,
+				context.getString(R.string.app_name),
 				context.getString(R.string.auto_connecting), pendIntent);
 		notificationManager.notify(1, notification);
 	}
-	
+
 	public static String getProfileName(Context context, Profile profile) {
 		if (profile.getName() == null || profile.getName().equals("")) {
-			return context.getString(R.string.profile_base) + " " + profile.getId();
+			return context.getString(R.string.profile_base) + " "
+					+ profile.getId();
 		}
 		return profile.getName();
+	}
+
+	public static void updateProfiles(Context context) {
+		SharedPreferences settings = PreferenceManager
+				.getDefaultSharedPreferences(context);
+
+		// Store current settings first
+		ProfileFactory.loadFromPreference(context);
+
+		// Load all profiles
+		String[] mProfileValues = settings.getString("profileValues", "")
+				.split("\\|");
+
+		// Test on each profile
+		for (String p : mProfileValues) {
+
+			if (p.equals("0"))
+				continue;
+
+			String profileString = settings.getString(p, "");
+			String[] st = profileString.split("\\|");
+
+			ProfileFactory.newProfile(context);
+			Profile profile = ProfileFactory.getProfile(context);
+
+			profile.setName(settings.getString("profile" + p, ""));
+
+			// tricks for old editions
+
+			try {
+				profile.setHost(st[0]);
+				profile.setPort(Integer.valueOf(st[1]));
+				profile.setUser(st[2]);
+				profile.setPassword(st[3]);
+				profile.setSocks(st[4].equals("true") ? true : false);
+				profile.setLocalPort(Integer.valueOf(st[5]));
+				profile.setRemoteAddress(st[6]);
+				profile.setRemotePort(Integer.valueOf(st[7]));
+			} catch (Exception ignore) {
+				// Ignore all exceptions
+			}
+
+		}
 	}
 }

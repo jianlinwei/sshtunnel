@@ -142,6 +142,8 @@
 	<string name="notif_vibrate_title">Vibrate</string>
 	<string name="notif_vibrate_summary">Also vibrate when connection status changes
 	</string>
+	<string name="update_finished">Programs and configurations have been updated
+	</string>
 
 	<!-- profile switcher -->
 	<string name="profile">Profiles</string>
