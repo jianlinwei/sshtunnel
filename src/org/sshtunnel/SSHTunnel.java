@@ -44,7 +44,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.sshtunnel.db.Profile;
@@ -78,6 +77,8 @@ import android.net.ConnectivityManager;
 import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.preference.CheckBoxPreference;
 import android.preference.EditTextPreference;
 import android.preference.ListPreference;
@@ -94,12 +95,13 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.Toast;
 
 public class SSHTunnel extends PreferenceActivity implements
 		OnSharedPreferenceChangeListener {
 
 	private static final String TAG = "SSHTunnel";
-	
+
 	private BroadcastReceiver ssidReceiver = new BroadcastReceiver() {
 		@Override
 		public void onReceive(Context context, Intent intent) {
@@ -109,9 +111,9 @@ public class SSHTunnel extends PreferenceActivity implements
 				Log.w(TAG, "onReceived() called uncorrectly");
 				return;
 			}
-			
+
 			loadNetworkList();
-		}	
+		}
 	};
 
 	public static boolean runCommand(String command) {
@@ -183,6 +185,25 @@ public class SSHTunnel extends PreferenceActivity implements
 
 	private Preference proxyedApps;
 	private ListPreferenceMultiSelect ssidListPreference;
+
+	private static final int MSG_UPDATE_FINISHED = 0;
+
+	final Handler handler = new Handler() {
+		@Override
+		public void handleMessage(Message msg) {
+			switch (msg.what) {
+			case MSG_UPDATE_FINISHED:
+
+				initProfileList();
+
+				Toast.makeText(SSHTunnel.this,
+						getString(R.string.update_finished), Toast.LENGTH_LONG)
+						.show();
+				break;
+			}
+			super.handleMessage(msg);
+		}
+	};
 
 	private void CopyAssets() {
 		AssetManager assetManager = getAssets();
@@ -377,27 +398,13 @@ public class SSHTunnel extends PreferenceActivity implements
 		isAutoConnectCheck = (CheckBoxPreference) findPreference("isAutoConnect");
 		isAutoReconnectCheck = (CheckBoxPreference) findPreference("isAutoReconnect");
 		isGFWListCheck = (CheckBoxPreference) findPreference("isGFWList");
-		
-		registerReceiver(ssidReceiver, new IntentFilter(android.net.ConnectivityManager.CONNECTIVITY_ACTION));
+
+		registerReceiver(ssidReceiver, new IntentFilter(
+				android.net.ConnectivityManager.CONNECTIVITY_ACTION));
 		loadNetworkList();
-		
+
 		SharedPreferences settings = PreferenceManager
 				.getDefaultSharedPreferences(this);
-
-		profileList = ProfileFactory.loadFromDao(this);
-
-		if (profileList == null || profileList.size() == 0) {
-			ProfileFactory.newProfile(this);
-			Profile profile = ProfileFactory.getProfile(this);
-			profile.setName(getString(R.string.profile_default));
-			Editor ed = settings.edit();
-			ed.putString(Constraints.NAME, profile.getName());
-			ed.commit();
-			ProfileFactory.saveToDao(this);
-			profileList = ProfileFactory.loadFromDao(this);
-		}
-
-		loadProfileList();
 
 		Editor edit = settings.edit();
 
@@ -435,25 +442,63 @@ public class SSHTunnel extends PreferenceActivity implements
 			showAToast(getString(R.string.require_root_alert));
 		}
 
-		String versionName = "";
+		if (!settings.getBoolean(getVersionName(), false)) {
+			new Thread() {
+				public void run() {
+
+					CopyAssets();
+					runCommand("chmod 777 /data/data/org.sshtunnel/iptables");
+					runCommand("chmod 777 /data/data/org.sshtunnel/redsocks");
+					runCommand("chmod 777 /data/data/org.sshtunnel/proxy_http.sh");
+					runCommand("chmod 777 /data/data/org.sshtunnel/proxy_socks.sh");
+
+					SharedPreferences settings = PreferenceManager
+							.getDefaultSharedPreferences(SSHTunnel.this);
+
+					String versionName = getVersionName();
+
+					Editor edit = settings.edit();
+					edit = settings.edit();
+					edit.putBoolean(versionName, true);
+					edit.commit();
+
+					Utils.updateProfiles(SSHTunnel.this);
+
+					handler.sendEmptyMessage(MSG_UPDATE_FINISHED);
+				}
+			};
+		} else {
+			initProfileList();
+		}
+
+	}
+
+	private String getVersionName() {
 		try {
-			versionName = getPackageManager().getPackageInfo(getPackageName(),
-					0).versionName;
+			return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
 		} catch (NameNotFoundException e) {
-			versionName = "NONE";
+			return "NONE";
+		}
+	}
+
+	private void initProfileList() {
+		profileList = ProfileFactory.loadFromDao(this);
+
+		if (profileList == null || profileList.size() == 0) {
+			ProfileFactory.newProfile(this);
+			Profile profile = ProfileFactory.getProfile(this);
+			profile.setName(getString(R.string.profile_default));
+
+			SharedPreferences settings = PreferenceManager
+					.getDefaultSharedPreferences(this);
+			Editor ed = settings.edit();
+			ed.putString(Constraints.NAME, profile.getName());
+			ed.commit();
+			ProfileFactory.saveToDao(this);
+			profileList = ProfileFactory.loadFromDao(this);
 		}
 
-		if (!settings.getBoolean(versionName, false)) {
-			CopyAssets();
-			runCommand("chmod 777 /data/data/org.sshtunnel/iptables");
-			runCommand("chmod 777 /data/data/org.sshtunnel/redsocks");
-			runCommand("chmod 777 /data/data/org.sshtunnel/proxy_http.sh");
-			runCommand("chmod 777 /data/data/org.sshtunnel/proxy_socks.sh");
-			edit = settings.edit();
-			edit.putBoolean(versionName, true);
-			edit.commit();
-		}
-
+		loadProfileList();
 	}
 
 	// 点击Menu时，系统调用当前Activity的onCreateOptionsMenu方法，并传一个实现了一个Menu接口的menu对象供你使用
@@ -516,8 +561,8 @@ public class SSHTunnel extends PreferenceActivity implements
 										profile.getName());
 								ed.commit();
 
-								profileListPreference
-										.setSummary(Utils.getProfileName(SSHTunnel.this, profile));
+								profileListPreference.setSummary(Utils
+										.getProfileName(SSHTunnel.this, profile));
 
 								profileList = ProfileFactory
 										.loadFromDao(SSHTunnel.this);
@@ -537,7 +582,7 @@ public class SSHTunnel extends PreferenceActivity implements
 	/** Called when the activity is closed. */
 	@Override
 	public void onDestroy() {
-		
+
 		unregisterReceiver(ssidReceiver);
 		super.onDestroy();
 	}
@@ -754,7 +799,8 @@ public class SSHTunnel extends PreferenceActivity implements
 				ProfileFactory.loadFromDaoToPreference(this, profileId);
 
 				Profile profile = ProfileFactory.getProfile(this);
-				profileListPreference.setSummary(Utils.getProfileName(this, profile));
+				profileListPreference.setSummary(Utils.getProfileName(this,
+						profile));
 
 			}
 		}
