@@ -119,4 +119,9 @@
 	<string name="auto_set_gfwlist">启用GFW列表</string>
 	<string name="auto_set_gfwlist_summary">为部分被屏蔽网站设置代理（实验性）</string>
 
+	<!-- ssid -->
+	<string name="ssid">绑定到网络</string>
+	<string name="ssid_summary">在2G/3G网络或指定无线网SSID下自动连接
+	</string>
+
 </resources>

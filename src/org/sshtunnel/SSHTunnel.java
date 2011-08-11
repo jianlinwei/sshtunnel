@@ -52,6 +52,7 @@ import org.sshtunnel.db.ProfileFactory;
 import org.sshtunnel.utils.Constraints;
 
 import com.flurry.android.FlurryAgent;
+import com.j256.ormlite.android.apptools.OpenHelperManager;
 
 import android.app.ActivityManager;
 import android.app.ActivityManager.RunningServiceInfo;
@@ -163,7 +164,7 @@ public class SSHTunnel extends PreferenceActivity implements
 
 	private String getProfileName(Profile profile) {
 		if (profile.getName() == null || profile.getName().equals("")) {
-			return getString(R.string.profile_default) + " " + profile.getId();
+			return getString(R.string.profile_base) + " " + profile.getId();
 		}
 		return profile.getName();
 	}
@@ -209,13 +210,19 @@ public class SSHTunnel extends PreferenceActivity implements
 	private void delProfile() {
 
 		if (profileList.size() > 1) {
-			ProfileFactory.delFromDao(this);
+			boolean result = ProfileFactory.delFromDao(this);
+			if (result == false)
+				Log.e(TAG, "del profile error");
 			profileList = ProfileFactory.loadFromDao(this);
-			if (profileList != null) {
-				loadProfileList();
-			}
+			loadProfileList();
 			int id = profileList.get(profileList.size() - 1).getId();
 			ProfileFactory.loadFromDaoToPreference(this, id);
+			SharedPreferences settings = PreferenceManager
+					.getDefaultSharedPreferences(this);
+			Editor ed = settings.edit();
+			ed.putString("profile", Integer.toString(id));
+			ed.commit();
+			profileListPreference.setValue(Integer.toString(id));
 		}
 	}
 
@@ -294,13 +301,12 @@ public class SSHTunnel extends PreferenceActivity implements
 	}
 
 	private void loadProfileList() {
-		SharedPreferences settings = PreferenceManager
-				.getDefaultSharedPreferences(this);
+
 		String[] profileEntries = new String[profileList.size() + 1];
 		String[] profileValues = new String[profileList.size() + 1];
 		int index = 0;
 		for (Profile profile : profileList) {
-			profileEntries[index] = profile.getName();
+			profileEntries[index] = getProfileName(profile);
 			profileValues[index] = Integer.toString(profile.getId());
 			index++;
 		}
@@ -354,9 +360,14 @@ public class SSHTunnel extends PreferenceActivity implements
 		profileList = ProfileFactory.loadFromDao(this);
 
 		if (profileList == null || profileList.size() == 0) {
+			ProfileFactory.newProfile(this);
 			Profile profile = ProfileFactory.getProfile(this);
 			profile.setName(getString(R.string.profile_default));
+			Editor ed = settings.edit();
+			ed.putString(Constraints.NAME, profile.getName());
+			ed.commit();
 			ProfileFactory.saveToDao(this);
+			profileList = ProfileFactory.loadFromDao(this);
 		}
 
 		loadProfileList();
@@ -460,8 +471,7 @@ public class SSHTunnel extends PreferenceActivity implements
 									int whichButton) {
 								EditText profileName = (EditText) textEntryView
 										.findViewById(R.id.profile_name_edit);
-								SharedPreferences settings = PreferenceManager
-										.getDefaultSharedPreferences(SSHTunnel.this);
+
 								String name = profileName.getText().toString();
 								if (name == null)
 									return;
@@ -471,10 +481,18 @@ public class SSHTunnel extends PreferenceActivity implements
 
 								profile.setName(name);
 								ProfileFactory.saveToDao(SSHTunnel.this);
-
+								
+								SharedPreferences settings = PreferenceManager
+										.getDefaultSharedPreferences(SSHTunnel.this);
+								Editor ed = settings.edit();
+								ed.putString(Constraints.NAME, profile.getName());
+								ed.commit();
+								
 								profileListPreference
 										.setSummary(getProfileName(profile));
 
+								profileList = ProfileFactory
+										.loadFromDao(SSHTunnel.this);
 								loadProfileList();
 							}
 						})
@@ -669,7 +687,7 @@ public class SSHTunnel extends PreferenceActivity implements
 
 		if (key.equals("profile")) {
 
-			ProfileFactory.saveToDao(this);
+			ProfileFactory.loadFromPreference(this);
 
 			String id = settings.getString("profile", "-1");
 			if (id.equals("-1")) {
@@ -678,11 +696,12 @@ public class SSHTunnel extends PreferenceActivity implements
 
 				profileList = ProfileFactory.loadFromDao(this);
 				loadProfileList();
-
+				String profileId = Integer.toString(ProfileFactory
+						.getProfile(this).getId());
 				Editor ed = settings.edit();
-				ed.putString("profile", Integer.toString(ProfileFactory
-						.getProfile(this).getId()));
+				ed.putString("profile", profileId);
 				ed.commit();
+				profileListPreference.setValue(profileId);
 
 			} else {
 
@@ -691,14 +710,13 @@ public class SSHTunnel extends PreferenceActivity implements
 				try {
 					profileId = Integer.valueOf(id);
 				} catch (NumberFormatException e) {
+					profileList = ProfileFactory.loadFromDao(this);
 					profileId = profileList.get(0).getId();
 				}
-				
+
 				ProfileFactory.loadFromDaoToPreference(this, profileId);
 
 				Profile profile = ProfileFactory.getProfile(this);
-				profileListPreference
-						.setValue(Integer.toString(profile.getId()));
 				profileListPreference.setSummary(getProfileName(profile));
 
 			}
@@ -873,7 +891,7 @@ public class SSHTunnel extends PreferenceActivity implements
 
 			return false;
 		}
-		
+
 		Profile profile = ProfileFactory.getProfile(this);
 
 		if (isTextEmpty(profile.getHost(), getString(R.string.host_empty)))
@@ -883,7 +901,8 @@ public class SSHTunnel extends PreferenceActivity implements
 			return false;
 
 		try {
-			if (isTextEmpty(Integer.toString(profile.getPort()), getString(R.string.port_empty)))
+			if (isTextEmpty(Integer.toString(profile.getPort()),
+					getString(R.string.port_empty)))
 				return false;
 
 			if (isTextEmpty(Integer.toString(profile.getLocalPort()),

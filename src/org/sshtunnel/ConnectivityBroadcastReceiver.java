@@ -56,7 +56,7 @@ public class ConnectivityBroadcastReceiver extends BroadcastReceiver {
 			return;
 		}
 
-		Log.e(TAG, "Connection Test");
+		Log.d(TAG, "Connection Test");
 
 		SharedPreferences settings = PreferenceManager
 				.getDefaultSharedPreferences(context);
