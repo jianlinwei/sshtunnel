@@ -83,6 +83,12 @@
 	<string name="fearute_cat">Feature Settings</string>
 	<string name="auto_connect">Auto Connect</string>
 	<string name="auto_connect_summary">Start SSH Tunnel when network available</string>
+	<string name="ssid">Binded NetWork</string>
+	<string name="ssid_summary">Bind your proxy setting to 2G/3G Network or
+		specified SSID
+	</string>
+	<string-array name="ssid_default_values"></string-array>
+	<string-array name="ssid_default_entries"></string-array>
 	<string name="auto_reconnect">Auto Reconnect</string>
 	<string name="auto_reconnect_summary">Try to reconnect the SSH service, when connection
 		closed unexpected
@@ -139,7 +145,7 @@
 
 	<!-- profile switcher -->
 	<string name="profile">Profiles</string>
-	<string name="profile_default">Profile 1</string>
+	<string name="profile_default">Default Profile</string>
 	<string name="profile_new">New Profile</string>
 	<string name="profile_base">Profile</string>
 	<string name="profile_del">Remove</string>

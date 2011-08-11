@@ -39,6 +39,10 @@
 	<PreferenceCategory android:title="@string/fearute_cat">
 		<CheckBoxPreference android:key="isAutoConnect"
 			android:title="@string/auto_connect" android:summary="@string/auto_connect_summary"></CheckBoxPreference>
+		<com.ksmaze.android.preference.ListPreferenceMultiSelect
+			android:defaultValue="" android:key="ssid" android:title="@string/ssid"
+			android:dialogTitle="@string/ssid" android:summary="@string/ssid_summary"
+			android:entries="@array/ssid_default_entries" android:entryValues="@array/ssid_default_values" />
 		<CheckBoxPreference android:key="isAutoReconnect"
 			android:title="@string/auto_reconnect" android:summary="@string/auto_reconnect_summary"></CheckBoxPreference>
 		<CheckBoxPreference android:summary="@string/auto_set_gfwlist_summary"
