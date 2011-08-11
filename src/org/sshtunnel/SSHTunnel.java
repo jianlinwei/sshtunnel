@@ -50,17 +50,21 @@ import java.util.List;
 import org.sshtunnel.db.Profile;
 import org.sshtunnel.db.ProfileFactory;
 import org.sshtunnel.utils.Constraints;
+import org.sshtunnel.utils.Utils;
 
 import com.flurry.android.FlurryAgent;
 import com.j256.ormlite.android.apptools.OpenHelperManager;
+import com.ksmaze.android.preference.ListPreferenceMultiSelect;
 
 import android.app.ActivityManager;
 import android.app.ActivityManager.RunningServiceInfo;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
@@ -70,11 +74,15 @@ import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationManager;
+import android.net.ConnectivityManager;
+import android.net.wifi.WifiConfiguration;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.preference.CheckBoxPreference;
 import android.preference.EditTextPreference;
 import android.preference.ListPreference;
 import android.preference.Preference;
+import android.preference.Preference.OnPreferenceClickListener;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 import android.preference.PreferenceScreen;
@@ -91,7 +99,20 @@ public class SSHTunnel extends PreferenceActivity implements
 		OnSharedPreferenceChangeListener {
 
 	private static final String TAG = "SSHTunnel";
-	public static final String SERVICE_NAME = "org.sshtunnel.SSHTunnelService";
+	
+	private BroadcastReceiver ssidReceiver = new BroadcastReceiver() {
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			String action = intent.getAction();
+
+			if (!action.equals(ConnectivityManager.CONNECTIVITY_ACTION)) {
+				Log.w(TAG, "onReceived() called uncorrectly");
+				return;
+			}
+			
+			loadNetworkList();
+		}	
+	};
 
 	public static boolean runCommand(String command) {
 		Process process = null;
@@ -161,13 +182,7 @@ public class SSHTunnel extends PreferenceActivity implements
 	private CheckBoxPreference isRunningCheck;
 
 	private Preference proxyedApps;
-
-	private String getProfileName(Profile profile) {
-		if (profile.getName() == null || profile.getName().equals("")) {
-			return getString(R.string.profile_base) + " " + profile.getId();
-		}
-		return profile.getName();
-	}
+	private ListPreferenceMultiSelect ssidListPreference;
 
 	private void CopyAssets() {
 		AssetManager assetManager = getAssets();
@@ -248,6 +263,7 @@ public class SSHTunnel extends PreferenceActivity implements
 		remoteAddressText.setEnabled(false);
 		proxyedApps.setEnabled(false);
 		profileListPreference.setEnabled(false);
+		ssidListPreference.setEnabled(false);
 
 		isSocksCheck.setEnabled(false);
 		isAutoSetProxyCheck.setEnabled(false);
@@ -271,6 +287,9 @@ public class SSHTunnel extends PreferenceActivity implements
 			if (!isAutoSetProxyCheck.isChecked())
 				proxyedApps.setEnabled(true);
 		}
+		if (isAutoConnectCheck.isChecked()) {
+			ssidListPreference.setEnabled(true);
+		}
 
 		profileListPreference.setEnabled(true);
 		isGFWListCheck.setEnabled(true);
@@ -287,26 +306,13 @@ public class SSHTunnel extends PreferenceActivity implements
 		return false;
 	}
 
-	public boolean isWorked(String service) {
-		ActivityManager myManager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
-		ArrayList<RunningServiceInfo> runningService = (ArrayList<RunningServiceInfo>) myManager
-				.getRunningServices(30);
-		for (int i = 0; i < runningService.size(); i++) {
-			if (runningService.get(i).service.getClassName().toString()
-					.equals(service)) {
-				return true;
-			}
-		}
-		return false;
-	}
-
 	private void loadProfileList() {
 
 		String[] profileEntries = new String[profileList.size() + 1];
 		String[] profileValues = new String[profileList.size() + 1];
 		int index = 0;
 		for (Profile profile : profileList) {
-			profileEntries[index] = getProfileName(profile);
+			profileEntries[index] = Utils.getProfileName(this, profile);
 			profileValues[index] = Integer.toString(profile.getId());
 			index++;
 		}
@@ -316,6 +322,23 @@ public class SSHTunnel extends PreferenceActivity implements
 
 		profileListPreference.setEntries(profileEntries);
 		profileListPreference.setEntryValues(profileValues);
+	}
+
+	private void loadNetworkList() {
+		WifiManager wm = (WifiManager) this
+				.getSystemService(Context.WIFI_SERVICE);
+		List<WifiConfiguration> wcs = wm.getConfiguredNetworks();
+		String[] ssidEntries = new String[wcs.size() + 1];
+		ssidEntries[0] = "2G/3G";
+		int n = 1;
+		for (WifiConfiguration wc : wcs) {
+			if (wc != null && wc.SSID != null)
+				ssidEntries[n++] = wc.SSID.replace("\"", "");
+			else
+				ssidEntries[n++] = "unknown";
+		}
+		ssidListPreference.setEntries(ssidEntries);
+		ssidListPreference.setEntryValues(ssidEntries);
 	}
 
 	@Override
@@ -346,6 +369,7 @@ public class SSHTunnel extends PreferenceActivity implements
 		remoteAddressText = (EditTextPreference) findPreference("remoteAddress");
 		proxyedApps = (Preference) findPreference("proxyedApps");
 		profileListPreference = (ListPreference) findPreference("profile");
+		ssidListPreference = (ListPreferenceMultiSelect) findPreference("ssid");
 
 		isRunningCheck = (CheckBoxPreference) findPreference("isRunning");
 		isAutoSetProxyCheck = (CheckBoxPreference) findPreference("isAutoSetProxy");
@@ -353,7 +377,10 @@ public class SSHTunnel extends PreferenceActivity implements
 		isAutoConnectCheck = (CheckBoxPreference) findPreference("isAutoConnect");
 		isAutoReconnectCheck = (CheckBoxPreference) findPreference("isAutoReconnect");
 		isGFWListCheck = (CheckBoxPreference) findPreference("isGFWList");
-
+		
+		registerReceiver(ssidReceiver, new IntentFilter(android.net.ConnectivityManager.CONNECTIVITY_ACTION));
+		loadNetworkList();
+		
 		SharedPreferences settings = PreferenceManager
 				.getDefaultSharedPreferences(this);
 
@@ -374,7 +401,7 @@ public class SSHTunnel extends PreferenceActivity implements
 
 		Editor edit = settings.edit();
 
-		if (this.isWorked(SERVICE_NAME)) {
+		if (Utils.isWorked(this)) {
 			edit.putBoolean("isRunning", true);
 		} else {
 			if (settings.getBoolean("isRunning", false)) {
@@ -460,7 +487,7 @@ public class SSHTunnel extends PreferenceActivity implements
 		final EditText profileName = (EditText) textEntryView
 				.findViewById(R.id.profile_name_edit);
 		final Profile profile = ProfileFactory.getProfile(this);
-		profileName.setText(getProfileName(profile));
+		profileName.setText(Utils.getProfileName(this, profile));
 
 		AlertDialog ad = new AlertDialog.Builder(this)
 				.setTitle(R.string.change_name)
@@ -481,15 +508,16 @@ public class SSHTunnel extends PreferenceActivity implements
 
 								profile.setName(name);
 								ProfileFactory.saveToDao(SSHTunnel.this);
-								
+
 								SharedPreferences settings = PreferenceManager
 										.getDefaultSharedPreferences(SSHTunnel.this);
 								Editor ed = settings.edit();
-								ed.putString(Constraints.NAME, profile.getName());
+								ed.putString(Constraints.NAME,
+										profile.getName());
 								ed.commit();
-								
+
 								profileListPreference
-										.setSummary(getProfileName(profile));
+										.setSummary(Utils.getProfileName(SSHTunnel.this, profile));
 
 								profileList = ProfileFactory
 										.loadFromDao(SSHTunnel.this);
@@ -509,7 +537,8 @@ public class SSHTunnel extends PreferenceActivity implements
 	/** Called when the activity is closed. */
 	@Override
 	public void onDestroy() {
-
+		
+		unregisterReceiver(ssidReceiver);
 		super.onDestroy();
 	}
 
@@ -629,7 +658,7 @@ public class SSHTunnel extends PreferenceActivity implements
 
 		Editor edit = settings.edit();
 
-		if (this.isWorked(SERVICE_NAME)) {
+		if (Utils.isWorked(this)) {
 			if (settings.getBoolean("isConnecting", false))
 				isRunningCheck.setEnabled(false);
 			edit.putBoolean("isRunning", true);
@@ -643,6 +672,12 @@ public class SSHTunnel extends PreferenceActivity implements
 
 		edit.commit();
 
+		if (settings.getBoolean("isAutoConnecting", false)) {
+			ssidListPreference.setEnabled(true);
+		} else {
+			ssidListPreference.setEnabled(false);
+		}
+
 		if (settings.getBoolean("isRunning", false)) {
 			isRunningCheck.setChecked(true);
 			disableAll();
@@ -654,8 +689,10 @@ public class SSHTunnel extends PreferenceActivity implements
 		// Setup the initial values
 		Profile profile = ProfileFactory.getProfile(this);
 		profileListPreference.setValue(Integer.toString(profile.getId()));
-		profileListPreference.setSummary(getProfileName(profile));
+		profileListPreference.setSummary(Utils.getProfileName(this, profile));
 
+		if (!settings.getString("ssid", "").equals(""))
+			ssidListPreference.setSummary(settings.getString("ssid", ""));
 		if (!settings.getString("user", "").equals(""))
 			userText.setSummary(settings.getString("user",
 					getString(R.string.user_summary)));
@@ -696,8 +733,8 @@ public class SSHTunnel extends PreferenceActivity implements
 
 				profileList = ProfileFactory.loadFromDao(this);
 				loadProfileList();
-				String profileId = Integer.toString(ProfileFactory
-						.getProfile(this).getId());
+				String profileId = Integer.toString(ProfileFactory.getProfile(
+						this).getId());
 				Editor ed = settings.edit();
 				ed.putString("profile", profileId);
 				ed.commit();
@@ -717,7 +754,7 @@ public class SSHTunnel extends PreferenceActivity implements
 				ProfileFactory.loadFromDaoToPreference(this, profileId);
 
 				Profile profile = ProfileFactory.getProfile(this);
-				profileListPreference.setSummary(getProfileName(profile));
+				profileListPreference.setSummary(Utils.getProfileName(this, profile));
 
 			}
 		}
@@ -768,9 +805,11 @@ public class SSHTunnel extends PreferenceActivity implements
 
 		if (key.equals("isSocks")) {
 			if (settings.getBoolean("isSocks", false)) {
+				isSocksCheck.setChecked(true);
 				remotePortText.setEnabled(false);
 				remoteAddressText.setEnabled(false);
 			} else {
+				isSocksCheck.setChecked(false);
 				remotePortText.setEnabled(true);
 				remoteAddressText.setEnabled(true);
 			}
@@ -778,9 +817,11 @@ public class SSHTunnel extends PreferenceActivity implements
 
 		if (key.equals("isGFWList")) {
 			if (settings.getBoolean("isGFWList", false)) {
+				isGFWListCheck.setChecked(true);
 				isAutoSetProxyCheck.setEnabled(false);
 				proxyedApps.setEnabled(false);
 			} else {
+				isGFWListCheck.setChecked(false);
 				isAutoSetProxyCheck.setEnabled(true);
 				if (settings.getBoolean("isGlobalProxy", false))
 					proxyedApps.setEnabled(false);
@@ -789,12 +830,25 @@ public class SSHTunnel extends PreferenceActivity implements
 			}
 		}
 
+		if (key.equals("isAutoConnect")) {
+			if (settings.getBoolean("isAutoConnect", false)) {
+				isAutoConnectCheck.setChecked(true);
+				ssidListPreference.setEnabled(true);
+			} else {
+				isAutoConnectCheck.setChecked(false);
+				ssidListPreference.setEnabled(false);
+			}
+		}
+
 		if (key.equals("isAutoSetProxy")) {
 			if (!settings.getBoolean("isGFWList", false)) {
-				if (settings.getBoolean("isAutoSetProxy", false))
+				if (settings.getBoolean("isAutoSetProxy", false)) {
+					isAutoSetProxyCheck.setChecked(true);
 					proxyedApps.setEnabled(false);
-				else
+				} else {
+					isAutoSetProxyCheck.setChecked(false);
 					proxyedApps.setEnabled(true);
+				}
 			}
 		}
 
@@ -808,7 +862,12 @@ public class SSHTunnel extends PreferenceActivity implements
 			}
 		}
 
-		if (key.equals("user"))
+		if (key.equals("ssid"))
+			if (settings.getString("ssid", "").equals(""))
+				ssidListPreference.setSummary(getString(R.string.ssid_summary));
+			else
+				ssidListPreference.setSummary(settings.getString("ssid", ""));
+		else if (key.equals("user"))
 			if (settings.getString("user", "").equals(""))
 				userText.setSummary(getString(R.string.user_summary));
 			else
@@ -881,7 +940,7 @@ public class SSHTunnel extends PreferenceActivity implements
 	/** Called when connect button is clicked. */
 	public boolean serviceStart() {
 
-		if (isWorked(SERVICE_NAME)) {
+		if (Utils.isWorked(this)) {
 
 			try {
 				stopService(new Intent(SSHTunnel.this, SSHTunnelService.class));

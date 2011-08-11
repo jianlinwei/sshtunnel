@@ -1,8 +1,14 @@
 package org.sshtunnel;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.sshtunnel.db.Profile;
+import org.sshtunnel.db.ProfileFactory;
+import org.sshtunnel.utils.Constraints;
+import org.sshtunnel.utils.Utils;
+
+import com.ksmaze.android.preference.ListPreferenceMultiSelect;
 
 import android.app.ActivityManager;
 import android.app.ActivityManager.RunningServiceInfo;
@@ -10,28 +16,20 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.location.Address;
-import android.location.Geocoder;
-import android.location.Location;
-import android.location.LocationManager;
+import android.content.SharedPreferences.Editor;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
+import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.telephony.TelephonyManager;
 import android.util.Log;
+import android.widget.Toast;
 
 public class ConnectivityBroadcastReceiver extends BroadcastReceiver {
 
 	private static final String TAG = "ConnectivityBroadcastReceiver";
-
-	public boolean isOnline(Context context) {
-		ConnectivityManager manager = (ConnectivityManager) context
-				.getSystemService(Context.CONNECTIVITY_SERVICE);
-		NetworkInfo networkInfo = manager.getActiveNetworkInfo();
-		if (networkInfo == null)
-			return false;
-		return true;
-	}
 
 	public boolean isWorked(Context context, String service) {
 		ActivityManager myManager = (ActivityManager) context
@@ -48,7 +46,7 @@ public class ConnectivityBroadcastReceiver extends BroadcastReceiver {
 	}
 
 	@Override
-	public void onReceive(Context context, Intent intent) {
+	public synchronized void onReceive(Context context, Intent intent) {
 		String action = intent.getAction();
 
 		if (!action.equals(ConnectivityManager.CONNECTIVITY_ACTION)) {
@@ -92,25 +90,66 @@ public class ConnectivityBroadcastReceiver extends BroadcastReceiver {
 			}
 		}
 
-		if (!isOnline(context)) {
-			if (isWorked(context, SSHTunnel.SERVICE_NAME)) {
-				try {
-					context.stopService(new Intent(context,
-							SSHTunnelService.class));
-				} catch (Exception e) {
-					// Nothing
-				}
+		if (SSHTunnelService.isConnecting)
+			return;
+		
+		// only switching profiles when needed
+		ConnectivityManager manager = (ConnectivityManager) context
+				.getSystemService(Context.CONNECTIVITY_SERVICE);
+		NetworkInfo networkInfo = manager.getActiveNetworkInfo();
+		if (networkInfo == null) {
+			if (Utils.isWorked(context)) {
+				context.stopService(new Intent(context, SSHTunnelService.class));
 			}
 		} else {
+			String lastSSID = settings.getString("lastSSID", "-1");
 
-			// // Wait for connection stable
-			// try {
-			// Thread.sleep();
-			// } catch (InterruptedException ignore) {
-			// // Nothing
-			// }
+			if (networkInfo.getTypeName().equals("WIFI")) {
+				if (!lastSSID.equals("-1")) {
+					WifiManager wm = (WifiManager) context
+							.getSystemService(Context.WIFI_SERVICE);
+					WifiInfo wInfo = wm.getConnectionInfo();
+					if (wInfo != null) {
+						String current = wInfo.getSSID();
+						if (current != null && !current.equals(lastSSID)) {
+							if (Utils.isWorked(context)) {
+								context.stopService(new Intent(context,
+										SSHTunnelService.class));
+							}
+						}
+					}
+				}
+			} else {
+				if (!lastSSID.equals("2G/3G")) {
+					if (Utils.isWorked(context)) {
+						context.stopService(new Intent(context,
+								SSHTunnelService.class));
+					}
+				}
+			}
+		}
 
-			if (!isWorked(context, SSHTunnel.SERVICE_NAME)) {
+		// Save current settings first
+		ProfileFactory.loadFromPreference(context);
+
+		String curSSID = null;
+		List<Profile> profileList = ProfileFactory.loadFromDao(context);
+		int profileId = -1;
+
+		// Test on each profile
+		for (Profile profile : profileList) {
+
+			curSSID = onlineSSID(context, profile.getSsid());
+			if (profile.isAutoConnect() && curSSID != null) {
+
+				// Then switch profile values
+				profileId = profile.getId();
+				break;
+			}
+		}
+
+		if (curSSID != null) {
+			if (!Utils.isWorked(context)) {
 
 				while (SSHTunnelService.isStopping) {
 					try {
@@ -120,11 +159,53 @@ public class ConnectivityBroadcastReceiver extends BroadcastReceiver {
 					}
 				}
 
-				SSHTunnelReceiver sshr = new SSHTunnelReceiver();
-				sshr.onReceive(context, intent, false);
+				Editor ed = settings.edit();
+				ed.putString("lastSSID", curSSID);
+				ed.commit();
+		
+				Utils.notifyConnect(context);
+
+				Intent it = new Intent(context, SSHTunnelService.class);
+				Bundle bundle = new Bundle();
+				bundle.putInt(Constraints.ID, profileId);
+				it.putExtras(bundle);
+				context.startService(it);
 			}
 		}
 
+	}
+
+	public String onlineSSID(Context context, String ssid) {
+		String ssids[] = ListPreferenceMultiSelect.parseStoredValue(ssid);
+		if (ssids == null)
+			return null;
+		if (ssids.length < 1)
+			return null;
+		ConnectivityManager manager = (ConnectivityManager) context
+				.getSystemService(Context.CONNECTIVITY_SERVICE);
+		NetworkInfo networkInfo = manager.getActiveNetworkInfo();
+		if (networkInfo == null)
+			return null;
+		if (!networkInfo.getTypeName().equals("WIFI")) {
+			for (String item : ssids) {
+				if (item.equals("2G/3G"))
+					return "2G/3G";
+			}
+			return null;
+		}
+		WifiManager wm = (WifiManager) context
+				.getSystemService(Context.WIFI_SERVICE);
+		WifiInfo wInfo = wm.getConnectionInfo();
+		if (wInfo == null)
+			return null;
+		String current = wInfo.getSSID();
+		if (current == null || current.equals(""))
+			return null;
+		for (String item : ssids) {
+			if (item.equals(current))
+				return item;
+		}
+		return null;
 	}
 
 }

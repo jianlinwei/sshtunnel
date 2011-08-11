@@ -31,6 +31,7 @@ import java.util.Random;
 import org.sshtunnel.utils.Base64;
 import org.sshtunnel.utils.DomainValidator;
 import org.sshtunnel.utils.InnerSocketBuilder;
+import org.sshtunnel.utils.Utils;
 
 import android.app.ActivityManager;
 import android.app.ActivityManager.RunningServiceInfo;
@@ -356,20 +357,6 @@ public class DNSServer implements WrapServer {
 		return inService;
 	}
 
-	public boolean isWorked(String service, Context context) {
-		ActivityManager myManager = (ActivityManager) context
-				.getSystemService(Context.ACTIVITY_SERVICE);
-		ArrayList<RunningServiceInfo> runningService = (ArrayList<RunningServiceInfo>) myManager
-				.getRunningServices(30);
-		for (int i = 0; i < runningService.size(); i++) {
-			if (runningService.get(i).service.getClassName().toString()
-					.equals(service)) {
-				return true;
-			}
-		}
-		return false;
-	}
-
 	/**
 	 * 由缓存载入域名解析缓存
 	 */
@@ -606,7 +593,7 @@ public class DNSServer implements WrapServer {
 			srvSocket = null;
 		}
 
-		if (isWorked(SSHTunnel.SERVICE_NAME, context)) {
+		if (Utils.isWorked(context)) {
 			try {
 				context.stopService(new Intent(context, SSHTunnelService.class));
 			} catch (Exception e) {

@@ -58,6 +58,7 @@ import org.sshtunnel.db.Profile;
 import org.sshtunnel.db.ProfileFactory;
 import org.sshtunnel.utils.Constraints;
 import org.sshtunnel.utils.ProxyedApp;
+import org.sshtunnel.utils.Utils;
 
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -118,7 +119,7 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 	private DynamicPortForwarder dpf = null;
 	private DNSServer dnsServer = null;
 	private int dnsPort = 0;
-	private volatile boolean isConnecting = false;
+	public volatile static boolean isConnecting = false;
 	public volatile static boolean isStopping = false;
 
 	private final static int AUTH_TRIES = 1;
@@ -246,14 +247,6 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 			super.handleMessage(msg);
 		}
 	};
-
-	private String getProfileName() {
-		String profile = settings.getString("profile", "1");
-		SharedPreferences settings = PreferenceManager
-				.getDefaultSharedPreferences(this);
-		return settings.getString("profile" + profile,
-				getString(R.string.profile_base) + " " + profile);
-	}
 
 	private void authenticate() {
 		try {
@@ -707,7 +700,7 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 		// notification.defaults = Notification.DEFAULT_SOUND;
 		initSoundVibrateLights(notification);
 		notification.setLatestEventInfo(this, getString(R.string.app_name)
-				+ " | " + getProfileName(), info, pendIntent);
+				+ " | " + Utils.getProfileName(this, profile), info, pendIntent);
 		notificationManager.cancel(1);
 		startForegroundCompat(1, notification);
 	}
@@ -718,7 +711,7 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 		notification.flags = flags;
 		initSoundVibrateLights(notification);
 		notification.setLatestEventInfo(this, getString(R.string.app_name)
-				+ " | " + getProfileName(), info, pendIntent);
+				+ " | " + Utils.getProfileName(this, profile), info, pendIntent);
 		notificationManager.cancel(0);
 		notificationManager.notify(0, notification);
 	}
