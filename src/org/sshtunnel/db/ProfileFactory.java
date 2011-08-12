@@ -61,7 +61,16 @@ public class ProfileFactory {
 		int id = settings.getInt(Constraints.ID, -1);
 
 		if (id == -1) {
-			profile = new Profile();
+			try {
+				Dao<Profile, Integer> profileDao = helper.getProfileDao();
+				List<Profile> list = profileDao.queryForAll();
+				if (list.size() > 0)
+					profile = list.get(0);
+			} catch (SQLException e) {
+				Log.e(TAG, "Cannot open DAO");
+			}
+			if (profile == null)
+				profile = new Profile();
 			saveToPreference(ctx);
 		} else
 			try {
