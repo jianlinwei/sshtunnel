@@ -145,6 +145,7 @@ public class ConnectivityBroadcastReceiver extends BroadcastReceiver {
 		}
 
 		// Save current settings first
+		ProfileFactory.getProfile(context);
 		ProfileFactory.loadFromPreference(context);
 
 		String curSSID = null;
