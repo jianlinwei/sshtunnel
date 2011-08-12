@@ -529,7 +529,7 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 
 			// for proxy specified apps
 			if (apps == null || apps.length <= 0)
-				apps = AppManager.getProxyedApps(this);
+				apps = AppManager.getProxyedApps(this, profile.getProxyedApps());
 
 			for (int i = 0; i < apps.length; i++) {
 				if (apps[i].isProxyed()) {
@@ -582,7 +582,7 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 
 			// for proxy specified apps
 			if (apps == null || apps.length <= 0)
-				apps = AppManager.getProxyedApps(this);
+				apps = AppManager.getProxyedApps(this, profile.getProxyedApps());
 
 			for (int i = 0; i < apps.length; i++) {
 				if (apps[i].isProxyed()) {

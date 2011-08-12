@@ -50,12 +50,8 @@ public class AppManager extends Activity implements OnCheckedChangeListener,
 		private ImageView icon;
 	}
 
-	public static ProxyedApp[] getProxyedApps(Context context) {
+	public static ProxyedApp[] getProxyedApps(Context context, String tordAppString) {
 
-		SharedPreferences prefs = PreferenceManager
-				.getDefaultSharedPreferences(context);
-
-		String tordAppString = prefs.getString(PREFS_KEY_PROXYED, "");
 		String[] tordApps;
 
 		StringTokenizer st = new StringTokenizer(tordAppString, "|");
