@@ -164,7 +164,7 @@ public class ConnectivityBroadcastReceiver extends BroadcastReceiver {
 			}
 		}
 
-		if (curSSID != null) {
+		if (curSSID != null && profileId != -1) {
 			if (!Utils.isWorked(context)) {
 
 				Editor ed = settings.edit();
