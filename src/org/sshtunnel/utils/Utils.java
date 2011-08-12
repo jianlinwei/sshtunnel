@@ -1,6 +1,7 @@
 package org.sshtunnel.utils;
 
 import java.util.ArrayList;
+import java.util.Map;
 
 import org.sshtunnel.R;
 import org.sshtunnel.SSHTunnel;
@@ -72,6 +73,22 @@ public class Utils {
 		// Load all profiles
 		String[] mProfileValues = settings.getString("profileValues", "")
 				.split("\\|");
+		
+		// Check if needs to update
+		Map<String,?> preferences = settings.getAll();
+		
+		boolean hasOldEdition = false;
+		boolean hasNewEdition = false;
+		
+		for(String p : preferences.keySet()) {
+			if (p.contains("1.5"))
+				hasNewEdition = true;
+			else
+				hasOldEdition = true;
+		}
+		
+		if (hasNewEdition || !hasOldEdition)
+			return;
 
 		// Test on each profile
 		for (String p : mProfileValues) {
@@ -101,6 +118,8 @@ public class Utils {
 			} catch (Exception ignore) {
 				// Ignore all exceptions
 			}
+			
+			ProfileFactory.saveToDao(context);
 
 		}
 	}

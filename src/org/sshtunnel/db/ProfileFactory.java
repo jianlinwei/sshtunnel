@@ -60,9 +60,10 @@ public class ProfileFactory {
 
 		int id = settings.getInt(Constraints.ID, -1);
 
-		if (id == -1)
-			profile = null;
-		else
+		if (id == -1) {
+			profile = new Profile();
+			saveToPreference(ctx);
+		} else
 			try {
 				Dao<Profile, Integer> profileDao = helper.getProfileDao();
 				profile = profileDao.queryForId(id);
@@ -96,9 +97,9 @@ public class ProfileFactory {
 	}
 
 	public static void loadFromPreference(Context ctx) {
-		
+
 		initHelper(ctx);
-		
+
 		SharedPreferences settings = PreferenceManager
 				.getDefaultSharedPreferences(ctx);
 
@@ -166,7 +167,7 @@ public class ProfileFactory {
 		}
 	}
 
-	private static void saveToPreference(Context ctx) {
+	public static void saveToPreference(Context ctx) {
 		SharedPreferences settings = PreferenceManager
 				.getDefaultSharedPreferences(ctx);
 

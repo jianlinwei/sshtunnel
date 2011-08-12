@@ -1,6 +1,5 @@
 package org.sshtunnel;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.sshtunnel.db.Profile;
@@ -8,8 +7,6 @@ import org.sshtunnel.db.ProfileFactory;
 import org.sshtunnel.utils.Constraints;
 import org.sshtunnel.utils.Utils;
 
-import android.app.ActivityManager;
-import android.app.ActivityManager.RunningServiceInfo;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -29,20 +26,6 @@ import com.ksmaze.android.preference.ListPreferenceMultiSelect;
 public class ConnectivityBroadcastReceiver extends BroadcastReceiver {
 
 	private static final String TAG = "ConnectivityBroadcastReceiver";
-
-	public boolean isWorked(Context context, String service) {
-		ActivityManager myManager = (ActivityManager) context
-				.getSystemService(Context.ACTIVITY_SERVICE);
-		ArrayList<RunningServiceInfo> runningService = (ArrayList<RunningServiceInfo>) myManager
-				.getRunningServices(30);
-		for (int i = 0; i < runningService.size(); i++) {
-			if (runningService.get(i).service.getClassName().toString()
-					.equals(service)) {
-				return true;
-			}
-		}
-		return false;
-	}
 
 	public String onlineSSID(Context context, String ssid) {
 		String ssids[] = ListPreferenceMultiSelect.parseStoredValue(ssid);
@@ -183,6 +166,10 @@ public class ConnectivityBroadcastReceiver extends BroadcastReceiver {
 		if (curSSID != null) {
 			if (!Utils.isWorked(context)) {
 
+				Editor ed = settings.edit();
+				ed.putString("lastSSID", curSSID);
+				ed.commit();
+				
 				while (SSHTunnelService.isStopping) {
 					try {
 						Thread.sleep(1000);
@@ -190,10 +177,6 @@ public class ConnectivityBroadcastReceiver extends BroadcastReceiver {
 						break;
 					}
 				}
-
-				Editor ed = settings.edit();
-				ed.putString("lastSSID", curSSID);
-				ed.commit();
 		
 				Utils.notifyConnect(context);
 
