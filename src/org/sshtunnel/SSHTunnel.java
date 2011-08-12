@@ -449,6 +449,8 @@ public class SSHTunnel extends PreferenceActivity implements
 			proxyedApps.setEnabled(false);
 			showAToast(getString(R.string.require_root_alert));
 		}
+		
+		initProfileList();
 
 		if (!settings.getBoolean(getVersionName(), false)) {
 			new Thread() {
@@ -461,6 +463,8 @@ public class SSHTunnel extends PreferenceActivity implements
 					runCommand("chmod 777 /data/data/org.sshtunnel/proxy_http.sh");
 					runCommand("chmod 777 /data/data/org.sshtunnel/proxy_socks.sh");
 
+					Utils.updateProfiles(SSHTunnel.this);
+					
 					SharedPreferences settings = PreferenceManager
 							.getDefaultSharedPreferences(SSHTunnel.this);
 
@@ -471,14 +475,11 @@ public class SSHTunnel extends PreferenceActivity implements
 					edit.putBoolean(versionName, true);
 					edit.commit();
 
-					Utils.updateProfiles(SSHTunnel.this);
-
 					handler.sendEmptyMessage(MSG_UPDATE_FINISHED);
 				}
 			};
-		} else {
-			initProfileList();
 		}
+
 
 	}
 
@@ -706,6 +707,8 @@ public class SSHTunnel extends PreferenceActivity implements
 
 				profileList = ProfileFactory.loadFromDao(this);
 				loadProfileList();
+				ProfileFactory.saveToPreference(this);
+				
 				String profileId = Integer.toString(ProfileFactory.getProfile(
 						this).getId());
 				Editor ed = settings.edit();
