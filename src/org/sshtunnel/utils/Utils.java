@@ -81,7 +81,7 @@ public class Utils {
 		boolean hasNewEdition = false;
 		
 		for(String p : preferences.keySet()) {
-			if (p.contains("1.5"))
+			if (p.contains("1.5."))
 				hasNewEdition = true;
 			else
 				hasOldEdition = true;
