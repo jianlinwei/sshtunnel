@@ -116,32 +116,6 @@ public class ConnectivityBroadcastReceiver extends BroadcastReceiver {
 			if (Utils.isWorked(context)) {
 				context.stopService(new Intent(context, SSHTunnelService.class));
 			}
-		} else {
-			String lastSSID = settings.getString("lastSSID", "-1");
-
-			if (networkInfo.getTypeName().equals("WIFI")) {
-				if (!lastSSID.equals("-1")) {
-					WifiManager wm = (WifiManager) context
-							.getSystemService(Context.WIFI_SERVICE);
-					WifiInfo wInfo = wm.getConnectionInfo();
-					if (wInfo != null) {
-						String current = wInfo.getSSID();
-						if (current != null && !current.equals(lastSSID)) {
-							if (Utils.isWorked(context)) {
-								context.stopService(new Intent(context,
-										SSHTunnelService.class));
-							}
-						}
-					}
-				}
-			} else {
-				if (!lastSSID.equals("2G/3G")) {
-					if (Utils.isWorked(context)) {
-						context.stopService(new Intent(context,
-								SSHTunnelService.class));
-					}
-				}
-			}
 		}
 
 		// Save current settings first
