@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.StringTokenizer;
 import java.util.Vector;
 
+import org.sshtunnel.utils.Constraints;
 import org.sshtunnel.utils.ProxyedApp;
 
 import android.app.Activity;
@@ -116,8 +117,6 @@ public class AppManager extends Activity implements OnCheckedChangeListener,
 
 	private static final int MSG_LOAD_FINISH = 2;
 
-	public final static String PREFS_KEY_PROXYED = "Proxyed";
-
 	private boolean appsLoaded = false;
 
 	final Handler handler = new Handler() {
@@ -176,7 +175,7 @@ public class AppManager extends Activity implements OnCheckedChangeListener,
 		SharedPreferences prefs = PreferenceManager
 				.getDefaultSharedPreferences(context);
 
-		String tordAppString = prefs.getString(PREFS_KEY_PROXYED, "");
+		String tordAppString = prefs.getString(Constraints.PROXYED_APPS, "");
 		String[] tordApps;
 
 		StringTokenizer st = new StringTokenizer(tordAppString, "|");
@@ -389,9 +388,6 @@ public class AppManager extends Activity implements OnCheckedChangeListener,
 		SharedPreferences prefs = PreferenceManager
 				.getDefaultSharedPreferences(this);
 
-		// final SharedPreferences prefs =
-		// context.getSharedPreferences(PREFS_KEY, 0);
-
 		StringBuilder tordApps = new StringBuilder();
 
 		for (int i = 0; i < apps.length; i++) {
@@ -402,7 +398,7 @@ public class AppManager extends Activity implements OnCheckedChangeListener,
 		}
 
 		Editor edit = prefs.edit();
-		edit.putString(PREFS_KEY_PROXYED, tordApps.toString());
+		edit.putString(Constraints.PROXYED_APPS, tordApps.toString());
 		edit.commit();
 
 	}
