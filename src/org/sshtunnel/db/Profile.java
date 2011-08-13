@@ -210,6 +210,12 @@ public class Profile {
 		StringBuilder sb = new StringBuilder();
 		sb.append("id=").append(id);
 		sb.append(", ").append("name=").append(name);
+		sb.append(", ").append("host=").append(host);
+		sb.append(", ").append("port=").append(port);
+		sb.append(", ").append("local_port=").append(localPort);
+		sb.append(", ").append("remote_address=").append(remoteAddress);
+		sb.append(", ").append("remote_port=").append(remotePort);
+		sb.append(", ").append("isSocks=").append(isSocks);
 		return sb.toString();
 	}
 	

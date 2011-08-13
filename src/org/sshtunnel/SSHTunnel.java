@@ -477,7 +477,7 @@ public class SSHTunnel extends PreferenceActivity implements
 
 					handler.sendEmptyMessage(MSG_UPDATE_FINISHED);
 				}
-			};
+			}.start();
 		}
 
 
