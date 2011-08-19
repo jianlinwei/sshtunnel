@@ -5,6 +5,7 @@ import java.util.Map;
 
 import org.sshtunnel.R;
 import org.sshtunnel.SSHTunnel;
+import org.sshtunnel.SSHTunnelContext;
 import org.sshtunnel.db.Profile;
 import org.sshtunnel.db.ProfileFactory;
 
@@ -22,9 +23,9 @@ public class Utils {
 
 	public static final String SERVICE_NAME = "org.sshtunnel.SSHTunnelService";
 
-	public static String getProfileName(Context context, Profile profile) {
+	public static String getProfileName(Profile profile) {
 		if (profile.getName() == null || profile.getName().equals("")) {
-			return context.getString(R.string.profile_base) + " "
+			return SSHTunnelContext.getAppContext().getString(R.string.profile_base) + " "
 					+ profile.getId();
 		}
 		return profile.getName();
@@ -68,7 +69,7 @@ public class Utils {
 				.getDefaultSharedPreferences(context);
 
 		// Store current settings first
-		ProfileFactory.loadFromPreference(context);
+		ProfileFactory.loadFromPreference();
 
 		// Load all profiles
 		String[] mProfileValues = settings.getString("profileValues", "")
@@ -99,8 +100,8 @@ public class Utils {
 			String profileString = settings.getString(p, "");
 			String[] st = profileString.split("\\|");
 
-			ProfileFactory.newProfile(context);
-			Profile profile = ProfileFactory.getProfile(context);
+			ProfileFactory.newProfile();
+			Profile profile = ProfileFactory.getProfile();
 
 			profile.setName(settings.getString("profile" + p, ""));
 
@@ -119,7 +120,7 @@ public class Utils {
 				// Ignore all exceptions
 			}
 			
-			ProfileFactory.saveToDao(context);
+			ProfileFactory.saveToDao();
 
 		}
 	}
