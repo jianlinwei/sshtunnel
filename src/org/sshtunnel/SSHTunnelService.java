@@ -662,6 +662,12 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 		else
 			notification.defaults |= Notification.DEFAULT_SOUND;
 
+		if (settings.getBoolean("settings_key_notif_icon", false)){
+			notification.icon = R.drawable.ic_stat;
+		} else {
+			notification.icon = R.drawable.ic_stat_trans;
+		}
+		
 		if (settings.getBoolean("settings_key_notif_vibrate", false)) {
 			long[] vibrate = { 0, 1000, 500, 1000, 500, 1000 };
 			notification.vibrate = vibrate;
@@ -695,7 +701,6 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 	}
 
 	private void notifyAlert(String title, String info) {
-		notification.icon = R.drawable.ic_stat;
 		notification.tickerText = title;
 		notification.flags = Notification.FLAG_ONGOING_EVENT;
 		// notification.defaults = Notification.DEFAULT_SOUND;
@@ -707,7 +712,6 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 	}
 
 	private void notifyAlert(String title, String info, int flags) {
-		notification.icon = R.drawable.ic_stat;
 		notification.tickerText = title;
 		notification.flags = flags;
 		initSoundVibrateLights(notification);

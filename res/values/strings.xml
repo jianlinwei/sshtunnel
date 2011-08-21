@@ -144,6 +144,7 @@
 	</string>
 	<string name="update_finished">Programs and configurations have been updated
 	</string>
+	<string name="notif_icon">Show notification icon</string>
 
 	<!-- profile switcher -->
 	<string name="profile">Profiles</string>

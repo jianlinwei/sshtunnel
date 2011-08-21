@@ -48,7 +48,7 @@
 		<CheckBoxPreference android:summary="@string/auto_set_gfwlist_summary"
 			android:key="isGFWList" android:title="@string/auto_set_gfwlist"
 			android:defaultValue="false"></CheckBoxPreference>
-			
+
 		<CheckBoxPreference android:key="isAutoSetProxy"
 			android:title="@string/auto_set_proxy" android:summary="@string/auto_set_proxy_summary"></CheckBoxPreference>
 		<Preference android:key="proxyedApps" android:title="@string/proxyed_apps"
@@ -59,6 +59,8 @@
 	</PreferenceCategory>
 
 	<PreferenceCategory android:title="@string/notif_cat">
+		<CheckBoxPreference android:key="settings_key_notif_icon"
+			android:title="@string/notif_icon" android:defaultValue="true" />
 		<RingtonePreference android:key="settings_key_notif_ringtone"
 			android:title="@string/notif_ringtone_title" android:ringtoneType="notification"
 			android:showDefault="true" android:showSilent="true" />

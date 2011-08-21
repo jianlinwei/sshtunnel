@@ -89,6 +89,7 @@
 	<string name="notif_vibrate_summary">在连接状态改变时震动</string>
 	<string name="update_finished">二进制文件及配置文件已更新到最新版本
 	</string>
+	<string name="notif_icon">在通知栏显示图标</string>
 
 	<!-- profile switcher -->
 	<string name="profile">切换账号</string>
