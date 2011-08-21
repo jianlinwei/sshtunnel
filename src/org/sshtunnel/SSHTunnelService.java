@@ -662,7 +662,7 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 		else
 			notification.defaults |= Notification.DEFAULT_SOUND;
 
-		if (settings.getBoolean("settings_key_notif_icon", false)){
+		if (settings.getBoolean("settings_key_notif_icon", true)){
 			notification.icon = R.drawable.ic_stat;
 		} else {
 			notification.icon = R.drawable.ic_stat_trans;
