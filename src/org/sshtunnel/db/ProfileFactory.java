@@ -57,7 +57,16 @@ public class ProfileFactory {
 
 		int id = settings.getInt(Constraints.ID, -1);
 
-		if (id == -1) {
+		if (id != -1) {
+			try {
+				Dao<Profile, Integer> profileDao = helper.getProfileDao();
+				profile = profileDao.queryForId(id);
+			} catch (SQLException e) {
+				Log.e(TAG, "Cannot open DAO");
+			}
+		}
+		
+		if (profile == null) {
 			try {
 				Dao<Profile, Integer> profileDao = helper.getProfileDao();
 				List<Profile> list = profileDao.queryForAll();
@@ -66,17 +75,14 @@ public class ProfileFactory {
 			} catch (SQLException e) {
 				Log.e(TAG, "Cannot open DAO");
 			}
-		} else {
-			try {
-				Dao<Profile, Integer> profileDao = helper.getProfileDao();
-				profile = profileDao.queryForId(id);
-			} catch (SQLException e) {
-				Log.e(TAG, "Cannot open DAO");
+
+			if (profile == null) {
+				profile = new Profile();
+				saveToPreference();
+				saveToDao();
 			}
 		}
-		if (profile == null)
-			profile = new Profile();
-		saveToPreference();
+
 	}
 
 	public static List<Profile> loadFromDao() {
@@ -125,6 +131,7 @@ public class ProfileFactory {
 				Constraints.IS_AUTO_SETPROXY, false);
 		profile.isSocks = settings.getBoolean(Constraints.IS_SOCKS, false);
 		profile.isGFWList = settings.getBoolean(Constraints.IS_GFW_LIST, false);
+		profile.isDNSProxy = settings.getBoolean(Constraints.IS_DNS_PROXY, false);
 
 		try {
 			profile.port = Integer.valueOf(settings.getString(Constraints.PORT,
@@ -195,6 +202,7 @@ public class ProfileFactory {
 		ed.putBoolean(Constraints.IS_AUTO_SETPROXY, profile.isAutoSetProxy);
 		ed.putBoolean(Constraints.IS_SOCKS, profile.isSocks);
 		ed.putBoolean(Constraints.IS_GFW_LIST, profile.isGFWList);
+		ed.putBoolean(Constraints.IS_DNS_PROXY, profile.isDNSProxy);
 
 		ed.commit();
 	}
