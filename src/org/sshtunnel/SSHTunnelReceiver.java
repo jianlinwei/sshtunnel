@@ -54,7 +54,7 @@ public class SSHTunnelReceiver {
 
 	public void onReceive(Context context, Intent intent, boolean enable) {
 
-		Profile profile = ProfileFactory.getProfile(context);
+		Profile profile = ProfileFactory.getProfile();
 		
 		if (profile == null) {
 			Log.e(TAG, "Exception when get preferences");
@@ -63,7 +63,7 @@ public class SSHTunnelReceiver {
 
 		if (profile.isAutoConnect() || enable) {
 			
-			Utils.notifyConnect(context);
+			Utils.notifyConnect();
 
 			Intent it = new Intent(context, SSHTunnelService.class);
 			Bundle bundle = new Bundle();
