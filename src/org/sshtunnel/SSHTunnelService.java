@@ -706,7 +706,7 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 		// notification.defaults = Notification.DEFAULT_SOUND;
 		initSoundVibrateLights(notification);
 		notification.setLatestEventInfo(this, getString(R.string.app_name)
-				+ " | " + Utils.getProfileName(profile), info, pendIntent);
+				+ " | " + Utils.getProfileName(profile, this), info, pendIntent);
 		notificationManager.cancel(1);
 		startForegroundCompat(1, notification);
 	}
@@ -716,7 +716,7 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 		notification.flags = flags;
 		initSoundVibrateLights(notification);
 		notification.setLatestEventInfo(this, getString(R.string.app_name)
-				+ " | " + Utils.getProfileName(profile), info, pendIntent);
+				+ " | " + Utils.getProfileName(profile, this), info, pendIntent);
 		notificationManager.cancel(0);
 		notificationManager.notify(0, notification);
 	}
