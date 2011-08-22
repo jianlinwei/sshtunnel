@@ -370,7 +370,7 @@ public class SSHTunnel extends PreferenceActivity implements
 		String[] profileValues = new String[profileList.size() + 1];
 		int index = 0;
 		for (Profile profile : profileList) {
-			profileEntries[index] = Utils.getProfileName(profile);
+			profileEntries[index] = Utils.getProfileName(profile, this);
 			profileValues[index] = Integer.toString(profile.getId());
 			index++;
 		}
@@ -662,7 +662,7 @@ public class SSHTunnel extends PreferenceActivity implements
 		// Setup the initial values
 		Profile profile = ProfileFactory.getProfile(this);
 		profileListPreference.setValue(Integer.toString(profile.getId()));
-		profileListPreference.setSummary(Utils.getProfileName(profile));
+		profileListPreference.setSummary(Utils.getProfileName(profile, this));
 
 		if (!settings.getString("ssid", "").equals(""))
 			ssidListPreference.setSummary(settings.getString("ssid", ""));
@@ -743,7 +743,7 @@ public class SSHTunnel extends PreferenceActivity implements
 
 				Profile profile = ProfileFactory.getProfile(this);
 				profileListPreference.setSummary(Utils.getProfileName(
-						profile));
+						profile, this));
 				updateValue(profile);
 
 			}
@@ -947,7 +947,7 @@ public class SSHTunnel extends PreferenceActivity implements
 		final EditText profileName = (EditText) textEntryView
 				.findViewById(R.id.profile_name_edit);
 		final Profile profile = ProfileFactory.getProfile(this);
-		profileName.setText(Utils.getProfileName(profile));
+		profileName.setText(Utils.getProfileName(profile, this));
 
 		AlertDialog ad = new AlertDialog.Builder(this)
 				.setTitle(R.string.change_name)
@@ -978,7 +978,7 @@ public class SSHTunnel extends PreferenceActivity implements
 								ed.commit();
 
 								profileListPreference.setSummary(Utils
-										.getProfileName(profile));
+										.getProfileName(profile, SSHTunnel.this));
 
 								profileList = ProfileFactory
 										.loadFromDao(SSHTunnel.this);

@@ -5,7 +5,6 @@ import java.util.Map;
 
 import org.sshtunnel.R;
 import org.sshtunnel.SSHTunnel;
-import org.sshtunnel.SSHTunnelContext;
 import org.sshtunnel.db.Profile;
 import org.sshtunnel.db.ProfileFactory;
 
@@ -23,9 +22,9 @@ public class Utils {
 
 	public static final String SERVICE_NAME = "org.sshtunnel.SSHTunnelService";
 
-	public static String getProfileName(Profile profile) {
+	public static String getProfileName(Profile profile, Context context) {
 		if (profile.getName() == null || profile.getName().equals("")) {
-			return SSHTunnelContext.getAppContext().getString(R.string.profile_base) + " "
+			return context.getString(R.string.profile_base) + " "
 					+ profile.getId();
 		}
 		return profile.getName();
