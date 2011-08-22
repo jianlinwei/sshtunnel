@@ -74,37 +74,6 @@ public class ConnectivityBroadcastReceiver extends BroadcastReceiver {
 		SharedPreferences settings = PreferenceManager
 				.getDefaultSharedPreferences(context);
 
-		boolean isMarketEnable = settings.getBoolean("isMarketEnable", false);
-
-		if (isMarketEnable) {
-			TelephonyManager tm = (TelephonyManager) context
-					.getSystemService(Context.TELEPHONY_SERVICE);
-			String countryCode = tm.getSimCountryIso();
-
-			try {
-				if (countryCode != null) {
-					Log.d(TAG, "Location: " + countryCode);
-					if (countryCode.toLowerCase().equals("cn")) {
-						String command = "setprop gsm.sim.operator.numeric 31026\n"
-								+ "setprop gsm.operator.numeric 31026\n"
-								+ "setprop gsm.sim.operator.iso-country us\n"
-								+ "setprop gsm.operator.iso-country us\n"
-								+ "chmod 777 /data/data/com.android.vending/shared_prefs\n"
-								+ "chmod 666 /data/data/com.android.vending/shared_prefs/vending_preferences.xml\n"
-								+ "setpref com.android.vending vending_preferences boolean metadata_paid_apps_enabled true\n"
-								+ "chmod 660 /data/data/com.android.vending/shared_prefs/vending_preferences.xml\n"
-								+ "chmod 771 /data/data/com.android.vending/shared_prefs\n"
-								+ "setown com.android.vending /data/data/com.android.vending/shared_prefs/vending_preferences.xml\n"
-								+ "kill $(ps | grep vending | tr -s  ' ' | cut -d ' ' -f2)\n"
-								+ "rm -rf /data/data/com.android.vending/cache/*\n";
-						SSHTunnel.runRootCommand(command);
-					}
-				}
-			} catch (Exception e) {
-				// Nothing
-			}
-		}
-
 		if (SSHTunnelService.isConnecting)
 			return;
 		

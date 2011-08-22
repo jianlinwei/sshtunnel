@@ -53,8 +53,9 @@
 			android:title="@string/auto_set_proxy" android:summary="@string/auto_set_proxy_summary"></CheckBoxPreference>
 		<Preference android:key="proxyedApps" android:title="@string/proxyed_apps"
 			android:summary="@string/proxyed_apps_summary"></Preference>
-		<CheckBoxPreference android:title="@string/enable_market"
-			android:summary="@string/enable_market_summary" android:key="isMarketEnable"></CheckBoxPreference>
+			
+		<CheckBoxPreference android:title="@string/enable_dnsproxy"
+			android:summary="@string/enable_dnsproxy_summary" android:key="isDNSProxy"></CheckBoxPreference>
 
 	</PreferenceCategory>
 

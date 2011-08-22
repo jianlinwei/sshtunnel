@@ -131,6 +131,7 @@ public class ProfileFactory {
 				Constraints.IS_AUTO_SETPROXY, false);
 		profile.isSocks = settings.getBoolean(Constraints.IS_SOCKS, false);
 		profile.isGFWList = settings.getBoolean(Constraints.IS_GFW_LIST, false);
+		profile.isDNSProxy = settings.getBoolean(Constraints.IS_DNS_PROXY, false);
 
 		try {
 			profile.port = Integer.valueOf(settings.getString(Constraints.PORT,
@@ -204,6 +205,7 @@ public class ProfileFactory {
 		ed.putBoolean(Constraints.IS_AUTO_SETPROXY, profile.isAutoSetProxy);
 		ed.putBoolean(Constraints.IS_SOCKS, profile.isSocks);
 		ed.putBoolean(Constraints.IS_GFW_LIST, profile.isGFWList);
+		ed.putBoolean(Constraints.IS_DNS_PROXY, profile.isDNSProxy);
 
 		ed.commit();
 	}

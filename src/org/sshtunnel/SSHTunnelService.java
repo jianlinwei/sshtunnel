@@ -863,6 +863,8 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 				handler.sendEmptyMessage(MSG_CONNECT_START);
 				isConnecting = true;
 
+				enableDNSProxy = profile.isDNSProxy();
+				
 				try {
 					URL url = new URL("http://gae-ip-country.appspot.com/");
 					HttpURLConnection conn = (HttpURLConnection) url
@@ -881,7 +883,6 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 					}
 				} catch (Exception e) {
 					Log.d(TAG, "Cannot get country code");
-					enableDNSProxy = true;
 					// Nothing
 				}
 
