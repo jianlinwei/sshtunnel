@@ -66,6 +66,7 @@ public class Profile {
 		this.isAutoSetProxy = false;
 		this.isGFWList = false;
 		this.isSocks = false;
+		this.isDNSProxy = true;
 		this.keyPath = "/sdcard/sshtunnel/key";
 		this.ssid = "";
 		this.proxyedApps = "";
