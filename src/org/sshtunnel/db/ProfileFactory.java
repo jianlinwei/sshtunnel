@@ -3,6 +3,7 @@ package org.sshtunnel.db;
 import java.sql.SQLException;
 import java.util.List;
 
+import org.sshtunnel.SSHTunnelContext;
 import org.sshtunnel.utils.Constraints;
 
 import android.content.Context;
@@ -22,10 +23,13 @@ public class ProfileFactory {
 
 	static {
 		OpenHelperManager.setOpenHelperClass(DatabaseHelper.class);
+		if (helper == null) {
+			helper = ((DatabaseHelper) OpenHelperManager
+					.getHelper(SSHTunnelContext.getAppContext()));
+		}
 	}
 
-	public static boolean delFromDao(Context ctx) {
-		initHelper(ctx);
+	public static boolean delFromDao() {
 		try {
 			Dao<Profile, Integer> profileDao = helper.getProfileDao();
 			int result = profileDao.delete(profile);
@@ -38,25 +42,18 @@ public class ProfileFactory {
 		}
 	}
 
-	public static Profile getProfile(Context ctx) {
-		initHelper(ctx);
+	public static Profile getProfile() {
 		if (profile == null) {
-			initProfile(ctx);
+			initProfile();
 		}
-		loadFromPreference(ctx);
+		loadFromPreference();
 		return profile;
 	}
 
-	private static void initHelper(Context ctx) {
-		if (helper == null) {
-			helper = ((DatabaseHelper) OpenHelperManager.getHelper(ctx));
-		}
-	}
-
-	private static void initProfile(Context ctx) {
+	private static void initProfile() {
 
 		SharedPreferences settings = PreferenceManager
-				.getDefaultSharedPreferences(ctx);
+				.getDefaultSharedPreferences(SSHTunnelContext.getAppContext());
 
 		int id = settings.getInt(Constraints.ID, -1);
 
@@ -69,20 +66,20 @@ public class ProfileFactory {
 			} catch (SQLException e) {
 				Log.e(TAG, "Cannot open DAO");
 			}
-			if (profile == null)
-				profile = new Profile();
-			saveToPreference(ctx);
-		} else
+		} else {
 			try {
 				Dao<Profile, Integer> profileDao = helper.getProfileDao();
 				profile = profileDao.queryForId(id);
 			} catch (SQLException e) {
 				Log.e(TAG, "Cannot open DAO");
 			}
+		}
+		if (profile == null)
+			profile = new Profile();
+		saveToPreference();
 	}
 
-	public static List<Profile> loadFromDao(Context ctx) {
-		initHelper(ctx);
+	public static List<Profile> loadFromDao() {
 		try {
 			Dao<Profile, Integer> profileDao = helper.getProfileDao();
 			List<Profile> list = profileDao.queryForAll();
@@ -93,8 +90,7 @@ public class ProfileFactory {
 		return null;
 	}
 
-	public static void loadFromDaoToPreference(Context ctx, int profileId) {
-		initHelper(ctx);
+	public static void loadFromDaoToPreference(int profileId) {
 		try {
 			Dao<Profile, Integer> profileDao = helper.getProfileDao();
 			profile = profileDao.queryForId(profileId);
@@ -102,15 +98,13 @@ public class ProfileFactory {
 			Log.e(TAG, "Cannot open DAO");
 			return;
 		}
-		saveToPreference(ctx);
+		saveToPreference();
 	}
 
-	public static void loadFromPreference(Context ctx) {
-
-		initHelper(ctx);
+	public static void loadFromPreference() {
 
 		SharedPreferences settings = PreferenceManager
-				.getDefaultSharedPreferences(ctx);
+				.getDefaultSharedPreferences(SSHTunnelContext.getAppContext());
 
 		profile.name = settings.getString(Constraints.NAME, "");
 		profile.host = settings.getString(Constraints.HOST, "");
@@ -131,7 +125,6 @@ public class ProfileFactory {
 				Constraints.IS_AUTO_SETPROXY, false);
 		profile.isSocks = settings.getBoolean(Constraints.IS_SOCKS, false);
 		profile.isGFWList = settings.getBoolean(Constraints.IS_GFW_LIST, false);
-		profile.isDNSProxy = settings.getBoolean(Constraints.IS_DNS_PROXY, false);
 
 		try {
 			profile.port = Integer.valueOf(settings.getString(Constraints.PORT,
@@ -146,11 +139,10 @@ public class ProfileFactory {
 			return;
 		}
 
-		saveToDao(ctx);
+		saveToDao();
 	}
 
-	public static Profile loadProfileFromDao(Context ctx, int profileId) {
-		initHelper(ctx);
+	public static Profile loadProfileFromDao(int profileId) {
 		try {
 			Dao<Profile, Integer> profileDao = helper.getProfileDao();
 			Profile profile = profileDao.queryForId(profileId);
@@ -161,14 +153,12 @@ public class ProfileFactory {
 		return null;
 	}
 
-	public static void newProfile(Context ctx) {
-		initHelper(ctx);
+	public static void newProfile() {
 		profile = new Profile();
-		saveToDao(ctx);
+		saveToDao();
 	}
 
-	public static void saveToDao(Context ctx) {
-		initHelper(ctx);
+	public static void saveToDao() {
 		try {
 			Dao<Profile, Integer> profileDao = helper.getProfileDao();
 			profileDao.createOrUpdate(profile);
@@ -177,9 +167,9 @@ public class ProfileFactory {
 		}
 	}
 
-	public static void saveToPreference(Context ctx) {
+	public static void saveToPreference() {
 		SharedPreferences settings = PreferenceManager
-				.getDefaultSharedPreferences(ctx);
+				.getDefaultSharedPreferences(SSHTunnelContext.getAppContext());
 
 		Editor ed = settings.edit();
 		ed = settings.edit();
@@ -205,7 +195,6 @@ public class ProfileFactory {
 		ed.putBoolean(Constraints.IS_AUTO_SETPROXY, profile.isAutoSetProxy);
 		ed.putBoolean(Constraints.IS_SOCKS, profile.isSocks);
 		ed.putBoolean(Constraints.IS_GFW_LIST, profile.isGFWList);
-		ed.putBoolean(Constraints.IS_DNS_PROXY, profile.isDNSProxy);
 
 		ed.commit();
 	}

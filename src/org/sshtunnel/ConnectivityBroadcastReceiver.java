@@ -82,17 +82,17 @@ public class ConnectivityBroadcastReceiver extends BroadcastReceiver {
 				.getSystemService(Context.CONNECTIVITY_SERVICE);
 		NetworkInfo networkInfo = manager.getActiveNetworkInfo();
 		if (networkInfo == null) {
-			if (Utils.isWorked(context)) {
+			if (Utils.isWorked()) {
 				context.stopService(new Intent(context, SSHTunnelService.class));
 			}
 		}
 
 		// Save current settings first
-		ProfileFactory.getProfile(context);
-		ProfileFactory.loadFromPreference(context);
+		ProfileFactory.getProfile();
+		ProfileFactory.loadFromPreference();
 
 		String curSSID = null;
-		List<Profile> profileList = ProfileFactory.loadFromDao(context);
+		List<Profile> profileList = ProfileFactory.loadFromDao();
 		int profileId = -1;
 
 		// Test on each profile
@@ -108,7 +108,7 @@ public class ConnectivityBroadcastReceiver extends BroadcastReceiver {
 		}
 
 		if (curSSID != null && profileId != -1) {
-			if (!Utils.isWorked(context)) {
+			if (!Utils.isWorked()) {
 
 				Editor ed = settings.edit();
 				ed.putString("lastSSID", curSSID);
@@ -122,7 +122,7 @@ public class ConnectivityBroadcastReceiver extends BroadcastReceiver {
 					}
 				}
 		
-				Utils.notifyConnect(context);
+				Utils.notifyConnect();
 
 				Intent it = new Intent(context, SSHTunnelService.class);
 				Bundle bundle = new Bundle();

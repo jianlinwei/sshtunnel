@@ -678,7 +678,7 @@ public class DNSServer implements WrapServer {
 			srvSocket = null;
 		}
 
-		if (Utils.isWorked(context)) {
+		if (Utils.isWorked()) {
 			try {
 				context.stopService(new Intent(context, SSHTunnelService.class));
 			} catch (Exception e) {

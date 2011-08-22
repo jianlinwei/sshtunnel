@@ -5,6 +5,7 @@ import java.util.Map;
 
 import org.sshtunnel.R;
 import org.sshtunnel.SSHTunnel;
+import org.sshtunnel.SSHTunnelContext;
 import org.sshtunnel.db.Profile;
 import org.sshtunnel.db.ProfileFactory;
 
@@ -22,16 +23,16 @@ public class Utils {
 
 	public static final String SERVICE_NAME = "org.sshtunnel.SSHTunnelService";
 
-	public static String getProfileName(Profile profile, Context context) {
+	public static String getProfileName(Profile profile) {
 		if (profile.getName() == null || profile.getName().equals("")) {
-			return context.getString(R.string.profile_base) + " "
+			return SSHTunnelContext.getAppContext().getString(R.string.profile_base) + " "
 					+ profile.getId();
 		}
 		return profile.getName();
 	}
 
-	public static boolean isWorked(Context context) {
-		ActivityManager myManager = (ActivityManager) context
+	public static boolean isWorked() {
+		ActivityManager myManager = (ActivityManager) SSHTunnelContext.getAppContext()
 				.getSystemService(Context.ACTIVITY_SERVICE);
 		ArrayList<RunningServiceInfo> runningService = (ArrayList<RunningServiceInfo>) myManager
 				.getRunningServices(30);
@@ -44,7 +45,8 @@ public class Utils {
 		return false;
 	}
 
-	public static void notifyConnect(Context context) {
+	public static void notifyConnect() {
+		Context context = SSHTunnelContext.getAppContext();
 		NotificationManager notificationManager = (NotificationManager) context
 				.getSystemService(Context.NOTIFICATION_SERVICE);
 		Notification notification = new Notification();
@@ -61,66 +63,5 @@ public class Utils {
 				context.getString(R.string.app_name),
 				context.getString(R.string.auto_connecting), pendIntent);
 		notificationManager.notify(1, notification);
-	}
-
-	public static void updateProfiles(Context context) {
-		SharedPreferences settings = PreferenceManager
-				.getDefaultSharedPreferences(context);
-
-		// Store current settings first
-		ProfileFactory.loadFromPreference(context);
-
-		// Load all profiles
-		String[] mProfileValues = settings.getString("profileValues", "")
-				.split("\\|");
-		
-		// Check if needs to update
-		Map<String,?> preferences = settings.getAll();
-		
-		boolean hasOldEdition = false;
-		boolean hasNewEdition = false;
-		
-		for(String p : preferences.keySet()) {
-			if (p.contains("1.5."))
-				hasNewEdition = true;
-			else if (p.contains("1.4.") || p.contains("1.3."))
-				hasOldEdition = true;
-		}
-		
-		if (hasNewEdition || !hasOldEdition)
-			return;
-
-		// Test on each profile
-		for (String p : mProfileValues) {
-
-			if (p.equals("0"))
-				continue;
-
-			String profileString = settings.getString(p, "");
-			String[] st = profileString.split("\\|");
-
-			ProfileFactory.newProfile(context);
-			Profile profile = ProfileFactory.getProfile(context);
-
-			profile.setName(settings.getString("profile" + p, ""));
-
-			// tricks for old editions
-
-			try {
-				profile.setHost(st[0]);
-				profile.setPort(Integer.valueOf(st[1]));
-				profile.setUser(st[2]);
-				profile.setPassword(st[3]);
-				profile.setSocks(st[4].equals("true") ? true : false);
-				profile.setLocalPort(Integer.valueOf(st[5]));
-				profile.setRemoteAddress(st[6]);
-				profile.setRemotePort(Integer.valueOf(st[7]));
-			} catch (Exception ignore) {
-				// Ignore all exceptions
-			}
-			
-			ProfileFactory.saveToDao(context);
-
-		}
 	}
 }
