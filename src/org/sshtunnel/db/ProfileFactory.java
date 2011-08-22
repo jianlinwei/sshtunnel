@@ -131,7 +131,7 @@ public class ProfileFactory {
 				Constraints.IS_AUTO_SETPROXY, false);
 		profile.isSocks = settings.getBoolean(Constraints.IS_SOCKS, false);
 		profile.isGFWList = settings.getBoolean(Constraints.IS_GFW_LIST, false);
-		profile.isDNSProxy = settings.getBoolean(Constraints.IS_DNS_PROXY, false);
+		profile.isDNSProxy = settings.getBoolean(Constraints.IS_DNS_PROXY, true);
 
 		try {
 			profile.port = Integer.valueOf(settings.getString(Constraints.PORT,
