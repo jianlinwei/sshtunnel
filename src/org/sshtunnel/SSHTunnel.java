@@ -162,6 +162,7 @@ public class SSHTunnel extends PreferenceActivity implements
 	private CheckBoxPreference isAutoSetProxyCheck;
 	private CheckBoxPreference isSocksCheck;
 	private CheckBoxPreference isGFWListCheck;
+	private CheckBoxPreference isDNSProxyCheck;
 
 	private ListPreference profileListPreference;
 
@@ -283,6 +284,7 @@ public class SSHTunnel extends PreferenceActivity implements
 		isAutoConnectCheck.setEnabled(false);
 		isAutoReconnectCheck.setEnabled(false);
 		isGFWListCheck.setEnabled(false);
+		isDNSProxyCheck.setEnabled(false);
 	}
 
 	private void enableAll() {
@@ -309,6 +311,7 @@ public class SSHTunnel extends PreferenceActivity implements
 		isSocksCheck.setEnabled(true);
 		isAutoConnectCheck.setEnabled(true);
 		isAutoReconnectCheck.setEnabled(true);
+		isDNSProxyCheck.setEnabled(true);
 	}
 
 	private String getVersionName() {
@@ -406,6 +409,7 @@ public class SSHTunnel extends PreferenceActivity implements
 		isAutoConnectCheck = (CheckBoxPreference) findPreference("isAutoConnect");
 		isAutoReconnectCheck = (CheckBoxPreference) findPreference("isAutoReconnect");
 		isGFWListCheck = (CheckBoxPreference) findPreference("isGFWList");
+		isDNSProxyCheck = (CheckBoxPreference) findPreference("isDNSProxy");
 
 		registerReceiver(ssidReceiver, new IntentFilter(
 				android.net.ConnectivityManager.CONNECTIVITY_ACTION));
@@ -702,6 +706,9 @@ public class SSHTunnel extends PreferenceActivity implements
         portText.setText(Integer.toString(profile.getPort()));
         localPortText.setText(Integer.toString(profile.getLocalPort()));
         remotePortText.setText(Integer.toString(profile.getRemotePort()));
+        
+        isAutoReconnectCheck.setChecked(profile.isAutoReconnect());
+        isDNSProxyCheck.setChecked(profile.isDNSProxy());
 	}
 
 	@Override
@@ -762,34 +769,6 @@ public class SSHTunnel extends PreferenceActivity implements
 					pd = null;
 				}
 				isRunningCheck.setEnabled(true);
-			}
-		}
-
-		if (key.equals("isMarketEnable")) {
-			if (settings.getBoolean("isMarketEnable", false)) {
-				TelephonyManager tm = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
-				String countryCode = tm.getSimCountryIso();
-
-				try {
-					Log.d(TAG, "Location: " + countryCode);
-					if (countryCode.toLowerCase().equals("cn")) {
-						String command = "setprop gsm.sim.operator.numeric 31026\n"
-								+ "setprop gsm.operator.numeric 31026\n"
-								+ "setprop gsm.sim.operator.iso-country us\n"
-								+ "setprop gsm.operator.iso-country us\n"
-								+ "chmod 777 /data/data/com.android.vending/shared_prefs\n"
-								+ "chmod 666 /data/data/com.android.vending/shared_prefs/vending_preferences.xml\n"
-								+ "setpref com.android.vending vending_preferences boolean metadata_paid_apps_enabled true\n"
-								+ "chmod 660 /data/data/com.android.vending/shared_prefs/vending_preferences.xml\n"
-								+ "chmod 771 /data/data/com.android.vending/shared_prefs\n"
-								+ "setown com.android.vending /data/data/com.android.vending/shared_prefs/vending_preferences.xml\n"
-								+ "kill $(ps | grep vending | tr -s  ' ' | cut -d ' ' -f2)\n"
-								+ "rm -rf /data/data/com.android.vending/cache/*\n";
-						runRootCommand(command);
-					}
-				} catch (Exception e) {
-					// Nothing
-				}
 			}
 		}
 
