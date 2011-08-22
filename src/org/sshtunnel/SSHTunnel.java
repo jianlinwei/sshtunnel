@@ -615,7 +615,7 @@ public class SSHTunnel extends PreferenceActivity implements
 			proxyedApps.setEnabled(false);
 		} else {
 			isAutoSetProxyCheck.setEnabled(true);
-			if (settings.getBoolean("isGlobalProxy", false))
+			if (settings.getBoolean("isAutoSetProxy", false))
 				proxyedApps.setEnabled(false);
 			else
 				proxyedApps.setEnabled(true);
@@ -628,11 +628,6 @@ public class SSHTunnel extends PreferenceActivity implements
 			remotePortText.setEnabled(true);
 			remoteAddressText.setEnabled(true);
 		}
-		
-		if (settings.getBoolean("isGlobalProxy", false))
-			proxyedApps.setEnabled(false);
-		else
-			proxyedApps.setEnabled(true);
 
 		Editor edit = settings.edit();
 
@@ -818,7 +813,7 @@ public class SSHTunnel extends PreferenceActivity implements
 			} else {
 				isGFWListCheck.setChecked(false);
 				isAutoSetProxyCheck.setEnabled(true);
-				if (settings.getBoolean("isGlobalProxy", false))
+				if (settings.getBoolean("isAutoSetProxy", false))
 					proxyedApps.setEnabled(false);
 				else
 					proxyedApps.setEnabled(true);
