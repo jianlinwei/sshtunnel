@@ -69,7 +69,7 @@ public class Utils {
 				.getDefaultSharedPreferences(context);
 
 		// Store current settings first
-		ProfileFactory.loadFromPreference();
+		ProfileFactory.loadFromPreference(context);
 
 		// Load all profiles
 		String[] mProfileValues = settings.getString("profileValues", "")
@@ -100,8 +100,8 @@ public class Utils {
 			String profileString = settings.getString(p, "");
 			String[] st = profileString.split("\\|");
 
-			ProfileFactory.newProfile();
-			Profile profile = ProfileFactory.getProfile();
+			ProfileFactory.newProfile(context);
+			Profile profile = ProfileFactory.getProfile(context);
 
 			profile.setName(settings.getString("profile" + p, ""));
 
@@ -120,7 +120,7 @@ public class Utils {
 				// Ignore all exceptions
 			}
 			
-			ProfileFactory.saveToDao();
+			ProfileFactory.saveToDao(context);
 
 		}
 	}

@@ -852,7 +852,7 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 
 		Bundle bundle = intent.getExtras();
 		int id = bundle.getInt(Constraints.ID);
-		profile = ProfileFactory.loadProfileFromDao(id);
+		profile = ProfileFactory.loadProfileFromDao(this, id);
 		
 		Log.d(TAG, profile.toString());
 
