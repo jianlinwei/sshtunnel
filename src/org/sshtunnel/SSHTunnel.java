@@ -691,6 +691,18 @@ public class SSHTunnel extends PreferenceActivity implements
 		getPreferenceScreen().getSharedPreferences()
 				.registerOnSharedPreferenceChangeListener(this);
 	}
+	
+	private void updateValue(Profile profile) {
+        hostText.setText(profile.getHost());
+        userText.setText(profile.getUser());
+        passwordText.setText(profile.getPassword());
+        remoteAddressText.setText(profile.getRemoteAddress());
+        ssidListPreference.setValue(profile.getSsid());
+        
+        portText.setText(Integer.toString(profile.getPort()));
+        localPortText.setText(Integer.toString(profile.getLocalPort()));
+        remotePortText.setText(Integer.toString(profile.getRemotePort()));
+	}
 
 	@Override
 	public void onSharedPreferenceChanged(SharedPreferences settings, String key) {
@@ -732,6 +744,7 @@ public class SSHTunnel extends PreferenceActivity implements
 				Profile profile = ProfileFactory.getProfile();
 				profileListPreference.setSummary(Utils.getProfileName(
 						profile));
+				updateValue(profile);
 
 			}
 		}
