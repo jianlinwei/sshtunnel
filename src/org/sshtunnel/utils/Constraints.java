@@ -18,6 +18,7 @@ public class Constraints {
 	public static final String IS_AUTO_SETPROXY = "isAutoSetProxy";
 	public static final String IS_GFW_LIST = "isGFWList";
 	public static final String IS_SOCKS = "isSocks";
+	public static final String IS_DNS_PROXY = "isDNSProxy";
 	
 	public static final String PORT = "port";
 	public static final String REMOTE_PORT = "remotePort";

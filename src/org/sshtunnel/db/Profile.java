@@ -44,6 +44,8 @@ public class Profile {
 	boolean isGFWList;
 	@DatabaseField
 	boolean isSocks;
+	@DatabaseField
+	boolean isDNSProxy;
 
 	Profile() {
 		// needed by ormlite
@@ -136,6 +138,10 @@ public class Profile {
 	public boolean isSocks() {
 		return isSocks;
 	}
+	
+	public boolean isDNSProxy() {
+		return isDNSProxy;
+	}
 
 	public void setAutoConnect(boolean isAutoConnect) {
 		this.isAutoConnect = isAutoConnect;
@@ -151,6 +157,10 @@ public class Profile {
 
 	public void setGFWList(boolean isGFWList) {
 		this.isGFWList = isGFWList;
+	}
+	
+	public void setDNSProxy(boolean isDNSProxy) {
+		this.isDNSProxy = isDNSProxy;
 	}
 
 	public void setHost(String host) {
