@@ -756,6 +756,10 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 	@Override
 	public void onDestroy() {
 
+		if (profile == null) {
+			return;
+		}
+		
 		isStopping = true;
 
 		stopForegroundCompat(1);
