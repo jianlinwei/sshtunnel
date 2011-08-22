@@ -628,6 +628,11 @@ public class SSHTunnel extends PreferenceActivity implements
 			remotePortText.setEnabled(true);
 			remoteAddressText.setEnabled(true);
 		}
+		
+		if (settings.getBoolean("isGlobalProxy", false))
+			proxyedApps.setEnabled(false);
+		else
+			proxyedApps.setEnabled(true);
 
 		Editor edit = settings.edit();
 
