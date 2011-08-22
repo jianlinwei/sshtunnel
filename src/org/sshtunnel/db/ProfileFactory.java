@@ -3,7 +3,6 @@ package org.sshtunnel.db;
 import java.sql.SQLException;
 import java.util.List;
 
-import org.sshtunnel.SSHTunnelContext;
 import org.sshtunnel.utils.Constraints;
 
 import android.content.Context;
@@ -23,12 +22,10 @@ public class ProfileFactory {
 
 	static {
 		OpenHelperManager.setOpenHelperClass(DatabaseHelper.class);
-		if (helper == null) {
-			helper = ((DatabaseHelper) OpenHelperManager.getHelper(SSHTunnelContext.getAppContext()));
-		}
 	}
 
-	public static boolean delFromDao() {
+	public static boolean delFromDao(Context ctx) {
+		initHelper(ctx);
 		try {
 			Dao<Profile, Integer> profileDao = helper.getProfileDao();
 			int result = profileDao.delete(profile);
@@ -41,18 +38,25 @@ public class ProfileFactory {
 		}
 	}
 
-	public static Profile getProfile() {
+	public static Profile getProfile(Context ctx) {
+		initHelper(ctx);
 		if (profile == null) {
-			initProfile();
+			initProfile(ctx);
 		}
-		loadFromPreference();
+		loadFromPreference(ctx);
 		return profile;
 	}
 
-	private static void initProfile() {
+	private static void initHelper(Context ctx) {
+		if (helper == null) {
+			helper = ((DatabaseHelper) OpenHelperManager.getHelper(ctx));
+		}
+	}
+
+	private static void initProfile(Context ctx) {
 
 		SharedPreferences settings = PreferenceManager
-				.getDefaultSharedPreferences(SSHTunnelContext.getAppContext());
+				.getDefaultSharedPreferences(ctx);
 
 		int id = settings.getInt(Constraints.ID, -1);
 
@@ -67,7 +71,7 @@ public class ProfileFactory {
 			}
 			if (profile == null)
 				profile = new Profile();
-			saveToPreference();
+			saveToPreference(ctx);
 		} else
 			try {
 				Dao<Profile, Integer> profileDao = helper.getProfileDao();
@@ -77,7 +81,8 @@ public class ProfileFactory {
 			}
 	}
 
-	public static List<Profile> loadFromDao() {
+	public static List<Profile> loadFromDao(Context ctx) {
+		initHelper(ctx);
 		try {
 			Dao<Profile, Integer> profileDao = helper.getProfileDao();
 			List<Profile> list = profileDao.queryForAll();
@@ -88,7 +93,8 @@ public class ProfileFactory {
 		return null;
 	}
 
-	public static void loadFromDaoToPreference(int profileId) {
+	public static void loadFromDaoToPreference(Context ctx, int profileId) {
+		initHelper(ctx);
 		try {
 			Dao<Profile, Integer> profileDao = helper.getProfileDao();
 			profile = profileDao.queryForId(profileId);
@@ -96,13 +102,15 @@ public class ProfileFactory {
 			Log.e(TAG, "Cannot open DAO");
 			return;
 		}
-		saveToPreference();
+		saveToPreference(ctx);
 	}
 
-	public static void loadFromPreference() {
+	public static void loadFromPreference(Context ctx) {
+
+		initHelper(ctx);
 
 		SharedPreferences settings = PreferenceManager
-				.getDefaultSharedPreferences(SSHTunnelContext.getAppContext());
+				.getDefaultSharedPreferences(ctx);
 
 		profile.name = settings.getString(Constraints.NAME, "");
 		profile.host = settings.getString(Constraints.HOST, "");
@@ -137,10 +145,11 @@ public class ProfileFactory {
 			return;
 		}
 
-		saveToDao();
+		saveToDao(ctx);
 	}
 
-	public static Profile loadProfileFromDao(int profileId) {
+	public static Profile loadProfileFromDao(Context ctx, int profileId) {
+		initHelper(ctx);
 		try {
 			Dao<Profile, Integer> profileDao = helper.getProfileDao();
 			Profile profile = profileDao.queryForId(profileId);
@@ -151,12 +160,14 @@ public class ProfileFactory {
 		return null;
 	}
 
-	public static void newProfile() {
+	public static void newProfile(Context ctx) {
+		initHelper(ctx);
 		profile = new Profile();
-		saveToDao();
+		saveToDao(ctx);
 	}
 
-	public static void saveToDao() {
+	public static void saveToDao(Context ctx) {
+		initHelper(ctx);
 		try {
 			Dao<Profile, Integer> profileDao = helper.getProfileDao();
 			profileDao.createOrUpdate(profile);
@@ -165,9 +176,9 @@ public class ProfileFactory {
 		}
 	}
 
-	public static void saveToPreference() {
+	public static void saveToPreference(Context ctx) {
 		SharedPreferences settings = PreferenceManager
-				.getDefaultSharedPreferences(SSHTunnelContext.getAppContext());
+				.getDefaultSharedPreferences(ctx);
 
 		Editor ed = settings.edit();
 		ed = settings.edit();

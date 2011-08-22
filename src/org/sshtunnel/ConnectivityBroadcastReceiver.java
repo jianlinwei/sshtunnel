@@ -119,11 +119,11 @@ public class ConnectivityBroadcastReceiver extends BroadcastReceiver {
 		}
 
 		// Save current settings first
-		ProfileFactory.getProfile();
-		ProfileFactory.loadFromPreference();
+		ProfileFactory.getProfile(context);
+		ProfileFactory.loadFromPreference(context);
 
 		String curSSID = null;
-		List<Profile> profileList = ProfileFactory.loadFromDao();
+		List<Profile> profileList = ProfileFactory.loadFromDao(context);
 		int profileId = -1;
 
 		// Test on each profile
