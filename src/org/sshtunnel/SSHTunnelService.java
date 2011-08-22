@@ -913,8 +913,6 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 
 				if (isOnline() && hostAddress != null && connect()) {
 
-					isConnecting = false;
-
 					// Connection and forward successful
 					finishConnection();
 
@@ -965,6 +963,8 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 					connected = false;
 					stopSelf();
 				}
+				
+				isConnecting = false;
 			}
 		}).start();
 	}
