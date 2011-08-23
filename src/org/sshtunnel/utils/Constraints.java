@@ -1,7 +1,7 @@
 package org.sshtunnel.utils;
 
 public class Constraints {
-	public static final String ID = "id";
+	public static final String ID = "profile_id";
 	
 	public static final String NAME = "name";
 	public static final String USER = "user";
@@ -19,6 +19,7 @@ public class Constraints {
 	public static final String IS_GFW_LIST = "isGFWList";
 	public static final String IS_SOCKS = "isSocks";
 	public static final String IS_DNS_PROXY = "isDNSProxy";
+	public static final String IS_ACTIVE = "isActive";
 	
 	public static final String PORT = "port";
 	public static final String REMOTE_PORT = "remotePort";
