@@ -3,8 +3,7 @@
 	<PreferenceCategory android:title="@string/function_cat">
 		<CheckBoxPreference android:key="isRunning"
 			android:title="@string/service_controller" android:summary="@string/service_summary"></CheckBoxPreference>
-		<ListPreference android:title="@string/profile"
-			android:key="profile"></ListPreference>
+		<ListPreference android:title="@string/profile" android:key="profile_id"></ListPreference>
 	</PreferenceCategory>
 	<PreferenceCategory android:title="@string/proxy_cat">
 		<EditTextPreference android:key="host"

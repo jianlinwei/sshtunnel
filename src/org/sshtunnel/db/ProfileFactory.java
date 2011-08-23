@@ -31,10 +31,20 @@ public class ProfileFactory {
 
 	public static boolean delFromDao() {
 		try {
+			
+			// try to remove profile from dao
 			Dao<Profile, Integer> profileDao = helper.getProfileDao();
 			int result = profileDao.delete(profile);
 			if (result != 1)
 				return false;
+			
+			// reload the current profile
+			profile = getActiveProfile();
+			
+			// ensure current profile is active
+			profile.setActive(true);
+			saveToDao();
+			
 			return true;
 		} catch (SQLException e) {
 			Log.e(TAG, "Cannot open DAO");
@@ -46,46 +56,43 @@ public class ProfileFactory {
 		if (profile == null) {
 			initProfile();
 		}
-		loadFromPreference();
 		return profile;
+	}
+
+	private static Profile getActiveProfile() {
+		try {
+			Dao<Profile, Integer> profileDao = helper.getProfileDao();
+			List<Profile> list = profileDao.queryForAll();
+			if (list == null || list.size() == 0)
+				return null;
+			Profile tmp = list.get(0);
+			for (Profile p : list) {
+				if (p.isActive) {
+					tmp = p;
+					break;
+				}
+			}
+			return tmp;
+		} catch (SQLException e) {
+			Log.e(TAG, "Cannot open DAO");
+			return null;
+		}
 	}
 
 	private static void initProfile() {
 
-		SharedPreferences settings = PreferenceManager
-				.getDefaultSharedPreferences(SSHTunnelContext.getAppContext());
+		profile = getActiveProfile();
 
-		int id = settings.getInt(Constraints.ID, -1);
-
-		if (id != -1) {
-			try {
-				Dao<Profile, Integer> profileDao = helper.getProfileDao();
-				profile = profileDao.queryForId(id);
-			} catch (SQLException e) {
-				Log.e(TAG, "Cannot open DAO");
-			}
-		}
-		
 		if (profile == null) {
-			try {
-				Dao<Profile, Integer> profileDao = helper.getProfileDao();
-				List<Profile> list = profileDao.queryForAll();
-				if (list.size() > 0)
-					profile = list.get(0);
-			} catch (SQLException e) {
-				Log.e(TAG, "Cannot open DAO");
-			}
-
-			if (profile == null) {
-				profile = new Profile();
-				saveToPreference();
-				saveToDao();
-			}
+			profile = new Profile();
+			profile.setActive(true);
+			saveToPreference();
+			saveToDao();
 		}
 
 	}
 
-	public static List<Profile> loadFromDao() {
+	public static List<Profile> loadAllProfilesFromDao() {
 		try {
 			Dao<Profile, Integer> profileDao = helper.getProfileDao();
 			List<Profile> list = profileDao.queryForAll();
@@ -95,16 +102,41 @@ public class ProfileFactory {
 		}
 		return null;
 	}
-
-	public static void loadFromDaoToPreference(int profileId) {
-		try {
-			Dao<Profile, Integer> profileDao = helper.getProfileDao();
-			profile = profileDao.queryForId(profileId);
-		} catch (SQLException e) {
-			Log.e(TAG, "Cannot open DAO");
+	
+	public static void switchToProfile(int profileId) {
+		
+		// current profile should not be null
+		if (profile == null)
 			return;
+		
+		// first save any changes to dao
+		saveToDao();
+		
+		// deactive all profiles
+		deactiveAllProfiles();
+		
+		// query for new profile
+		Profile tmp = loadProfileFromDao(profileId);
+		if (tmp != null) {
+			profile = tmp;
+			saveToPreference();
 		}
-		saveToPreference();
+		profile.setActive(true);
+		saveToDao();
+		
+	}
+	
+	private static void deactiveAllProfiles() {
+		List<Profile> list = loadAllProfilesFromDao();
+		for (Profile p : list) {
+			p.setActive(false);
+			try {
+				Dao<Profile, Integer> profileDao = helper.getProfileDao();
+				profileDao.createOrUpdate(p);
+			} catch (SQLException e) {
+				Log.e(TAG, "Cannot open DAO");
+			}
+		}
 	}
 
 	public static void loadFromPreference() {
@@ -131,7 +163,8 @@ public class ProfileFactory {
 				Constraints.IS_AUTO_SETPROXY, false);
 		profile.isSocks = settings.getBoolean(Constraints.IS_SOCKS, false);
 		profile.isGFWList = settings.getBoolean(Constraints.IS_GFW_LIST, false);
-		profile.isDNSProxy = settings.getBoolean(Constraints.IS_DNS_PROXY, true);
+		profile.isDNSProxy = settings
+				.getBoolean(Constraints.IS_DNS_PROXY, true);
 
 		try {
 			profile.port = Integer.valueOf(settings.getString(Constraints.PORT,
@@ -181,7 +214,6 @@ public class ProfileFactory {
 		Editor ed = settings.edit();
 		ed = settings.edit();
 
-		ed.putInt(Constraints.ID, profile.id);
 		ed.putString(Constraints.NAME, profile.name);
 		ed.putString(Constraints.HOST, profile.host);
 		ed.putString(Constraints.USER, profile.user);

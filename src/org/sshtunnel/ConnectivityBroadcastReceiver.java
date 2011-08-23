@@ -92,7 +92,7 @@ public class ConnectivityBroadcastReceiver extends BroadcastReceiver {
 		ProfileFactory.loadFromPreference();
 
 		String curSSID = null;
-		List<Profile> profileList = ProfileFactory.loadFromDao();
+		List<Profile> profileList = ProfileFactory.loadAllProfilesFromDao();
 		int profileId = -1;
 
 		// Test on each profile
