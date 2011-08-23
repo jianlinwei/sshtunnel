@@ -12,14 +12,17 @@ import com.j256.ormlite.support.ConnectionSource;
 import com.j256.ormlite.table.TableUtils;
 
 /**
- * Database helper class used to manage the creation and upgrading of your database. This class also usually provides
- * the DAOs used by the other classes.
+ * Database helper class used to manage the creation and upgrading of your
+ * database. This class also usually provides the DAOs used by the other
+ * classes.
  */
 public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
 
-	// name of the database file for your application -- change to something appropriate for your app
+	// name of the database file for your application -- change to something
+	// appropriate for your app
 	private static final String DATABASE_NAME = "sshtunnel.db";
-	// any time you make changes to your database objects, you may have to increase the database version
+	// any time you make changes to your database objects, you may have to
+	// increase the database version
 	private static final int DATABASE_VERSION = 3;
 
 	// the DAO object we use to access the SimpleData table
@@ -39,8 +42,8 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
 	}
 
 	/**
-	 * Returns the Database Access Object (DAO) for our SimpleData class. It will create it or just give the cached
-	 * value.
+	 * Returns the Database Access Object (DAO) for our SimpleData class. It
+	 * will create it or just give the cached value.
 	 */
 	public Dao<Profile, Integer> getProfileDao() throws SQLException {
 		if (profileDao == null) {
@@ -50,8 +53,9 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
 	}
 
 	/**
-	 * This is called when the database is first created. Usually you should call createTable statements here to create
-	 * the tables that will store your data.
+	 * This is called when the database is first created. Usually you should
+	 * call createTable statements here to create the tables that will store
+	 * your data.
 	 */
 	@Override
 	public void onCreate(SQLiteDatabase db, ConnectionSource connectionSource) {
@@ -65,19 +69,31 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
 	}
 
 	/**
-	 * This is called when your application is upgraded and it has a higher version number. This allows you to adjust
-	 * the various data to match the new version number.
+	 * This is called when your application is upgraded and it has a higher
+	 * version number. This allows you to adjust the various data to match the
+	 * new version number.
 	 */
 	@Override
-	public void onUpgrade(SQLiteDatabase db, ConnectionSource connectionSource, int oldVersion, int newVersion) {
-		try {
-			Log.i(DatabaseHelper.class.getName(), "onUpgrade");
-			TableUtils.dropTable(connectionSource, Profile.class, true);
-			// after we drop the old databases, we create the new ones
-			onCreate(db, connectionSource);
-		} catch (SQLException e) {
-			Log.e(DatabaseHelper.class.getName(), "Can't drop databases", e);
-			throw new RuntimeException(e);
+	public void onUpgrade(SQLiteDatabase db, ConnectionSource connectionSource,
+			int oldVersion, int newVersion) {
+		switch (oldVersion) {
+		case 1:
+			db.execSQL("ALTER TABLE Profile ADD COLUMN isDNSProxy BOOLEAN");
+			db.execSQL("UPDATE Profile SET isDNSProxy=1");
+		case 2:
+			db.execSQL("ALTER TABLE Profile ADD COLUMN isActive BOOLEAN");
+			db.execSQL("UPDATE Profile SET isActive=0");
+			break;
+		default:
+			try {
+				Log.i(DatabaseHelper.class.getName(), "onUpgrade");
+				TableUtils.dropTable(connectionSource, Profile.class, true);
+				// after we drop the old databases, we create the new ones
+				onCreate(db, connectionSource);
+			} catch (SQLException e) {
+				Log.e(DatabaseHelper.class.getName(), "Can't drop databases", e);
+				throw new RuntimeException(e);
+			}
 		}
 	}
 }
