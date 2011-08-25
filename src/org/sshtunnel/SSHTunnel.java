@@ -727,12 +727,14 @@ public class SSHTunnel extends PreferenceActivity implements
 				// refresh profile list
 				loadProfileList();
 				
+				// save the new profile to preference
+				ProfileFactory.saveToPreference();
+				
 				// switch profile again
 				Profile profile = ProfileFactory.getProfile();
 				String profileId = Integer.toString(profile
 						.getId());
 				Editor ed = settings.edit();
-				ed.putString(Constraints.NAME, profile.getName());
 				ed.putString(Constraints.ID, profileId);
 				ed.commit();
 
