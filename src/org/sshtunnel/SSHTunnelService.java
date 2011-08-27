@@ -284,13 +284,15 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 			Log.e(TAG, "Problem during handleAuthentication()", e);
 		}
 
-		try {
-			if (connection.authenticateWithKeyboardInteractive(profile.getUser(), this))
-				return;
-		} catch (Exception e) {
-			Log.d(TAG,
-					"Host does not support 'Keyboard-Interactive' authentication.");
-		}
+		// FIXME: Not works here
+		
+//		try {
+//			if (connection.authenticateWithKeyboardInteractive(profile.getUser(), this))
+//				return;
+//		} catch (Exception e) {
+//			Log.d(TAG,
+//					"Host does not support 'Keyboard-Interactive' authentication.");
+//		}
 	}
 
 	public boolean connect() {
