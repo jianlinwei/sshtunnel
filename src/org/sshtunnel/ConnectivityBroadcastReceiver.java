@@ -40,8 +40,10 @@ public class ConnectivityBroadcastReceiver extends BroadcastReceiver {
 			return null;
 		if (!networkInfo.getTypeName().equals("WIFI")) {
 			for (String item : ssids) {
-				if (item.equals("2G/3G"))
-					return "2G/3G";
+				if (item.equals(Constraints.WIFI_AND_3G))
+					return item;
+				if (item.equals(Constraints.ONLY_3G))
+					return item;
 			}
 			return null;
 		}
@@ -54,6 +56,10 @@ public class ConnectivityBroadcastReceiver extends BroadcastReceiver {
 		if (current == null || current.equals(""))
 			return null;
 		for (String item : ssids) {
+			if (item.equals(Constraints.WIFI_AND_3G))
+				return item;
+			if (item.equals(Constraints.ONLY_WIFI))
+				return item;
 			if (item.equals(current))
 				return item;
 		}

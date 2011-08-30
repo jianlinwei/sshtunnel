@@ -354,8 +354,10 @@ public class SSHTunnel extends PreferenceActivity implements
 		WifiManager wm = (WifiManager) this
 				.getSystemService(Context.WIFI_SERVICE);
 		List<WifiConfiguration> wcs = wm.getConfiguredNetworks();
-		String[] ssidEntries = new String[wcs.size() + 1];
-		ssidEntries[0] = "2G/3G";
+		String[] ssidEntries = new String[wcs.size() + 3];
+		ssidEntries[0] = Constraints.WIFI_AND_3G;
+		ssidEntries[1] = Constraints.ONLY_WIFI;
+		ssidEntries[2] = Constraints.ONLY_3G;
 		int n = 1;
 		for (WifiConfiguration wc : wcs) {
 			if (wc != null && wc.SSID != null)

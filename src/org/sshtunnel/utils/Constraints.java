@@ -27,4 +27,8 @@ public class Constraints {
 	
 	public static final String DEFAULT_KEY_PATH = "/sdcard/sshtunnel/key";
 	public static final String DEFAULT_REMOTE_ADDRESS = "127.0.0.1";
+	
+	public static final String ONLY_3G = "3G";
+	public static final String ONLY_WIFI = "WIFI";
+	public static final String WIFI_AND_3G = "WIFI/3G";
 }
