@@ -1,12 +1,10 @@
 package org.sshtunnel.db;
 
-import java.sql.SQLException;
 import java.util.List;
 
 import org.sshtunnel.SSHTunnelContext;
 import org.sshtunnel.utils.Constraints;
 
-import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.preference.PreferenceManager;
@@ -46,7 +44,7 @@ public class ProfileFactory {
 			saveToDao();
 			
 			return true;
-		} catch (SQLException e) {
+		} catch (Exception e) {
 			Log.e(TAG, "Cannot open DAO");
 			return false;
 		}
@@ -73,7 +71,7 @@ public class ProfileFactory {
 				}
 			}
 			return tmp;
-		} catch (SQLException e) {
+		} catch (Exception e) {
 			Log.e(TAG, "Cannot open DAO");
 			return null;
 		}
@@ -97,7 +95,7 @@ public class ProfileFactory {
 			Dao<Profile, Integer> profileDao = helper.getProfileDao();
 			List<Profile> list = profileDao.queryForAll();
 			return list;
-		} catch (SQLException e) {
+		} catch (Exception e) {
 			Log.e(TAG, "Cannot open DAO");
 		}
 		return null;
@@ -133,7 +131,7 @@ public class ProfileFactory {
 			try {
 				Dao<Profile, Integer> profileDao = helper.getProfileDao();
 				profileDao.createOrUpdate(p);
-			} catch (SQLException e) {
+			} catch (Exception e) {
 				Log.e(TAG, "Cannot open DAO");
 			}
 		}
@@ -187,7 +185,7 @@ public class ProfileFactory {
 			Dao<Profile, Integer> profileDao = helper.getProfileDao();
 			Profile profile = profileDao.queryForId(profileId);
 			return profile;
-		} catch (SQLException e) {
+		} catch (Exception e) {
 			Log.e(TAG, "Cannot open DAO");
 		}
 		return null;
@@ -202,7 +200,7 @@ public class ProfileFactory {
 		try {
 			Dao<Profile, Integer> profileDao = helper.getProfileDao();
 			profileDao.createOrUpdate(profile);
-		} catch (SQLException e) {
+		} catch (Exception e) {
 			Log.e(TAG, "Cannot open DAO");
 		}
 	}
