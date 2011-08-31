@@ -358,7 +358,7 @@ public class SSHTunnel extends PreferenceActivity implements
 		ssidEntries[0] = Constraints.WIFI_AND_3G;
 		ssidEntries[1] = Constraints.ONLY_WIFI;
 		ssidEntries[2] = Constraints.ONLY_3G;
-		int n = 1;
+		int n = 3;
 		for (WifiConfiguration wc : wcs) {
 			if (wc != null && wc.SSID != null)
 				ssidEntries[n++] = wc.SSID.replace("\"", "");
