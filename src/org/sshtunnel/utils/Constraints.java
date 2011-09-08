@@ -11,6 +11,7 @@ public class Constraints {
 	public static final String REMOTE_ADDRESS = "remoteAddress";
 	public static final String KEY_PATH = "keyPath";
 	public static final String PROXYED_APPS = "proxyedApps";
+	public static final String UPSTREAM_PROXY = "upstreamProxy";
 	
 	
 	public static final String IS_AUTO_RECONNECT = "isAutoReconnect";
@@ -20,6 +21,7 @@ public class Constraints {
 	public static final String IS_SOCKS = "isSocks";
 	public static final String IS_DNS_PROXY = "isDNSProxy";
 	public static final String IS_ACTIVE = "isActive";
+	public static final String IS_UPSTREAM_PROXY = "isUpstreamProxy";
 	
 	public static final String PORT = "port";
 	public static final String REMOTE_PORT = "remotePort";

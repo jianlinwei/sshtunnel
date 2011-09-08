@@ -121,6 +121,15 @@
 	</string>
 	<string name="proxyed_help">Select apps to use with SSHTunnel:</string>
 
+	<!-- settings proxyed apps category -->
+	<string name="upstream_proxy_cat">Upstream Proxy</string>
+	<string name="upstream_enable">Enable Upstream Proxy</string>
+	<string name="upstream_proxy">Proxy Address</string>
+	<string name="upstream_proxy_summary">The upstream proxy used for connecting to SSH
+		servers only supports http proxy. Input your proxy address like this:
+		user:password@host:port
+	</string>
+
 	<!-- menu bar category -->
 	<string name="recovery">Reset</string>
 	<string name="copy_rights">:\n\nSSHTunnel is an open source project

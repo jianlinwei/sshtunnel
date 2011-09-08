@@ -23,7 +23,7 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
 	private static final String DATABASE_NAME = "sshtunnel.db";
 	// any time you make changes to your database objects, you may have to
 	// increase the database version
-	private static final int DATABASE_VERSION = 3;
+	private static final int DATABASE_VERSION = 4;
 
 	// the DAO object we use to access the SimpleData table
 	private Dao<Profile, Integer> profileDao = null;
@@ -83,6 +83,12 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
 		case 2:
 			db.execSQL("ALTER TABLE Profile ADD COLUMN isActive BOOLEAN");
 			db.execSQL("UPDATE Profile SET isActive=0");
+			break;
+		case 3:
+			db.execSQL("ALTER TABLE Profile ADD COLUMN isUpstreamProxy BOOLEAN");
+			db.execSQL("UPDATE Profile SET isUpstreamProxy=0");
+			db.execSQL("ALTER TABLE Profile ADD COLUMN upstreamProxy VARCHAR");
+			db.execSQL("UPDATE Profile SET upstreamProxy=''");
 			break;
 		default:
 			try {

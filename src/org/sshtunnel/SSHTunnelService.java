@@ -86,8 +86,10 @@ import com.flurry.android.FlurryAgent;
 import com.trilead.ssh2.Connection;
 import com.trilead.ssh2.ConnectionMonitor;
 import com.trilead.ssh2.DynamicPortForwarder;
+import com.trilead.ssh2.HTTPProxyData;
 import com.trilead.ssh2.InteractiveCallback;
 import com.trilead.ssh2.LocalPortForwarder;
+import com.trilead.ssh2.ProxyData;
 
 public class SSHTunnelService extends Service implements InteractiveCallback,
 		ConnectionMonitor {
@@ -308,6 +310,9 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 
 		try {
 			connection = new Connection(profile.getHost(), profile.getPort());
+//			ProxyData pd = new HTTPProxyData(hostAddress, dnsPort);
+//			
+//			connection.setpro
 			connection.addConnectionMonitor(this);
 
 			/*
