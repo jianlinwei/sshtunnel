@@ -3,7 +3,8 @@
 	<PreferenceCategory android:title="@string/function_cat">
 		<CheckBoxPreference android:key="isRunning"
 			android:title="@string/service_controller" android:summary="@string/service_summary"></CheckBoxPreference>
-		<ListPreference android:title="@string/profile" android:key="profile_id"></ListPreference>
+		<ListPreference android:title="@string/profile"
+			android:key="profile_id"></ListPreference>
 	</PreferenceCategory>
 	<PreferenceCategory android:title="@string/proxy_cat">
 		<EditTextPreference android:key="host"
@@ -19,10 +20,7 @@
 		<EditTextPreference android:title="@string/password"
 			android:key="password" android:summary="@string/password_summary"
 			android:password="true"></EditTextPreference>
-		
-	</PreferenceCategory><PreferenceCategory android:title="@string/upstream_proxy_cat">
-		<CheckBoxPreference android:key="isUpstreamProxy" android:title="@string/upstream_enable"></CheckBoxPreference>
-		<EditTextPreference android:title="@string/upstream_proxy" android:summary="@string/upstream_proxy_summary" android:key="upstreamProxy"></EditTextPreference>
+
 	</PreferenceCategory>
 	<PreferenceCategory android:title="@string/port_cat">
 		<CheckBoxPreference android:summary="@string/socks_summary"
@@ -61,6 +59,13 @@
 			android:summary="@string/enable_dnsproxy_summary" android:key="isDNSProxy"
 			android:defaultValue="true"></CheckBoxPreference>
 
+	</PreferenceCategory>
+
+	<PreferenceCategory android:title="@string/upstream_proxy_cat">
+		<CheckBoxPreference android:key="isUpstreamProxy"
+			android:title="@string/upstream_enable"></CheckBoxPreference>
+		<EditTextPreference android:title="@string/upstream_proxy"
+			android:summary="@string/upstream_proxy_summary" android:key="upstreamProxy"></EditTextPreference>
 	</PreferenceCategory>
 
 	<PreferenceCategory android:title="@string/notif_cat">
