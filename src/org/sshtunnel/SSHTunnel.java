@@ -163,6 +163,7 @@ public class SSHTunnel extends PreferenceActivity implements
 	private CheckBoxPreference isSocksCheck;
 	private CheckBoxPreference isGFWListCheck;
 	private CheckBoxPreference isDNSProxyCheck;
+	private CheckBoxPreference isUpstreamProxyCheck;
 
 	private ListPreference profileListPreference;
 
@@ -173,6 +174,7 @@ public class SSHTunnel extends PreferenceActivity implements
 	private EditTextPreference localPortText;
 	private EditTextPreference remotePortText;
 	private EditTextPreference remoteAddressText;
+	private EditTextPreference upstreamProxyText;
 
 	private CheckBoxPreference isRunningCheck;
 

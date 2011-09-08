@@ -127,4 +127,12 @@
 	<string name="ssid_summary">在2G/3G网络或指定无线网SSID下自动连接
 	</string>
 
+	<!-- settings proxyed apps category -->
+	<string name="upstream_proxy_cat">上级代理</string>
+	<string name="upstream_enable">启用上级代理</string>
+	<string name="upstream_proxy">代理地址</string>
+	<string name="upstream_proxy_summary">设置此项目，以实现通过代理连接SSH服务器，仅支持HTTP代理。代理地址的填写格式如下：
+		用户名:密码@主机地址:端口
+	</string>
+
 </resources>

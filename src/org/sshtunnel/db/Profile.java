@@ -26,6 +26,8 @@ public class Profile {
 	String ssid;
 	@DatabaseField
 	String proxyedApps;
+	@DatabaseField
+	String upstreamProxy;
 	
 	@DatabaseField
 	int port;
@@ -48,6 +50,8 @@ public class Profile {
 	boolean isDNSProxy;
 	@DatabaseField
 	boolean isActive;
+	@DatabaseField
+	boolean isUpstreamProxy;
 
 	Profile() {
 		// needed by ormlite
@@ -69,9 +73,11 @@ public class Profile {
 		this.isGFWList = false;
 		this.isSocks = false;
 		this.isDNSProxy = true;
+		this.isUpstreamProxy = false;
 		this.keyPath = "/sdcard/sshtunnel/key";
 		this.ssid = "";
 		this.proxyedApps = "";
+		this.upstreamProxy = "";
 	}
 
 	public String getHost() {
@@ -121,6 +127,10 @@ public class Profile {
 	public String getUser() {
 		return user;
 	}
+	
+	public String getUpstreamProxy() {
+		return upstreamProxy;
+	}
 
 	public boolean isAutoConnect() {
 		return isAutoConnect;
@@ -149,6 +159,10 @@ public class Profile {
 	public boolean isActive() {
 		return isActive;
 	}
+	
+	public boolean isUpstreamProxy() {
+		return isUpstreamProxy;
+	}
 
 	public void setAutoConnect(boolean isAutoConnect) {
 		this.isAutoConnect = isAutoConnect;
@@ -172,6 +186,10 @@ public class Profile {
 	
 	public void setActive(boolean isActive) {
 		this.isActive = isActive;
+	}
+	
+	public void setIsUpstreamProxy(boolean isUpstreamProxy) {
+		this.isUpstreamProxy = isUpstreamProxy;
 	}
 
 	public void setHost(String host) {
@@ -224,6 +242,10 @@ public class Profile {
 
 	public void setUser(String user) {
 		this.user = user;
+	}
+	
+	public void setUpstreamProxy (String upstreamProxy) {
+		this.upstreamProxy = upstreamProxy;
 	}
 
 	@Override

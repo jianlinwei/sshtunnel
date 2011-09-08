@@ -152,6 +152,7 @@ public class ProfileFactory {
 		profile.proxyedApps = settings.getString(Constraints.PROXYED_APPS, "");
 		profile.keyPath = settings.getString(Constraints.KEY_PATH,
 				Constraints.DEFAULT_KEY_PATH);
+		profile.upstreamProxy = settings.getString(Constraints.UPSTREAM_PROXY, "");
 
 		profile.isAutoConnect = settings.getBoolean(
 				Constraints.IS_AUTO_CONNECT, false);
@@ -163,6 +164,7 @@ public class ProfileFactory {
 		profile.isGFWList = settings.getBoolean(Constraints.IS_GFW_LIST, false);
 		profile.isDNSProxy = settings
 				.getBoolean(Constraints.IS_DNS_PROXY, true);
+		profile.isUpstreamProxy = settings.getBoolean(Constraints.IS_UPSTREAM_PROXY, false);
 
 		try {
 			profile.port = Integer.valueOf(settings.getString(Constraints.PORT,
@@ -220,6 +222,7 @@ public class ProfileFactory {
 		ed.putString(Constraints.SSID, profile.ssid);
 		ed.putString(Constraints.KEY_PATH, profile.proxyedApps);
 		ed.putString(Constraints.KEY_PATH, profile.keyPath);
+		ed.putString(Constraints.UPSTREAM_PROXY, profile.upstreamProxy);
 
 		ed.putString(Constraints.PORT, Integer.toString(profile.port));
 		ed.putString(Constraints.LOCAL_PORT,
@@ -233,6 +236,7 @@ public class ProfileFactory {
 		ed.putBoolean(Constraints.IS_SOCKS, profile.isSocks);
 		ed.putBoolean(Constraints.IS_GFW_LIST, profile.isGFWList);
 		ed.putBoolean(Constraints.IS_DNS_PROXY, profile.isDNSProxy);
+		ed.putBoolean(Constraints.IS_UPSTREAM_PROXY, profile.isUpstreamProxy);
 
 		ed.commit();
 	}

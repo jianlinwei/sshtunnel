@@ -19,6 +19,10 @@
 		<EditTextPreference android:title="@string/password"
 			android:key="password" android:summary="@string/password_summary"
 			android:password="true"></EditTextPreference>
+		
+	</PreferenceCategory><PreferenceCategory android:title="@string/upstream_proxy_cat">
+		<CheckBoxPreference android:key="isUpstreamProxy" android:title="@string/upstream_enable"></CheckBoxPreference>
+		<EditTextPreference android:title="@string/upstream_proxy" android:summary="@string/upstream_proxy_summary" android:key="upstreamProxy"></EditTextPreference>
 	</PreferenceCategory>
 	<PreferenceCategory android:title="@string/port_cat">
 		<CheckBoxPreference android:summary="@string/socks_summary"
