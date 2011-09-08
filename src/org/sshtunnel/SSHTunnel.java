@@ -242,13 +242,13 @@ public class SSHTunnel extends PreferenceActivity implements
 			boolean result = ProfileFactory.delFromDao();
 			if (result == false)
 				Log.e(TAG, "del profile error");
-			
+
 			// refresh profile list
 			loadProfileList();
-			
+
 			// save the next profile to preference
 			ProfileFactory.saveToPreference();
-			
+
 			// switch to the last profile
 			Profile profile = ProfileFactory.getProfile();
 			int id = profile.getId();
@@ -257,7 +257,7 @@ public class SSHTunnel extends PreferenceActivity implements
 			Editor ed = settings.edit();
 			ed.putString(Constraints.ID, Integer.toString(id));
 			ed.commit();
-			
+
 			// change the profile list value
 			profileListPreference.setValue(Integer.toString(id));
 		}
@@ -286,6 +286,7 @@ public class SSHTunnel extends PreferenceActivity implements
 		proxyedApps.setEnabled(false);
 		profileListPreference.setEnabled(false);
 		ssidListPreference.setEnabled(false);
+		upstreamProxyText.setEnabled(false);
 
 		isSocksCheck.setEnabled(false);
 		isAutoSetProxyCheck.setEnabled(false);
@@ -293,6 +294,7 @@ public class SSHTunnel extends PreferenceActivity implements
 		isAutoReconnectCheck.setEnabled(false);
 		isGFWListCheck.setEnabled(false);
 		isDNSProxyCheck.setEnabled(false);
+		isUpstreamProxyCheck.setEnabled(false);
 	}
 
 	private void enableAll() {
@@ -313,6 +315,9 @@ public class SSHTunnel extends PreferenceActivity implements
 		if (isAutoConnectCheck.isChecked()) {
 			ssidListPreference.setEnabled(true);
 		}
+		if (isUpstreamProxyCheck.isChecked()) {
+			upstreamProxyText.setEnabled(true);
+		}
 
 		profileListPreference.setEnabled(true);
 		isGFWListCheck.setEnabled(true);
@@ -320,6 +325,7 @@ public class SSHTunnel extends PreferenceActivity implements
 		isAutoConnectCheck.setEnabled(true);
 		isAutoReconnectCheck.setEnabled(true);
 		isDNSProxyCheck.setEnabled(true);
+		isUpstreamProxyCheck.setEnabled(true);
 	}
 
 	private String getVersionName() {
@@ -374,7 +380,7 @@ public class SSHTunnel extends PreferenceActivity implements
 	private void loadProfileList() {
 
 		profileList = ProfileFactory.loadAllProfilesFromDao();
-		
+
 		String[] profileEntries = new String[profileList.size() + 1];
 		String[] profileValues = new String[profileList.size() + 1];
 		int index = 0;
@@ -405,6 +411,8 @@ public class SSHTunnel extends PreferenceActivity implements
 		localPortText = (EditTextPreference) findPreference("localPort");
 		remotePortText = (EditTextPreference) findPreference("remotePort");
 		remoteAddressText = (EditTextPreference) findPreference("remoteAddress");
+		upstreamProxyText = (EditTextPreference) findPreference("upstreamProxy");
+
 		proxyedApps = findPreference("proxyedApps");
 		profileListPreference = (ListPreference) findPreference("profile_id");
 		ssidListPreference = (ListPreferenceMultiSelect) findPreference("ssid");
@@ -416,6 +424,7 @@ public class SSHTunnel extends PreferenceActivity implements
 		isAutoReconnectCheck = (CheckBoxPreference) findPreference("isAutoReconnect");
 		isGFWListCheck = (CheckBoxPreference) findPreference("isGFWList");
 		isDNSProxyCheck = (CheckBoxPreference) findPreference("isDNSProxy");
+		isUpstreamProxyCheck = (CheckBoxPreference) findPreference("isUpstreamProxy");
 
 		registerReceiver(ssidReceiver, new IntentFilter(
 				android.net.ConnectivityManager.CONNECTIVITY_ACTION));
@@ -658,6 +667,12 @@ public class SSHTunnel extends PreferenceActivity implements
 			ssidListPreference.setEnabled(false);
 		}
 
+		if (settings.getBoolean("isUpstreamProxy", false)) {
+			upstreamProxyText.setEnabled(true);
+		} else {
+			upstreamProxyText.setEnabled(false);
+		}
+
 		if (settings.getBoolean("isRunning", false)) {
 			isRunningCheck.setChecked(true);
 			disableAll();
@@ -693,6 +708,10 @@ public class SSHTunnel extends PreferenceActivity implements
 		if (!settings.getString("remoteAddress", "").equals(""))
 			remoteAddressText.setSummary(settings.getString("remoteAddress",
 					getString(R.string.remote_port_summary)));
+		if (!settings.getString("upstreamProxy", "").equals(""))
+			upstreamProxyText.setSummary(settings.getString("upstreamProxy",
+					getString(R.string.upstream_proxy_summary)));
+		
 
 		// Set up a listener whenever a key changes
 		getPreferenceScreen().getSharedPreferences()
@@ -705,10 +724,12 @@ public class SSHTunnel extends PreferenceActivity implements
 		passwordText.setText(profile.getPassword());
 		remoteAddressText.setText(profile.getRemoteAddress());
 		ssidListPreference.setValue(profile.getSsid());
+		upstreamProxyText.setText(profile.getUpstreamProxy());
 
 		portText.setText(Integer.toString(profile.getPort()));
 		localPortText.setText(Integer.toString(profile.getLocalPort()));
 		remotePortText.setText(Integer.toString(profile.getRemotePort()));
+
 
 		isAutoReconnectCheck.setChecked(profile.isAutoReconnect());
 		isDNSProxyCheck.setChecked(profile.isDNSProxy());
@@ -727,17 +748,16 @@ public class SSHTunnel extends PreferenceActivity implements
 
 				// Create a new profile
 				ProfileFactory.newProfile();
-				
+
 				// refresh profile list
 				loadProfileList();
-				
+
 				// save the new profile to preference
 				ProfileFactory.saveToPreference();
-				
+
 				// switch profile again
 				Profile profile = ProfileFactory.getProfile();
-				String profileId = Integer.toString(profile
-						.getId());
+				String profileId = Integer.toString(profile.getId());
 				Editor ed = settings.edit();
 				ed.putString(Constraints.ID, profileId);
 				ed.commit();
@@ -755,7 +775,7 @@ public class SSHTunnel extends PreferenceActivity implements
 					profileList = ProfileFactory.loadAllProfilesFromDao();
 					profileId = profileList.get(0).getId();
 				}
-				
+
 				ProfileFactory.switchToProfile(profileId);
 
 				Profile profile = ProfileFactory.getProfile();
@@ -830,6 +850,16 @@ public class SSHTunnel extends PreferenceActivity implements
 			}
 		}
 
+		if (key.equals("isUpstreamProxy")) {
+			if (settings.getBoolean("isUpstreamProxy", false)) {
+				isUpstreamProxyCheck.setChecked(true);
+				upstreamProxyText.setEnabled(true);
+			} else {
+				isUpstreamProxyCheck.setChecked(false);
+				upstreamProxyText.setEnabled(false);
+			}
+		}
+
 		if (key.equals("isRunning")) {
 			if (settings.getBoolean("isRunning", false)) {
 				disableAll();
@@ -884,6 +914,13 @@ public class SSHTunnel extends PreferenceActivity implements
 				passwordText.setSummary("*********");
 			else
 				passwordText.setSummary(getString(R.string.password_summary));
+		else if (key.equals("upstreamProxy"))
+			if (settings.getString("upstreamProxy", "").equals(""))
+				upstreamProxyText
+						.setSummary(getString(R.string.upstream_proxy_summary));
+			else
+				upstreamProxyText.setSummary(settings.getString(
+						"upstreamProxy", ""));
 	}
 
 	@Override
@@ -995,7 +1032,7 @@ public class SSHTunnel extends PreferenceActivity implements
 
 			return false;
 		}
-		
+
 		Profile profile = ProfileFactory.getProfile();
 		ProfileFactory.loadFromPreference();
 

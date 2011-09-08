@@ -53,6 +53,7 @@ import java.net.URL;
 import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.FormatterClosedException;
 
 import org.sshtunnel.db.Profile;
 import org.sshtunnel.db.ProfileFactory;
@@ -109,13 +110,13 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 	private static final int MSG_DISCONNECT_FINISH = 4;
 
 	private SharedPreferences settings = null;
-	
+
 	private Profile profile;
 
 	private String hostAddress = null;
 
 	private boolean enableDNSProxy = true;
-	
+
 	private LocalPortForwarder lpf = null;
 	private LocalPortForwarder dnspf = null;
 	private DynamicPortForwarder dpf = null;
@@ -265,7 +266,8 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 			if (f.exists())
 				if (profile.getPassword().equals(""))
 					profile.setPassword(null);
-			if (connection.authenticateWithPublicKey(profile.getUser(), f, profile.getPassword())) {
+			if (connection.authenticateWithPublicKey(profile.getUser(), f,
+					profile.getPassword())) {
 				Log.d(TAG, "Authenticate with public key");
 				return;
 			}
@@ -274,7 +276,8 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 		}
 
 		try {
-			if (connection.authenticateWithPassword(profile.getUser(), profile.getPassword())) {
+			if (connection.authenticateWithPassword(profile.getUser(),
+					profile.getPassword())) {
 				Log.d(TAG, "Authenticate with password");
 				return;
 			}
@@ -287,14 +290,15 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 		}
 
 		// FIXME: Not works here
-		
-//		try {
-//			if (connection.authenticateWithKeyboardInteractive(profile.getUser(), this))
-//				return;
-//		} catch (Exception e) {
-//			Log.d(TAG,
-//					"Host does not support 'Keyboard-Interactive' authentication.");
-//		}
+
+		// try {
+		// if (connection.authenticateWithKeyboardInteractive(profile.getUser(),
+		// this))
+		// return;
+		// } catch (Exception e) {
+		// Log.d(TAG,
+		// "Host does not support 'Keyboard-Interactive' authentication.");
+		// }
 	}
 
 	public boolean connect() {
@@ -310,9 +314,43 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 
 		try {
 			connection = new Connection(profile.getHost(), profile.getPort());
-//			ProxyData pd = new HTTPProxyData(hostAddress, dnsPort);
-//			
-//			connection.setpro
+			if (profile.isUpstreamProxy()) {
+				try {
+
+					if (profile.getUpstreamProxy() == null
+							|| profile.getUpstreamProxy().equals(""))
+						throw new Exception();
+					String[] proxyInfo = profile.getUpstreamProxy().split("@");
+					if (proxyInfo.length == 1) {
+						String[] hostInfo = proxyInfo[0].split(":");
+						if (hostInfo.length != 2)
+							throw new Exception();
+						ProxyData pd = new HTTPProxyData(hostInfo[0],
+								Integer.valueOf(hostInfo[1]));
+						connection.setProxyData(pd);
+					} else if (proxyInfo.length == 2) {
+						String[] userInfo = proxyInfo[0].split(":");
+						if (userInfo.length != 2)
+							throw new Exception();
+						String[] hostInfo = proxyInfo[1].split(":");
+						if (hostInfo.length != 2)
+							throw new Exception();
+						ProxyData pd = new HTTPProxyData(hostInfo[0],
+								Integer.valueOf(hostInfo[1]), userInfo[0],
+								userInfo[1]);
+						connection.setProxyData(pd);
+					} else {
+						throw new Exception();
+					}
+				} catch (Exception e) {
+					reason = getString(R.string.upstream_format_error);
+					return false;
+				}
+			}
+
+			// ProxyData pd = new HTTPProxyData(hostAddress, dnsPort);
+			//
+			// connection.setpro
 			connection.addConnectionMonitor(this);
 
 			/*
@@ -462,10 +500,12 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 					80);
 
 			if (profile.isSocks()) {
-				dpf = connection.createDynamicPortForwarder(profile.getLocalPort());
+				dpf = connection.createDynamicPortForwarder(profile
+						.getLocalPort());
 			} else {
-				lpf = connection.createLocalPortForwarder(profile.getLocalPort(),
-						profile.getRemoteAddress(), profile.getRemotePort());
+				lpf = connection.createLocalPortForwarder(
+						profile.getLocalPort(), profile.getRemoteAddress(),
+						profile.getRemotePort());
 			}
 
 		} catch (Exception e) {
@@ -486,9 +526,11 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 		Log.e(TAG, "Forward Successful");
 
 		if (profile.isSocks())
-			runRootCommand(BASE + "proxy_socks.sh start " + profile.getLocalPort());
+			runRootCommand(BASE + "proxy_socks.sh start "
+					+ profile.getLocalPort());
 		else
-			runRootCommand(BASE + "proxy_http.sh start " + profile.getLocalPort());
+			runRootCommand(BASE + "proxy_http.sh start "
+					+ profile.getLocalPort());
 
 		StringBuffer cmd = new StringBuffer();
 
@@ -523,12 +565,11 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 					: CMD_IPTABLES_DNAT_ADD_SOCKS);
 
 		if (profile.isGFWList()) {
-			String[] gfw_list = getResources().getStringArray(
-					R.array.gfw_list);
+			String[] gfw_list = getResources().getStringArray(R.array.gfw_list);
 
 			for (String item : gfw_list) {
-				cmd.append(BASE + "iptables -t nat -A OUTPUT -p tcp -d "
-						+ item + " -j SSHTUNNEL\n");
+				cmd.append(BASE + "iptables -t nat -A OUTPUT -p tcp -d " + item
+						+ " -j SSHTUNNEL\n");
 			}
 		} else if (profile.isAutoSetProxy()) {
 			cmd.append(BASE + "iptables -t nat -A OUTPUT -p tcp -j SSHTUNNEL\n");
@@ -536,7 +577,8 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 
 			// for proxy specified apps
 			if (apps == null || apps.length <= 0)
-				apps = AppManager.getProxyedApps(this, profile.getProxyedApps());
+				apps = AppManager
+						.getProxyedApps(this, profile.getProxyedApps());
 
 			for (int i = 0; i < apps.length; i++) {
 				if (apps[i].isProxyed()) {
@@ -576,12 +618,11 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 		}
 
 		if (profile.isGFWList()) {
-			String[] gfw_list = getResources().getStringArray(
-					R.array.gfw_list);
+			String[] gfw_list = getResources().getStringArray(R.array.gfw_list);
 
 			for (String item : gfw_list) {
-				cmd.append(BASE + "iptables -t nat -D OUTPUT -p tcp -d "
-						+ item + " -j SSHTUNNEL\n");
+				cmd.append(BASE + "iptables -t nat -D OUTPUT -p tcp -d " + item
+						+ " -j SSHTUNNEL\n");
 			}
 		} else if (profile.isAutoSetProxy()) {
 			cmd.append(BASE + "iptables -t nat -D OUTPUT -p tcp -j SSHTUNNEL\n");
@@ -589,7 +630,8 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 
 			// for proxy specified apps
 			if (apps == null || apps.length <= 0)
-				apps = AppManager.getProxyedApps(this, profile.getProxyedApps());
+				apps = AppManager
+						.getProxyedApps(this, profile.getProxyedApps());
 
 			for (int i = 0; i < apps.length; i++) {
 				if (apps[i].isProxyed()) {
@@ -669,12 +711,12 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 		else
 			notification.defaults |= Notification.DEFAULT_SOUND;
 
-		if (settings.getBoolean("settings_key_notif_icon", true)){
+		if (settings.getBoolean("settings_key_notif_icon", true)) {
 			notification.icon = R.drawable.ic_stat;
 		} else {
 			notification.icon = R.drawable.ic_stat_trans;
 		}
-		
+
 		if (settings.getBoolean("settings_key_notif_vibrate", false)) {
 			long[] vibrate = { 0, 1000, 500, 1000, 500, 1000 };
 			notification.vibrate = vibrate;
@@ -766,11 +808,11 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 		if (profile == null) {
 			return;
 		}
-		
+
 		isStopping = true;
 
 		stopForegroundCompat(1);
-		
+
 		FlurryAgent.onEndSession(this);
 
 		// if (stateChanged != null) {
@@ -856,7 +898,7 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 	public void onStart(Intent intent, int startId) {
 
 		super.onStart(intent, startId);
-		
+
 		FlurryAgent.onStartSession(this, "MBY4JL18FQK1DPEJ5Y39");
 
 		Log.d(TAG, "Service Start");
@@ -864,7 +906,7 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 		Bundle bundle = intent.getExtras();
 		int id = bundle.getInt(Constraints.ID);
 		profile = ProfileFactory.loadProfileFromDao(id);
-		
+
 		Log.d(TAG, profile.toString());
 
 		new Thread(new Runnable() {
@@ -875,7 +917,7 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 				isConnecting = true;
 
 				enableDNSProxy = profile.isDNSProxy();
-				
+
 				try {
 					URL url = new URL("http://gae-ip-country.appspot.com/");
 					HttpURLConnection conn = (HttpURLConnection) url
@@ -910,7 +952,8 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 				}
 
 				try {
-					hostAddress = InetAddress.getByName(profile.getHost()).getHostAddress();
+					hostAddress = InetAddress.getByName(profile.getHost())
+							.getHostAddress();
 				} catch (UnknownHostException e) {
 					hostAddress = null;
 				}
@@ -970,7 +1013,7 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 					connected = false;
 					stopSelf();
 				}
-				
+
 				isConnecting = false;
 			}
 		}).start();

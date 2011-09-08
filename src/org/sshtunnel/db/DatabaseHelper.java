@@ -83,7 +83,6 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
 		case 2:
 			db.execSQL("ALTER TABLE Profile ADD COLUMN isActive BOOLEAN");
 			db.execSQL("UPDATE Profile SET isActive=0");
-			break;
 		case 3:
 			db.execSQL("ALTER TABLE Profile ADD COLUMN isUpstreamProxy BOOLEAN");
 			db.execSQL("UPDATE Profile SET isUpstreamProxy=0");

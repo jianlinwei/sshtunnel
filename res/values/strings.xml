@@ -129,6 +129,7 @@
 		servers only supports http proxy. Input your proxy address like this:
 		user:password@host:port
 	</string>
+	<string name="upstream_format_error">The upstream proxy is incorrect</string>
 
 	<!-- menu bar category -->
 	<string name="recovery">Reset</string>
