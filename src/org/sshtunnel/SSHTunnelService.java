@@ -53,7 +53,6 @@ import java.net.URL;
 import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.FormatterClosedException;
 
 import org.sshtunnel.db.Profile;
 import org.sshtunnel.db.ProfileFactory;
@@ -90,7 +89,6 @@ import com.trilead.ssh2.DynamicPortForwarder;
 import com.trilead.ssh2.HTTPProxyData;
 import com.trilead.ssh2.InteractiveCallback;
 import com.trilead.ssh2.LocalPortForwarder;
-import com.trilead.ssh2.ProxyData;
 
 public class SSHTunnelService extends Service implements InteractiveCallback,
 		ConnectionMonitor {
@@ -114,6 +112,7 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 	private Profile profile;
 
 	private String hostAddress = null;
+	private HTTPProxyData proxyData = null;
 
 	private boolean enableDNSProxy = true;
 
@@ -325,9 +324,9 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 						String[] hostInfo = proxyInfo[0].split(":");
 						if (hostInfo.length != 2)
 							throw new Exception();
-						ProxyData pd = new HTTPProxyData(hostInfo[0],
+						proxyData = new HTTPProxyData(hostInfo[0],
 								Integer.valueOf(hostInfo[1]));
-						connection.setProxyData(pd);
+						connection.setProxyData(proxyData);
 					} else if (proxyInfo.length == 2) {
 						String[] userInfo = proxyInfo[0].split(":");
 						if (userInfo.length != 2)
@@ -335,10 +334,10 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 						String[] hostInfo = proxyInfo[1].split(":");
 						if (hostInfo.length != 2)
 							throw new Exception();
-						ProxyData pd = new HTTPProxyData(hostInfo[0],
+						proxyData = new HTTPProxyData(hostInfo[0],
 								Integer.valueOf(hostInfo[1]), userInfo[0],
 								userInfo[1]);
-						connection.setProxyData(pd);
+						connection.setProxyData(proxyData);
 					} else {
 						throw new Exception();
 					}
@@ -591,6 +590,15 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 
 		String rules = cmd.toString();
 
+		if (proxyData != null) {
+			try {
+				hostAddress = InetAddress.getByName(proxyData.proxyHost)
+						.getHostAddress();
+			} catch (UnknownHostException e) {
+				hostAddress = null;
+			}
+		}
+		
 		if (hostAddress != null)
 			rules = rules.replace("--dport 443",
 					"! -d " + hostAddress + " --dport 443").replace(
@@ -772,7 +780,6 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 
 	@Override
 	public IBinder onBind(Intent intent) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
