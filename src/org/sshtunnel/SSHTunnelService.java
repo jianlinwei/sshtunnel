@@ -310,46 +310,69 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 		// } catch (IOException e) {
 		// Log.e(TAG, "Could not enable compression!", e);
 		// }
+		
+		// initialize the upstream proxy
+		if (profile.isUpstreamProxy()) {
+			try {
+				if (profile.getUpstreamProxy() == null
+						|| profile.getUpstreamProxy().equals(""))
+					throw new Exception();
+				String[] proxyInfo = profile.getUpstreamProxy().split("@");
+				if (proxyInfo.length == 1) {
+					String[] hostInfo = proxyInfo[0].split(":");
+					if (hostInfo.length != 2)
+						throw new Exception();
+					proxyData = new HTTPProxyData(hostInfo[0],
+							Integer.valueOf(hostInfo[1]));
+				} else if (proxyInfo.length == 2) {
+					String[] userInfo = proxyInfo[0].split(":");
+					if (userInfo.length != 2)
+						throw new Exception();
+					String[] hostInfo = proxyInfo[1].split(":");
+					if (hostInfo.length != 2)
+						throw new Exception();
+					proxyData = new HTTPProxyData(hostInfo[0],
+							Integer.valueOf(hostInfo[1]), userInfo[0],
+							userInfo[1]);
+				} else {
+					throw new Exception();
+				}
+			} catch (Exception e) {
+				reason = getString(R.string.upstream_format_error);
+				return false;
+			}
+		}
+		
+		// get the host ip address
+		if (proxyData != null) {
+			try {
+				hostAddress = InetAddress.getByName(proxyData.proxyHost)
+						.getHostAddress();
+			} catch (UnknownHostException e) {
+				hostAddress = null;
+			}
+		} else {
+			try {
+				hostAddress = InetAddress.getByName(profile.getHost())
+						.getHostAddress();
+			} catch (UnknownHostException e) {
+				hostAddress = null;
+			}
+		}
+		
+		// fail to connect if the dns lookup failed
+		if (hostAddress == null) {
+			reason = getString(R.string.fail_to_connect);
+			return false;
+		}
 
+		// begin to connect
 		try {
 			connection = new Connection(profile.getHost(), profile.getPort());
-			if (profile.isUpstreamProxy()) {
-				try {
 
-					if (profile.getUpstreamProxy() == null
-							|| profile.getUpstreamProxy().equals(""))
-						throw new Exception();
-					String[] proxyInfo = profile.getUpstreamProxy().split("@");
-					if (proxyInfo.length == 1) {
-						String[] hostInfo = proxyInfo[0].split(":");
-						if (hostInfo.length != 2)
-							throw new Exception();
-						proxyData = new HTTPProxyData(hostInfo[0],
-								Integer.valueOf(hostInfo[1]));
-						connection.setProxyData(proxyData);
-					} else if (proxyInfo.length == 2) {
-						String[] userInfo = proxyInfo[0].split(":");
-						if (userInfo.length != 2)
-							throw new Exception();
-						String[] hostInfo = proxyInfo[1].split(":");
-						if (hostInfo.length != 2)
-							throw new Exception();
-						proxyData = new HTTPProxyData(hostInfo[0],
-								Integer.valueOf(hostInfo[1]), userInfo[0],
-								userInfo[1]);
-						connection.setProxyData(proxyData);
-					} else {
-						throw new Exception();
-					}
-				} catch (Exception e) {
-					reason = getString(R.string.upstream_format_error);
-					return false;
-				}
-			}
+			if (proxyData != null)
+				connection.setProxyData(proxyData);
 
-			// ProxyData pd = new HTTPProxyData(hostAddress, dnsPort);
-			//
-			// connection.setpro
 			connection.addConnectionMonitor(this);
 
 			/*
@@ -589,15 +612,6 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 		}
 
 		String rules = cmd.toString();
-
-		if (proxyData != null) {
-			try {
-				hostAddress = InetAddress.getByName(proxyData.proxyHost)
-						.getHostAddress();
-			} catch (UnknownHostException e) {
-				hostAddress = null;
-			}
-		}
 		
 		if (hostAddress != null)
 			rules = rules.replace("--dport 443",
@@ -958,17 +972,10 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 					}
 				}
 
-				try {
-					hostAddress = InetAddress.getByName(profile.getHost())
-							.getHostAddress();
-				} catch (UnknownHostException e) {
-					hostAddress = null;
-				}
-
 				// Test for Redirect Support
 				initHasRedirectSupported();
 
-				if (isOnline() && hostAddress != null && connect()) {
+				if (isOnline() && connect()) {
 
 					// Connection and forward successful
 					finishConnection();
