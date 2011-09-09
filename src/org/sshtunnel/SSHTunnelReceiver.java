@@ -55,6 +55,7 @@ public class SSHTunnelReceiver {
 	public void onReceive(Context context, Intent intent, boolean enable) {
 
 		Profile profile = ProfileFactory.getProfile();
+		ProfileFactory.loadFromPreference();
 		
 		if (profile == null) {
 			Log.e(TAG, "Exception when get preferences");

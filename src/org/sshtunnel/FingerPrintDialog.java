@@ -5,7 +5,7 @@ import org.sshtunnel.db.ProfileFactory;
 import org.sshtunnel.utils.Constraints;
 
 import android.app.Activity;
-import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
@@ -31,7 +31,15 @@ public class FingerPrintDialog extends Activity {
 		fingerPrintType = bundle.getString(Constraints.FINGER_PRINT_TYPE);
 		int profileId = bundle.getInt(Constraints.ID);
 
-		profile = ProfileFactory.loadProfileFromDao(profileId);
+		SharedPreferences settings = PreferenceManager
+				.getDefaultSharedPreferences(this);
+		String id = settings.getString(Constraints.ID, "-1");
+
+		if (id.equals(Integer.toString(profileId))) {
+			profile = ProfileFactory.getProfile();
+		} else {
+			profile = ProfileFactory.loadProfileFromDao(profileId);
+		}
 
 		TextView warningText = (TextView) findViewById(R.id.warning_text);
 		Button acceptButton = (Button) findViewById(R.id.accept);
@@ -80,7 +88,7 @@ public class FingerPrintDialog extends Activity {
 	private void deny() {
 		finish();
 	}
-	
+
 	@Override
 	public void onDestroy() {
 		Editor ed = PreferenceManager.getDefaultSharedPreferences(this).edit();
