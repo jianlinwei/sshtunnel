@@ -198,7 +198,7 @@
 	<string name="finger_print_first">The server\'s host key is not cached. You have no
 		guarantee that the server is the computer you think it is.
 	</string>
-	<string name="finger_print">The key fingerprint is </string>
+	<string name="finger_print"> key fingerprint is </string>
 	<string name="finger_print_accept">Accept</string>
 	<string name="finger_print_deny">Deny</string>
 

@@ -645,6 +645,13 @@ public class SSHTunnel extends PreferenceActivity implements
 			remoteAddressText.setEnabled(true);
 		}
 
+		if (settings.getBoolean("isConnecting", false)) {
+			if (pd != null) {
+				pd.dismiss();
+				pd = null;
+			}
+		}
+
 		Editor edit = settings.edit();
 
 		if (Utils.isWorked()) {
@@ -711,7 +718,6 @@ public class SSHTunnel extends PreferenceActivity implements
 		if (!settings.getString("upstreamProxy", "").equals(""))
 			upstreamProxyText.setSummary(settings.getString("upstreamProxy",
 					getString(R.string.upstream_proxy_summary)));
-		
 
 		// Set up a listener whenever a key changes
 		getPreferenceScreen().getSharedPreferences()
@@ -729,7 +735,6 @@ public class SSHTunnel extends PreferenceActivity implements
 		portText.setText(Integer.toString(profile.getPort()));
 		localPortText.setText(Integer.toString(profile.getLocalPort()));
 		remotePortText.setText(Integer.toString(profile.getRemotePort()));
-
 
 		isAutoReconnectCheck.setChecked(profile.isAutoReconnect());
 		isDNSProxyCheck.setChecked(profile.isDNSProxy());

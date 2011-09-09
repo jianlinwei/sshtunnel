@@ -185,8 +185,8 @@ public class ProfileFactory {
 	public static Profile loadProfileFromDao(int profileId) {
 		try {
 			Dao<Profile, Integer> profileDao = helper.getProfileDao();
-			Profile profile = profileDao.queryForId(profileId);
-			return profile;
+			Profile mProfile = profileDao.queryForId(profileId);
+			return mProfile;
 		} catch (Exception e) {
 			Log.e(TAG, "Cannot open DAO");
 		}

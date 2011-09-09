@@ -19,6 +19,8 @@
 		</activity>
 		<activity android:name=".AppManager" android:label="@string/app_name" />
 		<activity android:name=".FileChooser" android:label="@string/app_name" />
+		<activity android:name=".FingerPrintDialog" android:label="@string/finger_print_alert_title"
+			android:theme="@android:style/Theme.Dialog" />
 
 		<service android:enabled="true" android:name=".SSHTunnelService" />
 

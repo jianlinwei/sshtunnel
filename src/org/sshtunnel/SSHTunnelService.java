@@ -125,7 +125,6 @@ public class SSHTunnelService extends Service implements ServerHostKeyVerifier,
 	private int dnsPort = 0;
 	public volatile static boolean isConnecting = false;
 	public volatile static boolean isStopping = false;
-	private volatile boolean hostKeyAccepted = false;
 
 	private final static int AUTH_TRIES = 1;
 	private final static int RECONNECT_TRIES = 2;
@@ -1137,6 +1136,9 @@ public class SSHTunnelService extends Service implements ServerHostKeyVerifier,
 				fingerPrintStatus = Constraints.FINGER_PRINT_CHANGED;
 
 		}
+		
+		Log.e(TAG, "Finger Print: " + profile.getFingerPrint());
+		Log.e(TAG, "Finger Print Type: " + profile.getFingerPrintType());
 
 		Bundle bundle = new Bundle();
 		bundle.putInt(Constraints.ID, profile.getId());

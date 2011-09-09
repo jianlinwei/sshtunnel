@@ -6,7 +6,9 @@ import org.sshtunnel.utils.Constraints;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.SharedPreferences.Editor;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
@@ -60,7 +62,8 @@ public class FingerPrintDialog extends Activity {
 			break;
 		}
 
-		sb.append(getString(R.string.finger_print) + fingerPrint);
+		sb.append(fingerPrintType + " " + getString(R.string.finger_print)
+				+ "\n" + fingerPrint);
 
 		warningText.setText(sb.toString());
 	}
@@ -76,6 +79,14 @@ public class FingerPrintDialog extends Activity {
 
 	private void deny() {
 		finish();
+	}
+	
+	@Override
+	public void onDestroy() {
+		Editor ed = PreferenceManager.getDefaultSharedPreferences(this).edit();
+		ed.putBoolean("isConnecting", false);
+		ed.commit();
+		super.onDestroy();
 	}
 
 }
