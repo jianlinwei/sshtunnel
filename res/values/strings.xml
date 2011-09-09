@@ -188,4 +188,18 @@
 		<item>202.248.0.0/16</item>
 	</string-array>
 
+	<!-- Finger Print Check -->
+	<string name="finger_print_alert_title">WARNING - POTENTIAL SECURITY BREACH!</string>
+	<string name="finger_print_changed">The server\'s host key does not match the one
+		SSHTunnel has cached, means that SSHTunnel has connected to the SSH
+		server before, knows what its host key should be, but has found a
+		different one.
+	</string>
+	<string name="finger_print_first">The server\'s host key is not cached. You have no
+		guarantee that the server is the computer you think it is.
+	</string>
+	<string name="finger_print">The key fingerprint is </string>
+	<string name="finger_print_accept">Accept</string>
+	<string name="finger_print_deny">Deny</string>
+
 </resources>

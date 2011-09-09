@@ -88,10 +88,12 @@ import com.trilead.ssh2.ConnectionMonitor;
 import com.trilead.ssh2.DynamicPortForwarder;
 import com.trilead.ssh2.HTTPProxyData;
 import com.trilead.ssh2.InteractiveCallback;
+import com.trilead.ssh2.KnownHosts;
 import com.trilead.ssh2.LocalPortForwarder;
+import com.trilead.ssh2.ServerHostKeyVerifier;
 
-public class SSHTunnelService extends Service implements InteractiveCallback,
-		ConnectionMonitor {
+public class SSHTunnelService extends Service implements ServerHostKeyVerifier,
+		InteractiveCallback, ConnectionMonitor {
 
 	// ConnectivityBroadcastReceiver stateChanged = null;
 
@@ -123,6 +125,7 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 	private int dnsPort = 0;
 	public volatile static boolean isConnecting = false;
 	public volatile static boolean isStopping = false;
+	private volatile boolean hostKeyAccepted = false;
 
 	private final static int AUTH_TRIES = 1;
 	private final static int RECONNECT_TRIES = 2;
@@ -250,6 +253,18 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 		}
 	};
 
+	final Handler hostKeyHandler = new Handler() {
+		@Override
+		public void handleMessage(Message msg) {
+			Bundle bundle = msg.getData();
+			Intent i = new Intent(SSHTunnelService.this,
+					FingerPrintDialog.class);
+			i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+			i.putExtras(bundle);
+			startActivity(i);
+		}
+	};
+
 	private void authenticate() {
 		try {
 			if (connection.authenticateWithNone(profile.getUser())) {
@@ -310,7 +325,7 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 		// } catch (IOException e) {
 		// Log.e(TAG, "Could not enable compression!", e);
 		// }
-		
+
 		// initialize the upstream proxy
 		if (profile.isUpstreamProxy()) {
 			try {
@@ -342,7 +357,7 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 				return false;
 			}
 		}
-		
+
 		// get the host ip address
 		if (proxyData != null) {
 			try {
@@ -359,7 +374,7 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 				hostAddress = null;
 			}
 		}
-		
+
 		// fail to connect if the dns lookup failed
 		if (hostAddress == null) {
 			reason = getString(R.string.fail_to_connect);
@@ -390,7 +405,7 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 			 * Logger.enabled = true; Logger.logger = logger;
 			 */
 
-			connection.connect(null, 10 * 1000, 20 * 1000);
+			connection.connect(this, 10 * 1000, 20 * 1000);
 			connected = true;
 
 		} catch (Exception e) {
@@ -612,7 +627,7 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 		}
 
 		String rules = cmd.toString();
-		
+
 		if (hostAddress != null)
 			rules = rules.replace("--dport 443",
 					"! -d " + hostAddress + " --dport 443").replace(
@@ -1097,5 +1112,43 @@ public class SSHTunnelService extends Service implements InteractiveCallback,
 				getString(R.string.reconnect_fail),
 				Notification.FLAG_AUTO_CANCEL);
 		stopSelf();
+	}
+
+	@Override
+	public boolean verifyServerHostKey(String hostname, int port,
+			String serverHostKeyAlgorithm, byte[] serverHostKey)
+			throws Exception {
+
+		String fingerPrint = KnownHosts.createHexFingerprint(
+				serverHostKeyAlgorithm, serverHostKey);
+		int fingerPrintStatus = Constraints.FINGER_PRINT_CHANGED;
+
+		if (profile.getFingerPrintType() == null
+				|| profile.getFingerPrintType().equals("")) {
+			fingerPrintStatus = Constraints.FINGER_PRINT_INIITIALIZE;
+
+		} else {
+
+			if (profile.getFingerPrintType().equals(serverHostKeyAlgorithm)
+					&& profile.getFingerPrint() != null
+					&& profile.getFingerPrint().equals(fingerPrint))
+				return true;
+			else
+				fingerPrintStatus = Constraints.FINGER_PRINT_CHANGED;
+
+		}
+
+		Bundle bundle = new Bundle();
+		bundle.putInt(Constraints.ID, profile.getId());
+		bundle.putInt(Constraints.FINGER_PRINT_STATUS, fingerPrintStatus);
+		bundle.putString(Constraints.FINGER_PRINT, fingerPrint);
+		bundle.putString(Constraints.FINGER_PRINT_TYPE, serverHostKeyAlgorithm);
+
+		Message msg = new Message();
+		msg.setData(bundle);
+
+		hostKeyHandler.sendMessage(msg);
+
+		return false;
 	}
 }
