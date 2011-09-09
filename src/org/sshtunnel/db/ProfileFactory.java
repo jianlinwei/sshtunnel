@@ -206,6 +206,15 @@ public class ProfileFactory {
 			Log.e(TAG, "Cannot open DAO");
 		}
 	}
+	
+	public static void saveToDao(Profile mProfile) {
+		try {
+			Dao<Profile, Integer> profileDao = helper.getProfileDao();
+			profileDao.createOrUpdate(mProfile);
+		} catch (Exception e) {
+			Log.e(TAG, "Cannot open DAO");
+		}
+	}
 
 	public static void saveToPreference() {
 		SharedPreferences settings = PreferenceManager

@@ -33,4 +33,12 @@ public class Constraints {
 	public static final String ONLY_3G = "3G";
 	public static final String ONLY_WIFI = "WIFI";
 	public static final String WIFI_AND_3G = "WIFI/3G";
+	
+	public static final String FINGER_PRINT_STATUS = "fingerPrintStatus";
+	public static final String FINGER_PRINT_TYPE = "fingerPrintType";
+	public static final String FINGER_PRINT = "fingerPrint";
+	public static final int FINGER_PRINT_INIITIALIZE = 1;
+	public static final int FINGER_PRINT_CHANGED = 2;
+	public static final int FINGER_PRINT_ACCEPT = 3;
+	public static final int FINGER_PRINT_DENY = 4;
 }

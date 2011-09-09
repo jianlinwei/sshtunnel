@@ -28,6 +28,10 @@ public class Profile {
 	String proxyedApps;
 	@DatabaseField
 	String upstreamProxy;
+	@DatabaseField
+	String fingerPrint;
+	@DatabaseField
+	String fingerPrintType;
 	
 	@DatabaseField
 	int port;
@@ -78,6 +82,8 @@ public class Profile {
 		this.ssid = "";
 		this.proxyedApps = "";
 		this.upstreamProxy = "";
+		this.fingerPrint = "";
+		this.fingerPrintType = "";
 	}
 
 	public String getHost() {
@@ -246,6 +252,23 @@ public class Profile {
 	
 	public void setUpstreamProxy (String upstreamProxy) {
 		this.upstreamProxy = upstreamProxy;
+	}
+	
+	
+	public String getFingerPrint() {
+		return fingerPrint;
+	}
+
+	public void setFingerPrint(String fingerPrint) {
+		this.fingerPrint = fingerPrint;
+	}
+
+	public String getFingerPrintType() {
+		return fingerPrintType;
+	}
+
+	public void setFingerPrintType(String fingerPrintType) {
+		this.fingerPrintType = fingerPrintType;
 	}
 
 	@Override
