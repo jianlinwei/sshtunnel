@@ -184,7 +184,7 @@ public class SSHTunnelService extends Service implements ServerHostKeyVerifier,
 
 	// Flag indicating if this is an ARMv6 device (-1: unknown, 0: no, 1: yes)
 	private boolean hasRedirectSupport = true;
-	private String reason = "";
+	private String reason = null;
 
 	private static final Class<?>[] mStartForegroundSignature = new Class[] {
 			int.class, Notification.class };
@@ -352,7 +352,8 @@ public class SSHTunnelService extends Service implements ServerHostKeyVerifier,
 					throw new Exception();
 				}
 			} catch (Exception e) {
-				reason = getString(R.string.upstream_format_error);
+				if (reason == null)
+					reason = getString(R.string.upstream_format_error);
 				return false;
 			}
 		}
@@ -376,7 +377,8 @@ public class SSHTunnelService extends Service implements ServerHostKeyVerifier,
 
 		// fail to connect if the dns lookup failed
 		if (hostAddress == null) {
-			reason = getString(R.string.fail_to_connect);
+			if (reason == null)
+				reason = getString(R.string.fail_to_connect);
 			return false;
 		}
 
@@ -412,7 +414,8 @@ public class SSHTunnelService extends Service implements ServerHostKeyVerifier,
 
 			// Display the reason in the text.
 
-			reason = getString(R.string.fail_to_connect);
+			if (reason == null)
+				reason = getString(R.string.fail_to_connect);
 
 			return false;
 		}
@@ -431,7 +434,8 @@ public class SSHTunnelService extends Service implements ServerHostKeyVerifier,
 			Log.e(TAG,
 					"Problem in SSH connection thread during authentication", e);
 
-			reason = getString(R.string.fail_to_authenticate);
+			if (reason == null)
+				reason = getString(R.string.fail_to_authenticate);
 			return false;
 		}
 
@@ -443,11 +447,13 @@ public class SSHTunnelService extends Service implements ServerHostKeyVerifier,
 			Log.e(TAG, "Problem in SSH connection thread during enabling port",
 					e);
 
-			reason = getString(R.string.fail_to_connect);
+			if (reason == null)
+				reason = getString(R.string.fail_to_connect);
 			return false;
 		}
 
-		reason = getString(R.string.fail_to_authenticate);
+		if (reason == null)
+			reason = getString(R.string.fail_to_authenticate);
 		Log.e(TAG, "Cannot authenticate");
 		return false;
 	}
@@ -546,7 +552,8 @@ public class SSHTunnelService extends Service implements ServerHostKeyVerifier,
 
 		} catch (Exception e) {
 			Log.e(TAG, "Could not create local port forward", e);
-			reason = getString(R.string.fail_to_forward);
+			if (reason == null)
+				reason = getString(R.string.fail_to_forward);
 			return false;
 		}
 
@@ -779,7 +786,8 @@ public class SSHTunnelService extends Service implements ServerHostKeyVerifier,
 				.getSystemService(CONNECTIVITY_SERVICE);
 		NetworkInfo networkInfo = manager.getActiveNetworkInfo();
 		if (networkInfo == null) {
-			reason = getString(R.string.fail_to_online);
+			if (reason == null)
+				reason = getString(R.string.fail_to_online);
 			return false;
 		}
 		return true;
@@ -833,7 +841,8 @@ public class SSHTunnelService extends Service implements ServerHostKeyVerifier,
 			mStartForeground = mStopForeground = null;
 		}
 
-		reason = getString(R.string.fail_to_connect);
+		if (reason == null)
+			reason = getString(R.string.fail_to_connect);
 	}
 
 	/** Called when the activity is closed. */
@@ -1125,20 +1134,23 @@ public class SSHTunnelService extends Service implements ServerHostKeyVerifier,
 		if (profile.getFingerPrintType() == null
 				|| profile.getFingerPrintType().equals("")) {
 			fingerPrintStatus = Constraints.FINGER_PRINT_INIITIALIZE;
+			reason = getString(R.string.finger_print_unknown);
 
 		} else {
 
 			if (profile.getFingerPrintType().equals(serverHostKeyAlgorithm)
 					&& profile.getFingerPrint() != null
-					&& profile.getFingerPrint().equals(fingerPrint))
+					&& profile.getFingerPrint().equals(fingerPrint)) {
 				return true;
-			else
+			} else {
 				fingerPrintStatus = Constraints.FINGER_PRINT_CHANGED;
+				reason = getString(R.string.finger_print_mismatch);
+			}
 
 		}
-		
-		Log.e(TAG, "Finger Print: " + profile.getFingerPrint());
-		Log.e(TAG, "Finger Print Type: " + profile.getFingerPrintType());
+
+		Log.d(TAG, "Finger Print: " + profile.getFingerPrint());
+		Log.d(TAG, "Finger Print Type: " + profile.getFingerPrintType());
 
 		Bundle bundle = new Bundle();
 		bundle.putInt(Constraints.ID, profile.getId());

@@ -136,11 +136,13 @@
 	</string>
 
 	<!-- Finger Print Check -->
-	<string name="finger_print_alert_title">警告 - 潜在的安全问题!</string>
-	<string name="finger_print_changed">此服务器的公钥文件与之前连接时的不同，您可能正面临中间人攻击，或只是管理员改变了服务器的配置。
+	<string name="finger_print_alert_title">警告！</string>
+	<string name="finger_print_changed">此服务器的公钥与之前连接时的不同，您可能正遭遇中间人攻击，或只是管理员改变了服务器的配置。
 	</string>
-	<string name="finger_print_first">这是您第一次连接此服务器，请确认其提供的公钥文件是可信的，之后此公钥文件将被缓存于应用中。
+	<string name="finger_print_first">这是您第一次连接此服务器，请确认其提供的公钥是可信的，之后此公钥将被缓存于应用中。
 	</string>
+	<string name="finger_print_unknown">未知的服务器指纹</string>
+	<string name="finger_print_mismatch">不匹配的服务器指纹</string>
 	<string name="finger_print">密钥的指纹是:</string>
 	<string name="finger_print_accept">接受</string>
 	<string name="finger_print_deny">拒绝</string>
