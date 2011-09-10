@@ -354,8 +354,9 @@ public class DNSServer implements WrapServer {
 			byte[] question = new byte[reqLength - 12];
 			System.arraycopy(request, 12, question, 0, reqLength - 12);
 			requestDomain = parseDomain(question);
-			requestDomain = requestDomain.substring(0,
-					requestDomain.length() - 1);
+			if (requestDomain.length() > 1)
+				requestDomain = requestDomain.substring(0,
+						requestDomain.length() - 1);
 		}
 		return requestDomain;
 	}
