@@ -101,6 +101,9 @@ public class ConnectivityBroadcastReceiver extends BroadcastReceiver {
 		List<Profile> profileList = ProfileFactory.loadAllProfilesFromDao();
 		int profileId = -1;
 
+		if (profileList == null) 
+			return;
+		
 		// Test on each profile
 		for (Profile profile : profileList) {
 
