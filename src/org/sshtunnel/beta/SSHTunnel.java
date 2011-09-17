@@ -165,7 +165,7 @@ public class SSHTunnel extends PreferenceActivity implements
 			InputStream in = null;
 			OutputStream out = null;
 			out = new FileOutputStream(f);
-			for (int i = 1; i <= 3; i++) {
+			for (int i = 1; i <= 2; i++) {
 				in = assetManager.open("openssh" + i);
 				copyFile(in, out);
 				in.close();

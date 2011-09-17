@@ -19,9 +19,12 @@ import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 import org.sshtunnel.beta.R;
 
+import android.app.ActivityManager;
+import android.app.ActivityManager.RunningAppProcessInfo;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -271,9 +274,9 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		 * Destroy this script runner
 		 */
 		public synchronized void onDestroy() {
-			
+
 			stopConnect = true;
-			
+
 			if (mTermIn != null) {
 				try {
 					mTermIn.close();
@@ -507,7 +510,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		File log = new File(BASE + "ssh.log");
 		if (log.exists())
 			log.delete();
-		
+
 		final ConnectRunner runner = new ConnectRunner();
 		runner.start();
 		try {
@@ -585,9 +588,33 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		// return false;
 		// }
 
-		runRootCommand(BASE + "busybox pgrep openssh > " + BASE + "ssh.pid");
+		// TODO: add pid
+		int sshPid = getSSHProcess();
+		if (sshPid != -1) {
+			try {
+				FileOutputStream fout = new FileOutputStream(BASE + "ssh.pid");
+				fout.write(Integer.toString(sshPid).getBytes());
+				fout.flush();
+				fout.close();
+			} catch (IOException e) {
+				// Ignore
+			}
+		}
 
 		return true;
+	}
+
+	public int getSSHProcess() {
+		ActivityManager am = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+		List<RunningAppProcessInfo> list = am.getRunningAppProcesses();
+
+		for (RunningAppProcessInfo ti : list) {
+			if (ti.processName.equals("openssh")) {
+				return ti.pid;
+			}
+		}
+
+		return -1;
 	}
 
 	/**

@@ -40,7 +40,7 @@ redsocks {
 stop)
   kill -9 `cat $DIR/redsocks.pid`
   
-  $DIR/busybox killall -9 openssh
+  killall -9 openssh
   
   rm $DIR/redsocks.pid
   
