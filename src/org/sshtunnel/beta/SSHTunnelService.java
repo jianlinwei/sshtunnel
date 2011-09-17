@@ -503,13 +503,48 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		}
 		return true;
 	}
+	
+	public static boolean runCommand(String command) {
+		Process process = null;
+		DataOutputStream os = null;
+		Log.d(TAG, command);
+		try {
+			process = Runtime.getRuntime().exec("sh");
+			os = new DataOutputStream(process.getOutputStream());
+			os.writeBytes(command + "\n");
+			os.writeBytes("exit\n");
+			os.flush();
+			process.waitFor();
+		} catch (Exception e) {
+			Log.e(TAG, e.getMessage());
+			return false;
+		} finally {
+			try {
+				if (os != null) {
+					os.close();
+				}
+				if (process != null)
+					process.destroy();
+			} catch (Exception e) {
+				// nothing
+			}
+		}
+		return true;
+	}
 
 	public boolean connect(int timeout) {
 
 		isAuth = false;
+		
 		File log = new File(BASE + "ssh.log");
 		if (log.exists())
 			log.delete();
+		
+		File pid = new File(BASE + "ssh.pid");
+		if (pid.exists()) {
+			runCommand("kill -9 `cat " + BASE + "ssh.pid`");
+			pid.delete();
+		}
 
 		final ConnectRunner runner = new ConnectRunner();
 		runner.start();
@@ -531,75 +566,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 		if (!isAuth)
 			return false;
-
-		// String cmd = "echo $$ > " + BASE + "shell.pid\n";
-
-		// FileInputStream mTermIn = new FileInputStream(mTermFd);
-		// FileOutputStream mTermOut = new FileOutputStream(mTermFd);
-		//
-		// try {
-		// if (isSocks)
-		// cmd += "/data/data/org.sshtunnel.beta/ssh.sh dynamic " + port
-		// + " " + localPort + " " + user + " " + hostIP;
-		// else
-		// cmd += "/data/data/org.sshtunnel.beta/ssh.sh local " + port
-		// + " " + localPort + " " + "127.0.0.1" + " "
-		// + remotePort + " " + user + " " + hostIP;
-		//
-		// Log.e(TAG, cmd);
-		//
-		// mTermOut.write((cmd + "\n").getBytes());
-		// mTermOut.flush();
-		//
-		// int count = 0;
-		// byte[] data = new byte[256];
-		// while ((mTermIn.read(data)) != -1) {
-		// StringBuffer sb = new StringBuffer();
-		// for (int i = 0; i < data.length; i++) {
-		// char printableB = (char) data[i];
-		// if (data[i] < 32 || data[i] > 126) {
-		// printableB = ' ';
-		// }
-		// sb.append(printableB);
-		// }
-		// String line = sb.toString();
-		// if (line.toLowerCase().contains("yes")) {
-		// mTermOut.write(("yes\n").getBytes());
-		// mTermOut.flush();
-		// continue;
-		// }
-		// if (line.toLowerCase().contains("password")) {
-		// mTermOut.write((password + "\n").getBytes());
-		// mTermOut.flush();
-		// mTermFd.sync();
-		// Log.d(TAG, "Flush count: " + count);
-		// break;
-		// } else {
-		// Log.e(TAG, "Connect fail: " + line);
-		// if (count > 10) {
-		// return false;
-		// }
-		// }
-		// count++;
-		// }
-		//
-		// } catch (Exception e) {
-		// Log.e(TAG, "Connect Error!");
-		// return false;
-		// }
-
-		// TODO: add pid
-		int sshPid = getSSHProcess();
-		if (sshPid != -1) {
-			try {
-				FileOutputStream fout = new FileOutputStream(BASE + "ssh.pid");
-				fout.write(Integer.toString(sshPid).getBytes());
-				fout.flush();
-				fout.close();
-			} catch (IOException e) {
-				// Ignore
-			}
-		}
 
 		return true;
 	}
