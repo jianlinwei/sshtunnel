@@ -17,11 +17,17 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
+import android.content.pm.PackageManager.NameNotFoundException;
+import android.graphics.drawable.Drawable;
 import android.preference.PreferenceManager;
+import android.util.Log;
 
 public class Utils {
 
 	public static final String SERVICE_NAME = "org.sshtunnel.SSHTunnelService";
+	public static final String TAG = "SSHTunnelUtils";
 
 	public static String getProfileName(Profile profile) {
 		if (profile.getName() == null || profile.getName().equals("")) {
@@ -30,6 +36,27 @@ public class Utils {
 		}
 		return profile.getName();
 	}
+	
+    public static Drawable getAppIcon(Context c, int uid) {
+        PackageManager pm = c.getPackageManager();
+        Drawable appIcon = c.getResources().getDrawable(R.drawable.sym_def_app_icon);
+        String[] packages = pm.getPackagesForUid(uid);
+
+        if (packages != null) {
+            if (packages.length == 1) {
+                try {
+                    ApplicationInfo appInfo = pm.getApplicationInfo(packages[0], 0);
+                    appIcon = pm.getApplicationIcon(appInfo);
+                } catch (NameNotFoundException e) {
+                	Log.e(TAG, "No package found matching with the uid " + uid);
+                }
+            }
+        } else {
+            Log.e(TAG, "Package not found for uid " + uid);
+        }
+
+        return appIcon;
+    }
 
 	public static boolean isWorked() {
 		ActivityManager myManager = (ActivityManager) SSHTunnelContext.getAppContext()

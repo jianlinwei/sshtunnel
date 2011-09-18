@@ -9,13 +9,9 @@ public class ProxyedApp {
 	private String username;
 	private String procname;
 	private String name;
-	private Drawable icon;
 	
 	private boolean proxyed = false;
 	
-	public Drawable getIcon() {
-		return icon;
-	}
 	/**
 	 * @return the name
 	 */
@@ -57,9 +53,6 @@ public class ProxyedApp {
 	 */
 	public void setEnabled(boolean enabled) {
 		this.enabled = enabled;
-	}
-	public void setIcon(Drawable icon) {
-		this.icon = icon;
 	}
 	/**
 	 * @param name the name to set
