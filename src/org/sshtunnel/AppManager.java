@@ -12,6 +12,7 @@ import java.util.Vector;
 
 import org.sshtunnel.utils.Constraints;
 import org.sshtunnel.utils.ProxyedApp;
+import org.sshtunnel.utils.Utils;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
@@ -51,7 +52,8 @@ public class AppManager extends Activity implements OnCheckedChangeListener,
 		private ImageView icon;
 	}
 
-	public static ProxyedApp[] getProxyedApps(Context context, String tordAppString) {
+	public static ProxyedApp[] getProxyedApps(Context context,
+			String tordAppString) {
 
 		String[] tordApps;
 
@@ -87,11 +89,7 @@ public class AppManager extends Activity implements OnCheckedChangeListener,
 			apps[appIdx].setUsername(pMgr.getNameForUid(apps[appIdx].getUid()));
 
 			// check if this application is allowed
-			if (aInfo.packageName != null
-					&& aInfo.packageName.equals("org.proxydroid")) {
-				apps[appIdx].setProxyed(true);
-			} else if (Arrays
-					.binarySearch(tordApps, apps[appIdx].getUsername()) >= 0) {
+			if (Arrays.binarySearch(tordApps, apps[appIdx].getUsername()) >= 0) {
 				apps[appIdx].setProxyed(true);
 			} else {
 				apps[appIdx].setProxyed(false);
@@ -186,7 +184,7 @@ public class AppManager extends Activity implements OnCheckedChangeListener,
 		}
 
 		Arrays.sort(tordApps);
-		
+
 		Vector<ProxyedApp> vectorApps = new Vector<ProxyedApp>();
 
 		// else load the apps up
@@ -216,7 +214,6 @@ public class AppManager extends Activity implements OnCheckedChangeListener,
 			tApp.setUsername(pMgr.getNameForUid(tApp.getUid()));
 			tApp.setProcname(aInfo.processName);
 			tApp.setName(pMgr.getApplicationLabel(aInfo).toString());
-			tApp.setIcon(pMgr.getApplicationIcon(aInfo));
 
 			// check if this application is allowed
 			if (Arrays.binarySearch(tordApps, tApp.getUsername()) >= 0) {
@@ -224,10 +221,10 @@ public class AppManager extends Activity implements OnCheckedChangeListener,
 			} else {
 				tApp.setProxyed(false);
 			}
-			
+
 			vectorApps.add(tApp);
 		}
-		
+
 		apps = new ProxyedApp[lAppInfo.size()];
 		vectorApps.toArray(apps);
 
@@ -239,6 +236,8 @@ public class AppManager extends Activity implements OnCheckedChangeListener,
 		Arrays.sort(apps, new Comparator<ProxyedApp>() {
 			@Override
 			public int compare(ProxyedApp o1, ProxyedApp o2) {
+				if (o1 == null || o2 == null)
+					return 1;
 				if (o1.isProxyed() == o2.isProxyed())
 					return o1.getName().compareTo(o2.getName());
 				if (o1.isProxyed())
@@ -279,7 +278,8 @@ public class AppManager extends Activity implements OnCheckedChangeListener,
 
 				final ProxyedApp app = apps[position];
 
-				entry.icon.setImageDrawable(app.getIcon());
+				entry.icon.setImageDrawable(Utils.getAppIcon(AppManager.this,
+						app.getUid()));
 
 				entry.text.setText(app.getName());
 
