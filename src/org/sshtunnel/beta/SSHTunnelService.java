@@ -43,6 +43,7 @@ import android.os.IBinder;
 import android.os.Message;
 import android.preference.PreferenceManager;
 import android.util.Log;
+import android.widget.Toast;
 
 public class SSHTunnelService extends Service implements ConnectionMonitor {
 
@@ -158,27 +159,27 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		private volatile boolean stopConnect = false;
 
 		private boolean waitForSuccess() throws InterruptedException {
-			while (true) {
-				if (stopConnect)
-					return false;
-				try {
-					FileInputStream in = new FileInputStream(BASE + "ssh.log");
 
-					BufferedReader reader = new BufferedReader(
-							new InputStreamReader(in));
-					while (true) {
-						String line = reader.readLine();
-						if (line == null)
-							break;
-						if (line.contains("succeeded"))
-							return true;
-						if (line.contains("denied"))
-							return false;
+			while (true) {
+				if (stopConnect) {
+					return false;
+				}
+				synchronized (notify_lock) {
+					if (notify_type == 0)
+						return true;
+					else if (notify_type == 1)
+						return false;
+					else if (notify_type == 3) {
+						if (sshOS != null) {
+							try {
+								sshOS.write((password + "\n").getBytes());
+								sshOS.flush();
+							} catch (IOException e) {
+								return false;
+							}
+						}
 					}
-					Thread.sleep(2000);
-				} catch (Exception ignore) {
-					Thread.sleep(2000);
-					continue;
+					notify_lock.wait();
 				}
 			}
 
@@ -187,79 +188,69 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		@Override
 		public void run() {
 
-			new Thread() {
-				public void run() {
-					try {
+			try {
 
-						String cmd = "echo $$ > " + BASE + "shell.pid\n";
+				String cmd = "echo $$ > " + BASE + "shell.pid\n";
 
-						mTermIn = new FileInputStream(mTermFd);
-						mTermOut = new FileOutputStream(mTermFd);
+				sshProcess = Runtime.getRuntime().exec("sh");
+				sshOS = new DataOutputStream(sshProcess.getOutputStream());
 
-						if (isSocks)
-							cmd += "/data/data/org.sshtunnel.beta/ssh.sh dynamic "
-									+ port
-									+ " "
-									+ localPort
-									+ " "
-									+ user
-									+ " "
-									+ hostIP;
-						else
-							cmd += "/data/data/org.sshtunnel.beta/ssh.sh local "
-									+ port
-									+ " "
-									+ localPort
-									+ " "
-									+ "127.0.0.1"
-									+ " "
-									+ remotePort
-									+ " "
-									+ user + " " + hostIP;
+				if (isSocks)
+					cmd += "/data/data/org.sshtunnel.beta/ssh.sh dynamic "
+							+ port + " " + localPort + " " + user + " "
+							+ hostIP;
+				else
+					cmd += "/data/data/org.sshtunnel.beta/ssh.sh local " + port
+							+ " " + localPort + " " + "127.0.0.1" + " "
+							+ remotePort + " " + user + " " + hostIP;
 
-						Log.e(TAG, cmd);
+				Log.e(TAG, cmd);
 
-						mTermOut.write((cmd + "\n").getBytes());
-						mTermOut.flush();
+				sshOS.write((cmd + "\n").getBytes());
+				sshOS.flush();
 
-						byte[] data = new byte[256];
-						StringBuffer sb = new StringBuffer();
-						while ((mTermIn.read(data)) != -1) {
-							if (stopConnect)
-								break;
-							for (int i = 0; i < data.length; i++) {
-								char printableB = (char) data[i];
-								if (data[i] < 32 || data[i] > 126) {
-									printableB = ' ';
-								}
-								sb.append(printableB);
-							}
-							String line = sb.toString();
-							if (line.toLowerCase().contains("password")
-									|| line.toLowerCase()
-											.contains("passphrase")) {
-								mTermOut.write((password + "\n").getBytes());
-								mTermOut.flush();
-								mTermFd.sync();
-								Log.d(TAG, "Try autenticate with password");
-								break;
-							} else {
-								Log.d(TAG, "Output: " + line);
-							}
-							if (line.toLowerCase().contains("yes")) {
-								mTermOut.write(("yes\n").getBytes());
-								mTermOut.flush();
-								continue;
-							}
-						}
+				// mTermOut.write((cmd + "\n").getBytes());
+				// mTermOut.flush();
 
-					} catch (IOException e) {
-						Log.e(TAG, "Operation timed-out");
-					} catch (Exception e) {
-						Log.e(TAG, "Unexcepted error: ", e);
-					}
-				}
-			}.start();
+				// byte[] data = new byte[256];
+				// StringBuffer sb = new StringBuffer();
+				// while ((mTermIn.read(data)) != -1) {
+				// if (stopConnect)
+				// break;
+				// for (int i = 0; i < data.length; i++) {
+				// char printableB = (char) data[i];
+				// if (data[i] < 32 || data[i] > 126) {
+				// printableB = ' ';
+				// }
+				// sb.append(printableB);
+				// }
+				// String line = sb.toString();
+				// if (line.toLowerCase().contains("password")
+				// || line.toLowerCase().contains("passphrase")) {
+				// Thread.sleep(1000);
+				// mTermOut.write((password + "\n").getBytes());
+				// mTermOut.flush();
+				// mTermFd.sync();
+				// Log.d(TAG, "Output: " + line);
+				// Log.d(TAG, "Try autenticate with password: " + password);
+				// break;
+				// } else {
+				// Log.d(TAG, "Output: " + line);
+				// }
+				// if (line.toLowerCase().contains("yes")) {
+				// Thread.sleep(1000);
+				// mTermOut.write(("yes\n").getBytes());
+				// mTermOut.flush();
+				// mTermFd.sync();
+				// continue;
+				// }
+				// }
+
+			} catch (IOException e) {
+				Log.e(TAG, "Operation timed-out");
+			} catch (Exception e) {
+				Log.e(TAG, "Unexcepted error: ", e);
+			}
 
 			try {
 				isAuth = waitForSuccess();
@@ -301,6 +292,10 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	private PendingIntent pendIntent;
 	private SSHMonitor sm;
 
+	public static String notify_status;
+	public static int notify_type = -1;
+	public static Object notify_lock = new Object();
+
 	private static final String TAG = "SSHTunnel";
 
 	private static final int MSG_CONNECT_START = 0;
@@ -310,13 +305,11 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 	private static final int CONNECT_TIMEOUT = 30000;
 
-	private final static String DEFAULT_SHELL = "/system/bin/sh -";
-
 	private SharedPreferences settings = null;
 	private boolean isAuth = false;
 
-	// private Process proxyProcess = null;
-	// private DataOutputStream proxyOS = null;
+	private Process sshProcess = null;
+	private DataOutputStream sshOS = null;
 
 	private String host;
 	private String hostIP = "127.0.0.1";
@@ -329,17 +322,10 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	// private LocalPortForwarder lpf2 = null;
 	private DNSServer dnsServer = null;
 	private boolean isSocks = false;
-	private int processId = 0;
 
 	private ProxyedApp apps[];
 
 	private boolean connected = false;
-
-	/**
-	 * The pseudo-teletype (pty) file descriptor that we use to communicate with
-	 * another process, typically a shell.
-	 */
-	private FileDescriptor mTermFd;
 
 	public static final String BASE = "/data/data/org.sshtunnel.beta/";
 
@@ -503,7 +489,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		}
 		return true;
 	}
-	
+
 	public static boolean runCommand(String command) {
 		Process process = null;
 		DataOutputStream os = null;
@@ -535,11 +521,13 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	public boolean connect(int timeout) {
 
 		isAuth = false;
-		
+		notify_type = -1;
+		notify_status = null;
+
 		File log = new File(BASE + "ssh.log");
 		if (log.exists())
 			log.delete();
-		
+
 		File pid = new File(BASE + "ssh.pid");
 		if (pid.exists()) {
 			runCommand("kill -9 `cat " + BASE + "ssh.pid`");
@@ -568,19 +556,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			return false;
 
 		return true;
-	}
-
-	public int getSSHProcess() {
-		ActivityManager am = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
-		List<RunningAppProcessInfo> list = am.getRunningAppProcesses();
-
-		for (RunningAppProcessInfo ti : list) {
-			if (ti.processName.equals("openssh")) {
-				return ti.pid;
-			}
-		}
-
-		return -1;
 	}
 
 	/**
@@ -768,26 +743,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		return result;
 	}
 
-	private FileDescriptor createSubprocess(String shell, int[] processId) {
-
-		if (shell == null || shell.equals("")) {
-			shell = DEFAULT_SHELL;
-		}
-		ArrayList<String> args = parse(shell);
-		String arg0 = args.get(0);
-		String arg1 = null;
-		String arg2 = null;
-
-		if (args.size() >= 2) {
-			arg1 = args.get(1);
-		}
-		if (args.size() >= 3) {
-			arg2 = args.get(2);
-		}
-
-		return Exec.createSubprocess(arg0, arg1, arg2, processId);
-	}
-
 	@Override
 	public void onCreate() {
 		super.onCreate();
@@ -839,6 +794,17 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 				dnsServer.close();
 				dnsServer = null;
 			}
+
+			if (sshProcess != null) {
+				sshProcess.destroy();
+				sshProcess = null;
+			}
+
+			if (sshOS != null) {
+				sshOS.close();
+				sshOS = null;
+			}
+
 		} catch (Exception e) {
 			Log.e(TAG, "DNS Server close unexpected");
 		}
@@ -848,13 +814,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		ed.commit();
 
 		notificationManager.cancel(0);
-
-		Exec.hangupProcessGroup(processId);
-
-		if (mTermFd != null) {
-			Exec.close(mTermFd);
-			mTermFd = null;
-		}
 
 		super.onDestroy();
 	}
@@ -927,6 +886,9 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 				ed.putBoolean("isRunning", true);
 				break;
 			case MSG_CONNECT_FAIL:
+				if (notify_status != null && !notify_status.equals(""))
+					Toast.makeText(SSHTunnelService.this, notify_status,
+							Toast.LENGTH_LONG).show();
 				ed.putBoolean("isRunning", false);
 				break;
 			}
@@ -958,9 +920,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		new Thread(new Runnable() {
 			public void run() {
 				handler.sendEmptyMessage(MSG_CONNECT_START);
-				int[] processIds = new int[1];
-				mTermFd = createSubprocess(null, processIds);
-				processId = processIds[0];
 				if (isOnline() && handleCommand()) {
 					// Connection and forward successful
 					finishConnection();
@@ -1066,8 +1025,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		}
 
 		try {
-			Log.d(TAG, "ProcessId: " + processId);
-			Exec.waitFor(processId);
+			sshProcess.waitFor();
 		} catch (Exception e) {
 			SimpleDateFormat df = new SimpleDateFormat("HH:mm:ss");
 			connected = false;
@@ -1079,12 +1037,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 					Notification.FLAG_AUTO_CANCEL);
 			stopSelf();
 		}
-		Exec.hangupProcessGroup(processId);
-		if (mTermFd != null)
-			Exec.close(mTermFd);
-		int[] processIds = new int[1];
-		mTermFd = createSubprocess(null, processIds);
-		processId = processIds[0];
 
 	}
 

@@ -130,8 +130,6 @@ public class SSHTunnel extends PreferenceActivity implements
 			try {
 				// if (!(new File("/data/data/org.sshtunnel.beta/" +
 				// files[i])).exists()) {
-				if (files[i].contains("openssh"))
-					continue;
 				in = assetManager.open(files[i]);
 				out = new FileOutputStream("/data/data/org.sshtunnel.beta/"
 						+ files[i]);
@@ -153,28 +151,6 @@ public class SSHTunnel extends PreferenceActivity implements
 		int read;
 		while ((read = in.read(buffer)) != -1) {
 			out.write(buffer, 0, read);
-		}
-	}
-
-	private void CopyOpenSSH() {
-		AssetManager assetManager = getAssets();
-		try {
-			File f = new File("/data/data/org.sshtunnel.beta/openssh");
-			if (!f.exists())
-				f.createNewFile();
-			InputStream in = null;
-			OutputStream out = null;
-			out = new FileOutputStream(f);
-			for (int i = 1; i <= 2; i++) {
-				in = assetManager.open("openssh" + i);
-				copyFile(in, out);
-				in.close();
-				out.flush();
-			}
-			out.close();
-			out = null;
-		} catch (Exception e) {
-			Log.e(TAG, "Exception when copying asset", e);
 		}
 	}
 
@@ -274,14 +250,12 @@ public class SSHTunnel extends PreferenceActivity implements
 
 				if (!settings.getBoolean(versionName, false)) {
 					CopyAssets();
-					CopyOpenSSH();
 					runCommand("chmod 777 /data/data/org.sshtunnel.beta/iptables");
 					runCommand("chmod 777 /data/data/org.sshtunnel.beta/redsocks");
 					runCommand("chmod 777 /data/data/org.sshtunnel.beta/proxy_http.sh");
 					runCommand("chmod 777 /data/data/org.sshtunnel.beta/proxy_socks.sh");
 					runCommand("chmod 777 /data/data/org.sshtunnel.beta/ssh.sh");
-					runCommand("chmod 777 /data/data/org.sshtunnel.beta/busybox");
-					runCommand("chmod 777 /data/data/org.sshtunnel.beta/openssh");
+					runCommand("chmod 777 /data/data/org.sshtunnel.beta/sshtunnel");
 					edit = settings.edit();
 					edit.putBoolean(versionName, true);
 					edit.commit();
@@ -688,14 +662,12 @@ public class SSHTunnel extends PreferenceActivity implements
 		}
 
 		CopyAssets();
-		CopyOpenSSH();
 		runCommand("chmod 777 /data/data/org.sshtunnel.beta/iptables");
 		runCommand("chmod 777 /data/data/org.sshtunnel.beta/redsocks");
 		runCommand("chmod 777 /data/data/org.sshtunnel.beta/proxy_http.sh");
 		runCommand("chmod 777 /data/data/org.sshtunnel.beta/proxy_socks.sh");
 		runCommand("chmod 777 /data/data/org.sshtunnel.beta/ssh.sh");
-		runCommand("chmod 777 /data/data/org.sshtunnel.beta/busybox");
-		runCommand("chmod 777 /data/data/org.sshtunnel.beta/openssh");
+		runCommand("chmod 777 /data/data/org.sshtunnel.beta/sshtunnel");
 
 		runRootCommand(SSHTunnelService.BASE + "iptables -t nat -F OUTPUT");
 
