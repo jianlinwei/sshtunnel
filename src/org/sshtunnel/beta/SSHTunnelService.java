@@ -165,9 +165,10 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 					return false;
 				}
 				synchronized (notify_lock) {
-					if (notify_type == 0)
+					if (notify_type == 0) {
+						process_id = notify_status;
 						return true;
-					else if (notify_type == 1)
+					} else if (notify_type == 1)
 						return false;
 					else if (notify_type == 3) {
 						if (sshOS != null) {
@@ -208,43 +209,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 				sshOS.write((cmd + "\n").getBytes());
 				sshOS.flush();
-
-				// mTermOut.write((cmd + "\n").getBytes());
-				// mTermOut.flush();
-
-				// byte[] data = new byte[256];
-				// StringBuffer sb = new StringBuffer();
-				// while ((mTermIn.read(data)) != -1) {
-				// if (stopConnect)
-				// break;
-				// for (int i = 0; i < data.length; i++) {
-				// char printableB = (char) data[i];
-				// if (data[i] < 32 || data[i] > 126) {
-				// printableB = ' ';
-				// }
-				// sb.append(printableB);
-				// }
-				// String line = sb.toString();
-				// if (line.toLowerCase().contains("password")
-				// || line.toLowerCase().contains("passphrase")) {
-				// Thread.sleep(1000);
-				// mTermOut.write((password + "\n").getBytes());
-				// mTermOut.flush();
-				// mTermFd.sync();
-				// Log.d(TAG, "Output: " + line);
-				// Log.d(TAG, "Try autenticate with password: " + password);
-				// break;
-				// } else {
-				// Log.d(TAG, "Output: " + line);
-				// }
-				// if (line.toLowerCase().contains("yes")) {
-				// Thread.sleep(1000);
-				// mTermOut.write(("yes\n").getBytes());
-				// mTermOut.flush();
-				// mTermFd.sync();
-				// continue;
-				// }
-				// }
 
 			} catch (IOException e) {
 				Log.e(TAG, "Operation timed-out");
@@ -295,6 +259,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	public static String notify_status;
 	public static int notify_type = -1;
 	public static Object notify_lock = new Object();
+	private String process_id;
 
 	private static final String TAG = "SSHTunnel";
 
@@ -530,7 +495,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 		File pid = new File(BASE + "ssh.pid");
 		if (pid.exists()) {
-			runCommand("kill -9 `cat " + BASE + "ssh.pid`");
+			if (process_id != null)
+				runCommand("kill -9 " + process_id);
 			pid.delete();
 		}
 
