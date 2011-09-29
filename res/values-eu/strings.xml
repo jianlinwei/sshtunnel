@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+        <!-- app string -->
+        <string name="app_name">SSHTunnel</string>
+        <string name="ok_iknow">Ados, badakit</string>
+        <string name="feedback">Berrelikadura @ofmax</string>
+
+        <!-- alert string -->
+        <string name="port_empty">Ataka kaxa hutsik dago</string>
+        <string name="host_empty">Ostalaria kaxa hutsik dago</string>
+        <string name="local_port_empty">Ataka lokala kaxa hutsik dago</string>
+        <string name="remote_port_empty">Urruneko ataka kaxa hutsik dago</string>
+        <string name="number_alert">Mesedez egiaztatu zure ataka zenbakia</string>
+        <string name="user_empty">Erabiltzaile-izena kaxa hutsik dago</string>
+        <string name="port_alert">Ataka zenbakiak 1024 baino handiagoa izan behar du
+        </string>
+        <string name="crash_alert">Hutsegite batetik errekuperatzen. \n\nmesedez jakinarazi
+                zure
+                arazoa proiektuaren orrian. \n\n(sshtunnel.googlecode.com)
+        </string>
+        <string name="require_root_alert">GAILUAN ROOT BAIMENA BEHAR DUZU LEHENIK !!!</string>
+
+        <!-- error string -->
+        <string name="fail_to_connect">ezin izan da ostalarira konektatu</string>
+        <string name="fail_to_authenticate">erabiltzaile-izen edo pasahitz okerra</string>
+        <string name="fail_to_forward">Errorea ataka birbidalketa gauzatzean</string>
+        <string name="fail_to_online">ez dago sarerik eskuragarri</string>
+
+        <!-- status string -->
+        <string name="service_running">Atzeko planoan exekutatzen</string>
+        <string name="forward_success">Konektatuta</string>
+        <string name="forward_fail">Errorea</string>
+        <string name="service_stopped">SSHTunnel zerbitzua gelditu da</string>
+        <string name="auto_reconnected">Birkonektatzen</string>
+        <string name="reconnect_success">Birkonektatuta</string>
+        <string name="already_stopped">Zerbitzua geldituta dago dagoeneko</string>
+        <string name="already_running">Zerbitzua martxan dago dagoeneko</string>
+        <string name="forward_stop">Deskonektatuta</string>
+        <string name="service_failed">Mesedez egiaztatu zure sarearen eta saioaren informazioa
+        </string>
+        <string name="reconnect_fail">Ezin da birkonektatu, zerbitzua gelditu da</string>
+        <string name="connecting">Konektatzen</string>
+        <string name="auto_connecting">Konektatzen...</string>
+        <string name="loading">Aplikazio zerrenda kargatzen...</string>
+
+        <!-- settings function category -->
+        <string name="function_cat">Zerbitzu-kontrolatzailea</string>
+        <string name="disconnect">Deskonektatu</string>
+        <string name="connect">Konektatu</string>
+        <string name="service_controller">Aldatu tunela</string>
+        <string name="service_summary">Gaitu / Desgaitu SSH Tunela</string>
+
+        <!-- settings proxy category -->
+        <string name="proxy_cat">SSH Tunelaren ezarpenak</string>
+        <string name="host">Ostalaria</string>
+        <string name="host_summary">SSH zerbitzuaren ostalari-izena</string>
+        <string name="proxy_summary">SSH Tunelaren URLa</string>
+        <string name="port">Ataka</string>
+        <string name="port_summary">Zure SSH zerbitzuaren ataka zenbakia</string>
+
+        <!-- settings account category -->
+        <string name="user_cat">Kontuaren Informazioa</string>
+        <string name="user">Erabiltzailea</string>
+        <string name="user_summary">SSH Erabiltzaile-izena</string>
+        <string name="password">Pasahitza / Pasaesaldia</string>
+        <string name="password_summary">SSH Pasahitza</string>
+
+        <!-- settings port forwarding category -->
+        <string name="socks">Erabili socks proxy-a</string>
+        <string name="socks_summary">Gaitu ataka birbidalketa dinamikoa, birbidali ataka guztiak</string>
+        <string name="port_cat">Ataka birbidalketa</string>
+        <string name="local_port">Ataka Lokala</string>
+        <string name="local_port_summary">Entzuteko Ataka, lehenetsia 1984</string>
+        <string name="remote_address">Urruneko Helbidea</string>
+        <string name="remote_address_summary">Urruneko birbidalketa helbidea, lehenetsia 127.0.0.1
+        </string>
+        <string name="remote_port">Urruneko Ataka</string>
+        <string name="remote_port_summary">Urruneko birbidalketa ataka，lehenetsia 3128</string>
+
+        <!-- settings feature category -->
+        <string name="fearute_cat">Ezaugarri Ezarpenak</string>
+        <string name="auto_connect">Auto-konektatu</string>
+        <string name="auto_connect_summary">Abiarazi SSH Tunela sarea eskuragarri dagoenean</string>
+	<string name="ssid">Lotutako Sarea</string>
+	<string name="ssid_summary">Lotu zure proxy ezarpena 2G/3G sarera edo
+		zehaztutako SSID-ra
+	</string>
+	<string-array name="ssid_default_values"></string-array>
+	<string-array name="ssid_default_entries"></string-array>
+        <string name="auto_reconnect">Auto-birkonektatu</string>
+        <string name="auto_reconnect_summary">Saiatu SSH zerbitzua birkonektatzen, konexioa ustekabean ixten denean
+	</string>
+	<string name="auto_set_gfwlist">Gaitu GFW Zerrenda</string>
+	<string name="auto_set_gfwlist_summary">Ezarri proxy-a soilik blokeatutako guneentzat (Txinako erabiltzaileentzat soilik)
+	</string>
+        <string name="auto_set_proxy">Proxy globala</string>
+        <string name="auto_set_proxy_summary">Proxy globala automatikoki ezarri (ROOT baimena eta IPTABLES euskarria behar ditu)</string>
+        <string name="enable_market">Gaitu Market-a</string>
+        <string name="enable_market_summary">Txinako erabiltzaileentzat soilik, aplikazioa Android Market-etik eguneratzeko laguntza (berrabiarazi beharra dago)
+	</string>
+        <string name="enable_dnsproxy">Gaitu DNS Proxy-a</string>
+        <string name="enable_dnsproxy_summary">Gaitu DNS Proxy-a suhesi baten atzeko erabiltzaile batzuentzat
+        </string>
+        <string name="dnsproxy_addr">Upstream DNS Helbidea</string>
+        <string name="dnsproxy_addr_summary">DNS Proxy-ak erabiltzen duen upstream DNS-a, zer den baldin badakizu bakarrik aldatu
+	</string>
+
+        <!-- settings proxyed apps category -->
+        <string name="proxyed_apps">Banakako Proxy-a</string>
+        <string name="proxyed_apps_summary">Hautatu aplikazioak proxy-an zehar (ROOT baimenak eta IPTABLES euskarria behar ditu)
+	</string>
+        <string name="proxyed_help">Hautatu SSHTunnel-ekin erabiltzeko aplikazioak:</string>
+
+        <!-- menu bar category -->
+        <string name="recovery">Konexioa berreskuratu</string>
+        <string name="copy_rights">:\n\nSSHTunnel GPLv3 lizentziapean argitaratutako software libreko proiektua da\n\nGalderarik baduzu, mesedez bisita ezazu gure proiektuaren orria googlecode-n.\n\n(sshtunnel.googlecode.com)
+	</string>
+        <string name="about">Honi buruz</string>
+
+        <!-- settings notification category -->
+        <string name="notif_cat">Jakinerazpen ezarpenak</string>
+        <string name="notif_ringtone_title">Hautatu txirrina</string>
+        <string name="notif_vibrate_title">Bibratu</string>
+        <string name="notif_vibrate_summary">Konexioaren egoera aldatzean ere bibratu
+        </string>
+	<string name="update_finished">Programa eta konfigurazioak eguneratu dira
+	</string>
+	<string name="notif_icon">Bistaratu jakinerazpen ikonoa</string>
+
+        <!-- profile switcher -->
+        <string name="profile">Profilak</string>
+        <string name="profile_default">Profil lehenetsia</string>
+        <string name="profile_new">Profil berria</string>
+        <string name="profile_base">Profila</string>
+        <string name="profile_del">Ezabatu uneko profila</string>
+
+        <!-- file chooser -->
+        <string name="file_chooser">Hautatu zure gako fitxategia</string>
+        <string name="key_manager">Gako Fitxategi Kudeatzailea</string>
+        <string name="current_dir">Uneko Direktorioa</string>
+        <string name="parent_dir">Guraso Direktorioa</string>
+        <string name="folder">Karpeta</string>
+        <string name="file_size">Fitxategi Tamaina</string>
+        <string name="file_toast">Erabili gako fitxategia: </string>
+
+	<!-- GFW List -->
+	<string-array name="gfw_list">
+		<item>209.0.0.0/8</item>
+		<item>72.0.0.0/8</item>
+		<item>74.0.0.0/8</item>
+		<item>68.0.0.0/8</item>
+		<item>69.0.0.0/8</item>
+		<item>66.0.0.0/8</item>
+		<item>64.0.0.0/8</item>
+		<item>199.0.0.0/8</item>
+		<item>168.0.0.0/8</item>
+		<item>67.0.0.0/8</item>
+		<item>173.0.0.0/8</item>
+		<item>202.248.0.0/16</item>
+	</string-array>
+</resources>
+
