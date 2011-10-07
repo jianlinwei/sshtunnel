@@ -250,12 +250,12 @@ public class SSHTunnel extends PreferenceActivity implements
 
 				if (!settings.getBoolean(versionName, false)) {
 					CopyAssets();
-					runCommand("chmod 777 /data/data/org.sshtunnel.beta/iptables");
-					runCommand("chmod 777 /data/data/org.sshtunnel.beta/redsocks");
-					runCommand("chmod 777 /data/data/org.sshtunnel.beta/proxy_http.sh");
-					runCommand("chmod 777 /data/data/org.sshtunnel.beta/proxy_socks.sh");
-					runCommand("chmod 777 /data/data/org.sshtunnel.beta/ssh.sh");
-					runCommand("chmod 777 /data/data/org.sshtunnel.beta/sshtunnel");
+					runCommand("chmod 755 /data/data/org.sshtunnel.beta/iptables");
+					runCommand("chmod 755 /data/data/org.sshtunnel.beta/redsocks");
+					runCommand("chmod 755 /data/data/org.sshtunnel.beta/proxy_http.sh");
+					runCommand("chmod 755 /data/data/org.sshtunnel.beta/proxy_socks.sh");
+					runCommand("chmod 755 /data/data/org.sshtunnel.beta/ssh.sh");
+					runCommand("chmod 755 /data/data/org.sshtunnel.beta/sshtunnel");
 					edit = settings.edit();
 					edit.putBoolean(versionName, true);
 					edit.commit();
@@ -662,12 +662,12 @@ public class SSHTunnel extends PreferenceActivity implements
 		}
 
 		CopyAssets();
-		runCommand("chmod 777 /data/data/org.sshtunnel.beta/iptables");
-		runCommand("chmod 777 /data/data/org.sshtunnel.beta/redsocks");
-		runCommand("chmod 777 /data/data/org.sshtunnel.beta/proxy_http.sh");
-		runCommand("chmod 777 /data/data/org.sshtunnel.beta/proxy_socks.sh");
-		runCommand("chmod 777 /data/data/org.sshtunnel.beta/ssh.sh");
-		runCommand("chmod 777 /data/data/org.sshtunnel.beta/sshtunnel");
+		runCommand("chmod 755 /data/data/org.sshtunnel.beta/iptables");
+		runCommand("chmod 755 /data/data/org.sshtunnel.beta/redsocks");
+		runCommand("chmod 755 /data/data/org.sshtunnel.beta/proxy_http.sh");
+		runCommand("chmod 755 /data/data/org.sshtunnel.beta/proxy_socks.sh");
+		runCommand("chmod 755 /data/data/org.sshtunnel.beta/ssh.sh");
+		runCommand("chmod 755 /data/data/org.sshtunnel.beta/sshtunnel");
 
 		runRootCommand(SSHTunnelService.BASE + "iptables -t nat -F OUTPUT");
 

@@ -754,6 +754,10 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			// Make sure the connection is closed, important here
 			onDisconnect();
 		}
+		
+		// kill sshtunnel
+		if (process_id != null)
+			runCommand("kill -9 " + process_id);
 
 		try {
 			if (dnsServer != null) {
