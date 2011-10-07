@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest package="org.sshtunnel.beta" xmlns:android="http://schemas.android.com/apk/res/android"
+	android:versionCode="57" android:versionName="1.7.1beta">
+	<uses-sdk android:minSdkVersion="7" />
+	<uses-permission android:name="android.permission.INTERNET"></uses-permission>
+	<uses-permission android:name="android.permission.VIBRATE" />
+	<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"></uses-permission>
+	<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"></uses-permission>
+	<uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+	<uses-permission android:name="org.sshtunnel.RESPOND" />
+	<permission android:name="org.sshtunnel.RESPOND"
+		android:label="@string/permlab_respond" android:description="@string/permdesc_respond"
+		android:protectionLevel="normal" />
+
+	<application android:icon="@drawable/icon" android:label="@string/app_name">
+		<activity android:name=".SSHTunnel" android:label="@string/app_name">
+			<intent-filter>
+				<action android:name="android.intent.action.MAIN" />
+				<category android:name="android.intent.category.LAUNCHER" />
+			</intent-filter>
+		</activity>
+
+		<activity android:name=".AppManager" android:label="@string/app_name" />
+		<activity android:name=".FileChooser" android:label="@string/app_name" />
+
+		<service android:enabled="true" android:name=".SSHTunnelService" />
+
+		<receiver android:name=".SSHTunnelReceiver">
+			<intent-filter>
+				<action android:name="android.intent.action.BOOT_COMPLETED" />
+			</intent-filter>
+		</receiver>
+
+		<receiver android:name=".SSHTunnelRespondReceiver">
+			<intent-filter>
+				<action android:name="org.sshtunnel.NOTIFICATION" />
+			</intent-filter>
+		</receiver>
+
+	</application>
+</manifest>
