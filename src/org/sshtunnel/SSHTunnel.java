@@ -477,10 +477,10 @@ public class SSHTunnel extends PreferenceActivity implements
 				public void run() {
 
 					CopyAssets();
-					runCommand("chmod 777 /data/data/org.sshtunnel/iptables");
-					runCommand("chmod 777 /data/data/org.sshtunnel/redsocks");
-					runCommand("chmod 777 /data/data/org.sshtunnel/proxy_http.sh");
-					runCommand("chmod 777 /data/data/org.sshtunnel/proxy_socks.sh");
+					runCommand("chmod 755 /data/data/org.sshtunnel/iptables");
+					runCommand("chmod 755 /data/data/org.sshtunnel/redsocks");
+					runCommand("chmod 755 /data/data/org.sshtunnel/proxy_http.sh");
+					runCommand("chmod 755 /data/data/org.sshtunnel/proxy_socks.sh");
 
 					SharedPreferences settings = PreferenceManager
 							.getDefaultSharedPreferences(SSHTunnel.this);
@@ -550,10 +550,10 @@ public class SSHTunnel extends PreferenceActivity implements
 		switch (item.getItemId()) {
 		case Menu.FIRST + 1:
 			CopyAssets();
-			runCommand("chmod 777 /data/data/org.sshtunnel/iptables");
-			runCommand("chmod 777 /data/data/org.sshtunnel/redsocks");
-			runCommand("chmod 777 /data/data/org.sshtunnel/proxy_http.sh");
-			runCommand("chmod 777 /data/data/org.sshtunnel/proxy_socks.sh");
+			runCommand("chmod 755 /data/data/org.sshtunnel/iptables");
+			runCommand("chmod 755 /data/data/org.sshtunnel/redsocks");
+			runCommand("chmod 755 /data/data/org.sshtunnel/proxy_http.sh");
+			runCommand("chmod 755 /data/data/org.sshtunnel/proxy_socks.sh");
 			recovery();
 			break;
 		case Menu.FIRST + 2:
