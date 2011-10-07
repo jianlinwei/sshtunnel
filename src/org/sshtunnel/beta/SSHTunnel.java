@@ -11,10 +11,6 @@ import java.util.ArrayList;
 
 import org.sshtunnel.beta.R;
 
-import com.google.ads.AdRequest;
-import com.google.ads.AdSize;
-import com.google.ads.AdView;
-
 import android.app.ActivityManager;
 import android.app.AlertDialog;
 import android.app.ActivityManager.RunningServiceInfo;
