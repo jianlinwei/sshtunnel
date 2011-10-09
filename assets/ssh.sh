@@ -1,4 +1,4 @@
-#!/system/bin/sh
+ps#!/system/bin/sh
 
 DIR=/data/data/org.sshtunnel.beta
 
@@ -14,7 +14,3 @@ $DIR/sshtunnel -i /data/data/org.sshtunnel.beta/.ssh/private_key -NT -p $2 -L 12
   
   ;;
 esac
-
-kill -9 `cat $DIR/shell.pid`
-kill -9 `cat $DIR/ssh.pid`
-killall -9 sshtunnel

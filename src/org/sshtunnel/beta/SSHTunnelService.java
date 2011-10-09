@@ -191,7 +191,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 			try {
 
-				String cmd = "echo $$ > " + BASE + "shell.pid\n";
+				String cmd = "";
 
 				sshProcess = Runtime.getRuntime().exec("sh");
 				sshOS = new DataOutputStream(sshProcess.getOutputStream());
@@ -754,10 +754,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			// Make sure the connection is closed, important here
 			onDisconnect();
 		}
-		
-		// kill sshtunnel
-		if (process_id != null)
-			runCommand("kill -9 " + process_id);
 
 		try {
 			if (dnsServer != null) {
@@ -838,6 +834,13 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			runRootCommand(rules);
 
 		runRootCommand("/data/data/org.sshtunnel.beta/proxy_http.sh stop");
+		
+		// kill sshtunnel
+		if (process_id != null)
+			runCommand("kill -9 " + process_id);
+		
+		// double check, need busybox
+		runCommand("killall -9 sshtunnel");
 
 	}
 
