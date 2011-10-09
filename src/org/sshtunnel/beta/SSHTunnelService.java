@@ -903,7 +903,9 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 					handler.sendEmptyMessage(MSG_CONNECT_SUCCESS);
 					sm = new SSHMonitor();
 					sm.setMonitor(SSHTunnelService.this);
-					new Thread(sm).start();
+					Thread t = new Thread(sm);
+					t.setDaemon(true);
+					t.start();
 
 				} else {
 					// Connection or forward unsuccessful
