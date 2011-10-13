@@ -292,24 +292,24 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 	public static final String BASE = "/data/data/org.sshtunnel.beta/";
 
 	final static String CMD_IPTABLES_REDIRECT_DEL = BASE
-			+ "iptables -t nat -D OUTPUT -p 6 --dport 80 -j REDIRECT --to-ports 8123\n"
+			+ "iptables -t nat -D OUTPUT -p tcp --dport 80 -j REDIRECT --to-ports 8123\n"
 			+ BASE
-			+ "iptables -t nat -D OUTPUT -p 6 --dport 443 -j REDIRECT --to-ports 8124\n";
+			+ "iptables -t nat -D OUTPUT -p tcp --dport 443 -j REDIRECT --to-ports 8124\n";
 
 	final static String CMD_IPTABLES_REDIRECT_ADD = BASE
-			+ "iptables -t nat -A OUTPUT -p 6 --dport 80 -j REDIRECT --to-ports 8123\n"
+			+ "iptables -t nat -A OUTPUT -p tcp --dport 80 -j REDIRECT --to-ports 8123\n"
 			+ BASE
-			+ "iptables -t nat -A OUTPUT -p 6 --dport 443 -j REDIRECT --to-ports 8124\n";
+			+ "iptables -t nat -A OUTPUT -p tcp --dport 443 -j REDIRECT --to-ports 8124\n";
 
 	final static String CMD_IPTABLES_DNAT_DEL = BASE
-			+ "iptables -t nat -D OUTPUT -p 6 --dport 80 -j DNAT --to-destination 127.0.0.1:8123\n"
+			+ "iptables -t nat -D OUTPUT -p tcp --dport 80 -j DNAT --to-destination 127.0.0.1:8123\n"
 			+ BASE
-			+ "iptables -t nat -D OUTPUT -p 6 --dport 443 -j DNAT --to-destination 127.0.0.1:8124\n";
+			+ "iptables -t nat -D OUTPUT -p tcp --dport 443 -j DNAT --to-destination 127.0.0.1:8124\n";
 
 	final static String CMD_IPTABLES_DNAT_ADD = BASE
-			+ "iptables -t nat -A OUTPUT -p 6 --dport 80 -j DNAT --to-destination 127.0.0.1:8123\n"
+			+ "iptables -t nat -A OUTPUT -p tcp --dport 80 -j DNAT --to-destination 127.0.0.1:8123\n"
 			+ BASE
-			+ "iptables -t nat -A OUTPUT -p 6 --dport 443 -j DNAT --to-destination 127.0.0.1:8124\n";
+			+ "iptables -t nat -A OUTPUT -p tcp --dport 443 -j DNAT --to-destination 127.0.0.1:8124\n";
 
 	private boolean hasRedirectSupport = true;
 
@@ -388,7 +388,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		String line = null;
 
 		command = BASE
-				+ "iptables -t nat -A OUTPUT -p 17 --dport 53 -j REDIRECT --to-ports 8153";
+				+ "iptables -t nat -A OUTPUT -p udp --dport 53 -j REDIRECT --to-ports 8153";
 
 		try {
 			process = Runtime.getRuntime().exec("su");
@@ -538,10 +538,10 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 		if (hasRedirectSupport) {
 			cmd.append(BASE
-					+ "iptables -t nat -A OUTPUT -p 17 --dport 53 -j REDIRECT --to-ports 8153\n");
+					+ "iptables -t nat -A OUTPUT -p udp --dport 53 -j REDIRECT --to-ports 8153\n");
 		} else {
 			cmd.append(BASE
-					+ "iptables -t nat -A OUTPUT -p 17 --dport 53 -j DNAT --to-destination 127.0.0.1:8153\n");
+					+ "iptables -t nat -A OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:8153\n");
 		}
 
 		if (isAutoSetProxy) {
@@ -789,10 +789,10 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 		if (hasRedirectSupport) {
 			cmd.append(BASE
-					+ "iptables -t nat -D OUTPUT -p 17 --dport 53 -j REDIRECT --to-ports 8153\n");
+					+ "iptables -t nat -D OUTPUT -p udp --dport 53 -j REDIRECT --to-ports 8153\n");
 		} else {
 			cmd.append(BASE
-					+ "iptables -t nat -D OUTPUT -p 17 --dport 53 -j DNAT --to-destination 127.0.0.1:8153\n");
+					+ "iptables -t nat -D OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:8153\n");
 		}
 
 		if (isAutoSetProxy) {
