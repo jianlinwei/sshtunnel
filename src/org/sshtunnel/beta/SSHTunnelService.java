@@ -206,9 +206,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 				sshProcess = Runtime.getRuntime().exec(cmd);
 				sshOS = new DataOutputStream(sshProcess.getOutputStream());
-				
-				sshOS.write((cmd + "\n").getBytes());
-				sshOS.flush();
 
 			} catch (IOException e) {
 				Log.e(TAG, "Operation timed-out");

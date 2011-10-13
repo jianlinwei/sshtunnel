@@ -14,3 +14,5 @@ $DIR/sshtunnel -i /data/data/org.sshtunnel.beta/.ssh/private_key -NT -p $2 -L 12
   
   ;;
 esac
+
+exit
