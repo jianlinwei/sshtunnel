@@ -45,6 +45,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.lang.ref.WeakReference;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
@@ -184,6 +185,38 @@ public class SSHTunnelService extends Service implements ServerHostKeyVerifier,
 			}
 		}
 		return true;
+	}
+	
+	/* This is a hack
+	 * see http://www.mail-archive.com/android-developers@googlegroups.com/msg18298.html
+	 * we are not really able to decide if the service was started.
+	 * So we remember a week reference to it. We set it if we are running and clear it
+	 * if we are stopped. If anything goes wrong, the reference will hopefully vanish
+	 */	
+	private static WeakReference<SSHTunnelService> sRunningInstance = null;
+	public final static boolean isServiceStarted()
+	{
+		final boolean isServiceStarted;
+		if ( sRunningInstance == null )
+		{
+			isServiceStarted = false;
+		}
+		else if ( sRunningInstance.get() == null )
+		{
+			isServiceStarted = false;
+			sRunningInstance = null;
+		}
+		else
+		{
+			isServiceStarted = true;
+		}
+		return isServiceStarted;
+	}
+	private void markServiceStarted(){
+		sRunningInstance = new WeakReference<SSHTunnelService>( this );
+	}
+	private void markServiceStopped(){
+		sRunningInstance = null;
 	}
 
 	// Flag indicating if this is an ARMv6 device (-1: unknown, 0: no, 1: yes)
@@ -912,6 +945,9 @@ public class SSHTunnelService extends Service implements ServerHostKeyVerifier,
 		flushIptables();
 
 		super.onDestroy();
+		
+		markServiceStopped();
+		
 	}
 
 	private void onDisconnect() {
@@ -1068,6 +1104,8 @@ public class SSHTunnelService extends Service implements ServerHostKeyVerifier,
 				isConnecting = false;
 			}
 		}).start();
+		
+		markServiceStarted();
 	}
 
 	// XXX: Is it right?

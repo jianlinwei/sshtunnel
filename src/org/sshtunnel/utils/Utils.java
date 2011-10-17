@@ -6,6 +6,7 @@ import java.util.Map;
 import org.sshtunnel.R;
 import org.sshtunnel.SSHTunnel;
 import org.sshtunnel.SSHTunnelContext;
+import org.sshtunnel.SSHTunnelService;
 import org.sshtunnel.db.Profile;
 import org.sshtunnel.db.ProfileFactory;
 
@@ -59,17 +60,7 @@ public class Utils {
     }
 
 	public static boolean isWorked() {
-		ActivityManager myManager = (ActivityManager) SSHTunnelContext.getAppContext()
-				.getSystemService(Context.ACTIVITY_SERVICE);
-		ArrayList<RunningServiceInfo> runningService = (ArrayList<RunningServiceInfo>) myManager
-				.getRunningServices(30);
-		for (int i = 0; i < runningService.size(); i++) {
-			if (runningService.get(i).service.getClassName().toString()
-					.equals(SERVICE_NAME)) {
-				return true;
-			}
-		}
-		return false;
+		return SSHTunnelService.isServiceStarted();
 	}
 
 	public static void notifyConnect() {
