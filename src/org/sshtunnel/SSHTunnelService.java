@@ -109,6 +109,10 @@ public class SSHTunnelService extends Service implements ServerHostKeyVerifier,
 	private static final int MSG_CONNECT_FAIL = 3;
 	private static final int MSG_DISCONNECT_FINISH = 4;
 
+	private static final String AUTH_PUBLICKEY = "publickey",
+			AUTH_PASSWORD = "password",
+			AUTH_KEYBOARDINTERACTIVE = "keyboard-interactive";
+
 	private SharedPreferences settings = null;
 
 	private Profile profile;
@@ -265,6 +269,7 @@ public class SSHTunnelService extends Service implements ServerHostKeyVerifier,
 	};
 
 	private void authenticate() {
+
 		try {
 			if (connection.authenticateWithNone(profile.getUser())) {
 				Log.d(TAG, "Authenticate with none");
@@ -275,24 +280,30 @@ public class SSHTunnelService extends Service implements ServerHostKeyVerifier,
 		}
 
 		try {
-			File f = new File(profile.getKeyPath());
-			if (f.exists())
-				if (profile.getPassword().equals(""))
-					profile.setPassword(null);
-			if (connection.authenticateWithPublicKey(profile.getUser(), f,
-					profile.getPassword())) {
-				Log.d(TAG, "Authenticate with public key");
-				return;
+			if (connection.isAuthMethodAvailable(profile.getUser(),
+					AUTH_PUBLICKEY)) {
+				File f = new File(profile.getKeyPath());
+				if (f.exists())
+					if (profile.getPassword().equals(""))
+						profile.setPassword(null);
+				if (connection.authenticateWithPublicKey(profile.getUser(), f,
+						profile.getPassword())) {
+					Log.d(TAG, "Authenticate with public key");
+					return;
+				}
 			}
 		} catch (Exception e) {
 			Log.d(TAG, "Host does not support 'Public key' authentication.");
 		}
 
 		try {
-			if (connection.authenticateWithPassword(profile.getUser(),
-					profile.getPassword())) {
-				Log.d(TAG, "Authenticate with password");
-				return;
+			if (connection.isAuthMethodAvailable(profile.getUser(),
+					AUTH_PASSWORD)) {
+				if (connection.authenticateWithPassword(profile.getUser(),
+						profile.getPassword())) {
+					Log.d(TAG, "Authenticate with password");
+					return;
+				}
 			}
 		} catch (IllegalStateException e) {
 			Log.e(TAG,
@@ -302,16 +313,19 @@ public class SSHTunnelService extends Service implements ServerHostKeyVerifier,
 			Log.e(TAG, "Problem during handleAuthentication()", e);
 		}
 
-		// FIXME: Not works here
+		// TODO: Need verification
 
-		// try {
-		// if (connection.authenticateWithKeyboardInteractive(profile.getUser(),
-		// this))
-		// return;
-		// } catch (Exception e) {
-		// Log.d(TAG,
-		// "Host does not support 'Keyboard-Interactive' authentication.");
-		// }
+		try {
+			if (connection.isAuthMethodAvailable(profile.getUser(),
+					AUTH_KEYBOARDINTERACTIVE)) {
+				if (connection.authenticateWithKeyboardInteractive(
+						profile.getUser(), this))
+					return;
+			}
+		} catch (Exception e) {
+			Log.d(TAG,
+					"Host does not support 'Keyboard-Interactive' authentication.");
+		}
 	}
 
 	public boolean connect() {
@@ -1056,6 +1070,7 @@ public class SSHTunnelService extends Service implements ServerHostKeyVerifier,
 		}).start();
 	}
 
+	// XXX: Is it right?
 	@Override
 	public String[] replyToChallenge(String name, String instruction,
 			int numPrompts, String[] prompt, boolean[] echo) throws Exception {
