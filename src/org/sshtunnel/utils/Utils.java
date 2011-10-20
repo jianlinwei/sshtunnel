@@ -1,28 +1,22 @@
 package org.sshtunnel.utils;
 
-import java.util.ArrayList;
-import java.util.Map;
-
 import org.sshtunnel.R;
 import org.sshtunnel.SSHTunnel;
 import org.sshtunnel.SSHTunnelContext;
 import org.sshtunnel.SSHTunnelService;
 import org.sshtunnel.db.Profile;
-import org.sshtunnel.db.ProfileFactory;
 
-import android.app.ActivityManager;
-import android.app.ActivityManager.RunningServiceInfo;
+
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
+
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.graphics.drawable.Drawable;
-import android.preference.PreferenceManager;
 import android.util.Log;
 
 public class Utils {

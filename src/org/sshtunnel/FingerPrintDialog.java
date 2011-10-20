@@ -5,6 +5,7 @@ import org.sshtunnel.db.ProfileFactory;
 import org.sshtunnel.utils.Constraints;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.os.Bundle;
@@ -82,19 +83,19 @@ public class FingerPrintDialog extends Activity {
 			profile.setFingerPrint(fingerPrint);
 			ProfileFactory.saveToDao(profile);
 		}
+		Intent intent = new Intent(
+				Constraints.FINGER_PRINT_ACTION);
+		intent.putExtra(Constraints.FINGER_PRINT_ACTION_ACCEPT, true);
+		sendBroadcast(intent);
 		finish();
 	}
 
 	private void deny() {
+		Intent intent = new Intent(
+				Constraints.FINGER_PRINT_ACTION);
+		intent.putExtra(Constraints.FINGER_PRINT_ACTION_ACCEPT, false);
+		sendBroadcast(intent);
 		finish();
-	}
-
-	@Override
-	public void onDestroy() {
-		Editor ed = PreferenceManager.getDefaultSharedPreferences(this).edit();
-		ed.putBoolean("isConnecting", false);
-		ed.commit();
-		super.onDestroy();
 	}
 
 }

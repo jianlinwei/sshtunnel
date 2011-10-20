@@ -66,9 +66,12 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.appwidget.AppWidgetManager;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.media.AudioManager;
@@ -81,7 +84,11 @@ import android.os.IBinder;
 import android.os.Message;
 import android.preference.PreferenceManager;
 import android.util.Log;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.Button;
 import android.widget.RemoteViews;
+import android.widget.TextView;
 
 import com.flurry.android.FlurryAgent;
 import com.trilead.ssh2.Connection;
@@ -114,20 +121,35 @@ public class SSHTunnelService extends Service implements ServerHostKeyVerifier,
 			AUTH_PASSWORD = "password",
 			AUTH_KEYBOARDINTERACTIVE = "keyboard-interactive";
 
+	// Global settings
 	private SharedPreferences settings = null;
 
+	// Current profile
 	private Profile profile;
 
+	// Host IP address
 	private String hostAddress = null;
+
+	// Upstream proxy
 	private HTTPProxyData proxyData = null;
 
+	// DNS proxy option
 	private boolean enableDNSProxy = true;
 
+	// DNS proxy
+	private DNSServer dnsServer = null;
+	private int dnsPort = 0;
+
+	// Fingerprint Checker
+	private boolean fingerPrintChecker = false;
+	private Object fingerPrintLock = new Object();
+
+	// Port forwarding
 	private LocalPortForwarder lpf = null;
 	private LocalPortForwarder dnspf = null;
 	private DynamicPortForwarder dpf = null;
-	private DNSServer dnsServer = null;
-	private int dnsPort = 0;
+
+	// Connecting / Stopping lock
 	public volatile static boolean isConnecting = false;
 	public volatile static boolean isStopping = false;
 
@@ -186,36 +208,35 @@ public class SSHTunnelService extends Service implements ServerHostKeyVerifier,
 		}
 		return true;
 	}
-	
-	/* This is a hack
-	 * see http://www.mail-archive.com/android-developers@googlegroups.com/msg18298.html
-	 * we are not really able to decide if the service was started.
-	 * So we remember a week reference to it. We set it if we are running and clear it
-	 * if we are stopped. If anything goes wrong, the reference will hopefully vanish
-	 */	
+
+	/*
+	 * This is a hack see
+	 * http://www.mail-archive.com/android-developers@googlegroups
+	 * .com/msg18298.html we are not really able to decide if the service was
+	 * started. So we remember a week reference to it. We set it if we are
+	 * running and clear it if we are stopped. If anything goes wrong, the
+	 * reference will hopefully vanish
+	 */
 	private static WeakReference<SSHTunnelService> sRunningInstance = null;
-	public final static boolean isServiceStarted()
-	{
+
+	public final static boolean isServiceStarted() {
 		final boolean isServiceStarted;
-		if ( sRunningInstance == null )
-		{
+		if (sRunningInstance == null) {
 			isServiceStarted = false;
-		}
-		else if ( sRunningInstance.get() == null )
-		{
+		} else if (sRunningInstance.get() == null) {
 			isServiceStarted = false;
 			sRunningInstance = null;
-		}
-		else
-		{
+		} else {
 			isServiceStarted = true;
 		}
 		return isServiceStarted;
 	}
-	private void markServiceStarted(){
-		sRunningInstance = new WeakReference<SSHTunnelService>( this );
+
+	private void markServiceStarted() {
+		sRunningInstance = new WeakReference<SSHTunnelService>(this);
 	}
-	private void markServiceStopped(){
+
+	private void markServiceStopped() {
 		sRunningInstance = null;
 	}
 
@@ -289,6 +310,27 @@ public class SSHTunnelService extends Service implements ServerHostKeyVerifier,
 		}
 	};
 
+	final BroadcastReceiver hostKeyReceiver = new BroadcastReceiver() {
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			if (intent.getAction().equals(Constraints.FINGER_PRINT_ACTION)) {
+				if (intent.getBooleanExtra(
+						Constraints.FINGER_PRINT_ACTION_ACCEPT, false)) {
+					fingerPrintChecker = true;
+					synchronized (fingerPrintLock) {
+						fingerPrintLock.notifyAll();
+					}
+				} else {
+					fingerPrintChecker = false;
+					synchronized (fingerPrintLock) {
+						fingerPrintLock.notifyAll();
+					}
+				}
+			}
+			unregisterReceiver(hostKeyReceiver);
+		}
+	};
+
 	final Handler hostKeyHandler = new Handler() {
 		@Override
 		public void handleMessage(Message msg) {
@@ -298,6 +340,9 @@ public class SSHTunnelService extends Service implements ServerHostKeyVerifier,
 			i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 			i.putExtras(bundle);
 			startActivity(i);
+			IntentFilter filter = new IntentFilter(
+					Constraints.FINGER_PRINT_ACTION);
+			registerReceiver(hostKeyReceiver, filter);
 		}
 	};
 
@@ -945,9 +990,9 @@ public class SSHTunnelService extends Service implements ServerHostKeyVerifier,
 		flushIptables();
 
 		super.onDestroy();
-		
+
 		markServiceStopped();
-		
+
 	}
 
 	private void onDisconnect() {
@@ -1104,7 +1149,7 @@ public class SSHTunnelService extends Service implements ServerHostKeyVerifier,
 				isConnecting = false;
 			}
 		}).start();
-		
+
 		markServiceStarted();
 	}
 
@@ -1216,6 +1261,11 @@ public class SSHTunnelService extends Service implements ServerHostKeyVerifier,
 
 		hostKeyHandler.sendMessage(msg);
 
-		return false;
+		synchronized (fingerPrintLock) {
+			fingerPrintLock.wait();
+		}
+
+		return fingerPrintChecker;
+
 	}
 }
