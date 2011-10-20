@@ -41,4 +41,8 @@ public class Constraints {
 	public static final int FINGER_PRINT_CHANGED = 2;
 	public static final int FINGER_PRINT_ACCEPT = 3;
 	public static final int FINGER_PRINT_DENY = 4;
+	
+	public static final String FINGER_PRINT_ACTION_ACCEPT = "org.sshtunnel.fingerprint.ACCEPT";
+	public static final String FINGER_PRINT_ACTION_DENY = "org.sshtunnel.fingerprint.DENY";
+	public static final String FINGER_PRINT_ACTION = "org.sshtunnel.fingerprint.ACTION";
 }
