@@ -217,6 +217,10 @@ public class ProfileFactory {
 	}
 
 	public static void saveToPreference() {
+		
+		if (profile == null)
+			return;
+		
 		SharedPreferences settings = PreferenceManager
 				.getDefaultSharedPreferences(SSHTunnelContext.getAppContext());
 
