@@ -12,6 +12,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.lang.ref.WeakReference;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.InetAddress;
@@ -191,10 +192,7 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 			try {
 
-				String cmd = "echo $$ > " + BASE + "shell.pid\n";
-
-				sshProcess = Runtime.getRuntime().exec("sh");
-				sshOS = new DataOutputStream(sshProcess.getOutputStream());
+				String cmd = "";
 
 				if (isSocks)
 					cmd += "/data/data/org.sshtunnel.beta/ssh.sh dynamic "
@@ -207,8 +205,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 				Log.e(TAG, cmd);
 
-				sshOS.write((cmd + "\n").getBytes());
-				sshOS.flush();
+				sshProcess = Runtime.getRuntime().exec(cmd);
+				sshOS = new DataOutputStream(sshProcess.getOutputStream());
 
 			} catch (IOException e) {
 				Log.e(TAG, "Operation timed-out");
@@ -336,6 +334,38 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			// Should not happen.
 			Log.w("ApiDemos", "Unable to invoke method", e);
 		}
+	}
+	
+	/* This is a hack
+	 * see http://www.mail-archive.com/android-developers@googlegroups.com/msg18298.html
+	 * we are not really able to decide if the service was started.
+	 * So we remember a week reference to it. We set it if we are running and clear it
+	 * if we are stopped. If anything goes wrong, the reference will hopefully vanish
+	 */	
+	private static WeakReference<SSHTunnelService> sRunningInstance = null;
+	public final static boolean isServiceStarted()
+	{
+		final boolean isServiceStarted;
+		if ( sRunningInstance == null )
+		{
+			isServiceStarted = false;
+		}
+		else if ( sRunningInstance.get() == null )
+		{
+			isServiceStarted = false;
+			sRunningInstance = null;
+		}
+		else
+		{
+			isServiceStarted = true;
+		}
+		return isServiceStarted;
+	}
+	private void markServiceStarted(){
+		sRunningInstance = new WeakReference<SSHTunnelService>( this );
+	}
+	private void markServiceStopped(){
+		sRunningInstance = null;
 	}
 
 	/**
@@ -754,10 +784,6 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			// Make sure the connection is closed, important here
 			onDisconnect();
 		}
-		
-		// kill sshtunnel
-		if (process_id != null)
-			runCommand("kill -9 " + process_id);
 
 		try {
 			if (dnsServer != null) {
@@ -786,6 +812,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		notificationManager.cancel(0);
 
 		super.onDestroy();
+		
+		markServiceStopped();
 	}
 
 	private void onDisconnect() {
@@ -838,6 +866,13 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			runRootCommand(rules);
 
 		runRootCommand("/data/data/org.sshtunnel.beta/proxy_http.sh stop");
+		
+		// kill sshtunnel
+		if (process_id != null)
+			runCommand("kill -9 " + process_id);
+		
+		// double check, need busybox
+		runCommand("killall -9 sshtunnel");
 
 	}
 
@@ -900,7 +935,9 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 					handler.sendEmptyMessage(MSG_CONNECT_SUCCESS);
 					sm = new SSHMonitor();
 					sm.setMonitor(SSHTunnelService.this);
-					new Thread(sm).start();
+					Thread t = new Thread(sm);
+					t.setDaemon(true);
+					t.start();
 
 				} else {
 					// Connection or forward unsuccessful
@@ -914,6 +951,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 				handler.sendEmptyMessage(MSG_CONNECT_FINISH);
 			}
 		}).start();
+		
+		markServiceStarted();
 	}
 
 	public boolean isOnline() {

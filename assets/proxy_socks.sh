@@ -33,15 +33,17 @@ redsocks {
 stop)
   kill -9 `cat $DIR/redsocks.pid`
   
-  killall -9 openssh
+  kill -9 `cat $DIR/ssh.pid`
+  
+  killall -9 redsocks
+  
+  killall -9 sshtunnel
   
   rm $DIR/redsocks.pid
   
   rm $DIR/redsocks.conf
   
   rm $DIR/ssh.pid
-  
-  rm $DIR/shell.pid
   
   ;;
 esac
