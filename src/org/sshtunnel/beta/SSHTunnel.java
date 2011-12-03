@@ -35,13 +35,11 @@ import android.util.Log;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.LinearLayout;
 
 public class SSHTunnel extends PreferenceActivity implements
 		OnSharedPreferenceChangeListener {
 
 	private static final String TAG = "SSHTunnel";
-	private static final String SERVICE_NAME = "org.sshtunnel.beta.SSHTunnelService";
 
 	private ProgressDialog pd = null;
 
@@ -197,7 +195,7 @@ public class SSHTunnel extends PreferenceActivity implements
 
 		Editor edit = settings.edit();
 
-		if (this.isWorked(SERVICE_NAME)) {
+		if (SSHTunnelService.isServiceStarted()) {
 			edit.putBoolean("isRunning", true);
 		} else {
 			if (settings.getBoolean("isRunning", false)) {
@@ -276,7 +274,7 @@ public class SSHTunnel extends PreferenceActivity implements
 	/** Called when connect button is clicked. */
 	public boolean serviceStart() {
 
-		if (isWorked(SERVICE_NAME)) {
+		if (SSHTunnelService.isServiceStarted()) {
 			try {
 				stopService(new Intent(this, SSHTunnelService.class));
 			} catch (Exception e) {
@@ -448,7 +446,7 @@ public class SSHTunnel extends PreferenceActivity implements
 
 		Editor edit = settings.edit();
 
-		if (this.isWorked(SERVICE_NAME)) {
+		if (SSHTunnelService.isServiceStarted()) {
 			edit.putBoolean("isRunning", true);
 		} else {
 			if (settings.getBoolean("isRunning", false)) {
