@@ -314,13 +314,16 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 
 	private boolean hasRedirectSupport = true;
 
+	private static final Class<?>[] mSetForegroundSignature = new Class[] { boolean.class };
 	private static final Class<?>[] mStartForegroundSignature = new Class[] {
 			int.class, Notification.class };
 	private static final Class<?>[] mStopForegroundSignature = new Class[] { boolean.class };
 
+	private Method mSetForeground;
 	private Method mStartForeground;
 	private Method mStopForeground;
 
+	private Object[] mSetForegroundArgs = new Object[1];
 	private Object[] mStartForegroundArgs = new Object[2];
 	private Object[] mStopForegroundArgs = new Object[1];
 
@@ -335,36 +338,35 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			Log.w("ApiDemos", "Unable to invoke method", e);
 		}
 	}
-	
-	/* This is a hack
-	 * see http://www.mail-archive.com/android-developers@googlegroups.com/msg18298.html
-	 * we are not really able to decide if the service was started.
-	 * So we remember a week reference to it. We set it if we are running and clear it
-	 * if we are stopped. If anything goes wrong, the reference will hopefully vanish
-	 */	
+
+	/*
+	 * This is a hack see
+	 * http://www.mail-archive.com/android-developers@googlegroups
+	 * .com/msg18298.html we are not really able to decide if the service was
+	 * started. So we remember a week reference to it. We set it if we are
+	 * running and clear it if we are stopped. If anything goes wrong, the
+	 * reference will hopefully vanish
+	 */
 	private static WeakReference<SSHTunnelService> sRunningInstance = null;
-	public final static boolean isServiceStarted()
-	{
+
+	public final static boolean isServiceStarted() {
 		final boolean isServiceStarted;
-		if ( sRunningInstance == null )
-		{
+		if (sRunningInstance == null) {
 			isServiceStarted = false;
-		}
-		else if ( sRunningInstance.get() == null )
-		{
+		} else if (sRunningInstance.get() == null) {
 			isServiceStarted = false;
 			sRunningInstance = null;
-		}
-		else
-		{
+		} else {
 			isServiceStarted = true;
 		}
 		return isServiceStarted;
 	}
-	private void markServiceStarted(){
-		sRunningInstance = new WeakReference<SSHTunnelService>( this );
+
+	private void markServiceStarted() {
+		sRunningInstance = new WeakReference<SSHTunnelService>(this);
 	}
-	private void markServiceStopped(){
+
+	private void markServiceStopped() {
 		sRunningInstance = null;
 	}
 
@@ -382,7 +384,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		}
 
 		// Fall back on the old API.
-		setForeground(true);
+		mSetForegroundArgs[0] = Boolean.TRUE;
+		invokeMethod(mSetForeground, mSetForegroundArgs);
 		notificationManager.notify(id, notification);
 	}
 
@@ -409,7 +412,8 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 		// Fall back on the old API. Note to cancel BEFORE changing the
 		// foreground state, since we could be killed at that point.
 		notificationManager.cancel(id);
-		setForeground(false);
+		mSetForegroundArgs[0] = Boolean.FALSE;
+		invokeMethod(mSetForeground, mSetForegroundArgs);
 	}
 
 	private void initHasRedirectSupported() {
@@ -760,6 +764,15 @@ public class SSHTunnelService extends Service implements ConnectionMonitor {
 			// Running on an older platform.
 			mStartForeground = mStopForeground = null;
 		}
+
+		try {
+			mSetForeground = getClass().getMethod("setForeground",
+					mSetForegroundSignature);
+		} catch (NoSuchMethodException e) {
+			throw new IllegalStateException(
+					"OS doesn't have Service.startForeground OR Service.setForeground!");
+		}
+
 	}
 
 	/** Called when the activity is closed. */

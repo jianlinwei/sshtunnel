@@ -1,3 +1,4 @@
-
-syntax: regexp
-^bin$
+syntax: glob
+bin
+gen
+local.properties
