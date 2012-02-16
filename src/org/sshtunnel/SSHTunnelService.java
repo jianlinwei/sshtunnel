@@ -173,12 +173,15 @@ public class SSHTunnelService extends Service implements ServerHostKeyVerifier,
 			+ "iptables -t nat -A SSHTUNNEL -p tcp --dport 80 -j DNAT --to-destination 127.0.0.1:8123\n"
 			+ BASE
 			+ "iptables -t nat -A SSHTUNNEL -p tcp --dport 443 -j DNAT --to-destination 127.0.0.1:8124\n";
-	
-	final static String CMD_IPTABLES_REDIRECT_ADD_SOCKS = BASE + "iptables -t nat -A SSHTUNNEL -p tcp -j REDIRECT --to 8123\n";
 
-	final static String CMD_IPTABLES_DNAT_ADD_SOCKS = BASE + "iptables -t nat -A SSHTUNNEL -p tcp -j DNAT --to-destination 127.0.0.1:8123\n";
-	
-	final static String CMD_IPTABLES_RETURN = BASE + "iptables -t nat -A OUTPUT -p tcp -d 0.0.0.0 -j RETURN\n";
+	final static String CMD_IPTABLES_REDIRECT_ADD_SOCKS = BASE
+			+ "iptables -t nat -A SSHTUNNEL -p tcp -j REDIRECT --to 8123\n";
+
+	final static String CMD_IPTABLES_DNAT_ADD_SOCKS = BASE
+			+ "iptables -t nat -A SSHTUNNEL -p tcp -j DNAT --to-destination 127.0.0.1:8123\n";
+
+	final static String CMD_IPTABLES_RETURN = BASE
+			+ "iptables -t nat -A OUTPUT -p tcp -d 0.0.0.0 -j RETURN\n";
 
 	public static boolean runRootCommand(String command) {
 		Process process = null;
@@ -698,7 +701,7 @@ public class SSHTunnelService extends Service implements ServerHostKeyVerifier,
 		else
 			cmd.append(hasRedirectSupport ? CMD_IPTABLES_REDIRECT_ADD
 					: CMD_IPTABLES_DNAT_ADD);
-		
+
 		cmd.append(CMD_IPTABLES_RETURN.replace("0.0.0.0", hostAddress));
 
 		if (profile.isGFWList()) {
@@ -746,6 +749,9 @@ public class SSHTunnelService extends Service implements ServerHostKeyVerifier,
 
 		cmd.append(BASE + "iptables -t nat -F SSHTUNNEL\n");
 		cmd.append(BASE + "iptables -t nat -X SSHTUNNEL\n");
+
+		cmd.append((CMD_IPTABLES_RETURN.replace("0.0.0.0", hostAddress))
+				.replace("-A", "-D"));
 
 		if (enableDNSProxy) {
 			cmd.append(BASE + "iptables -t nat -F SSHTUNNELDNS\n");
@@ -952,11 +958,6 @@ public class SSHTunnelService extends Service implements ServerHostKeyVerifier,
 		stopForegroundCompat(1);
 
 		FlurryAgent.onEndSession(this);
-
-		// if (stateChanged != null) {
-		// unregisterReceiver(stateChanged);
-		// stateChanged = null;
-		// }
 
 		if (connected) {
 
